@@ -1,11 +1,6 @@
 import pandas as pd
 import os
 
-
-# CLASSES = ['MEL', 'NMC', 'NNV', 'NV', 'SUS']
-# COLUMNS = ['dataset_id', 'image', 'image_type', 'sex', 'age_approx', 'anatom_site_general', 'class']
-
-
 def merge_datasets():
     columns = ['dataset_id', 'image', 'image_type', 'sex', 'age_approx', 'anatom_site_general', 'class']
     seven_pt = pd.read_csv('data/7pt.csv')
@@ -26,8 +21,8 @@ def merge_datasets():
 
 
 def string_to_num(dataset):  # Change string values to numeric.
-    sex_map = {'m': 0, 'f': 1}
-    dataset['sex'] = dataset['sex'].map(sex_map)
+    image_type_map = {0: 'clinic', 1: 'derm'}
+    dataset['image_type'] = dataset['image_type'].map(image_type_map)
     for idx in dataset.index:
         dataset.loc[idx, 'image'] = os.path.join('data', dataset.loc[idx, 'dataset_id'], 'data',
                                                  dataset.loc[idx, 'image'])
