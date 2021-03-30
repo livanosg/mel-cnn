@@ -5,18 +5,19 @@ import tensorflow as tf
 from sklearn import utils
 from tensorflow import data
 import config
-from hyperparam import HWC_RANGE, BATCH_SIZE_RANGE
+from hyperparameters import BATCH_SIZE_RANGE, HWC_RANGE
 
 all_data = pd.read_csv('all_data.csv', index_col=0)
 all_data.drop('dataset_id', axis=1, inplace=True)
 all_data['image_type'].fillna('nan', inplace=True)
 all_data['anatom_site_general'].fillna('nan', inplace=True)
 all_data['sex'].fillna('nan', inplace=True)
+all_data['age_approx'].fillna(1000, inplace=True)
 all_data = utils.shuffle(all_data)  # Shuffle data
 
 msk = np.random.rand(len(all_data)) < 0.8  # Split data to training and evaluation segments
-training_data = all_data[msk][:100]
-eval_data = all_data[~msk][:100]
+training_data = all_data[msk][10000:11000]
+eval_data = all_data[~msk][10000:11000]
 
 anatom_site_dict = {'head neck': 0, 'torso': 1, 'lateral torso': 2, 'upper extremity': 3,
                     'lower extremity': 4, 'palms soles': 5, 'oral genital': 6, 'nan': 7}
@@ -41,12 +42,11 @@ class MelData(tf.data.Dataset, ABC):
             classes = tf.one_hot(classes_dict[mode_data[3]], depth=len(classes_dict), name='classes')
             yield image, image_type, sex, anatom_site, age, classes
 
-
     @staticmethod
     def _read_image(sample_data, hparams):
-        sample_data['image'] = tf.io.read_file(filename=sample_data['image'])
-        sample_data['image'] = tf.image.decode_image(contents=sample_data['image'], channels=3, dtype=tf.uint8)
-        sample_data['image'] = tf.image.resize_with_pad(sample_data['image'], hparams[HWC_RANGE], hparams[HWC_RANGE])
+        sample_data = tf.io.read_file(filename=sample_data)
+        sample_data = tf.image.decode_image(contents=sample_data, channels=3, dtype=tf.uint8)
+        sample_data = tf.image.resize_with_pad(sample_data, hparams[HWC_RANGE], hparams[HWC_RANGE])
         return sample_data
 
     def __new__(cls, hparams, *args, **kwargs):
@@ -60,28 +60,17 @@ class MelData(tf.data.Dataset, ABC):
                                                                     tf.TensorSpec(shape=len(sex_dict),
                                                                                   dtype=tf.float32, name='sex'),
                                                                     tf.TensorSpec(shape=len(anatom_site_dict),
-                                                                                  dtype=tf.float32, name=' anatom_site'),
+                                                                                  dtype=tf.float32,
+                                                                                  name=' anatom_site'),
                                                                     tf.TensorSpec(shape=[1],
                                                                                   dtype=tf.float32, name='age'),
                                                                     tf.TensorSpec(shape=len(classes_dict),
                                                                                   dtype=tf.float32, name='classes')),
                                                   args=[mode])
-            dataset = dataset.map(lambda image, image_type, sex, anatom_site, age, classes: {'image': image,
-                                                                                             'image_type': image_type,
-                                                                                             'sex': sex,
-                                                                                             'anatom_site': anatom_site,
-                                                                                             'age': age,
-                                                                                             'classes': classes})
-            dataset = dataset.prefetch(config.BUFFER_SIZE)
-            dataset = dataset.map(lambda samples: cls._read_image(samples, hparams), num_parallel_calls=tf.data.AUTOTUNE)
-            dataset = dataset.map(lambda samples: ({'image': samples['image'], 'image_type': samples['image_type'],
-                                                    'sex': samples['sex'], 'anatom_site': samples['anatom_site'],
-                                                    'age': samples['age']}, {'classes': samples['classes']})).cache()
+            dataset = dataset.map(lambda image, image_type, sex, anatom_site, age, classes: ({'image': cls._read_image(image, hparams), 'image_type': image_type, 'sex': sex, 'anatom_site': anatom_site, 'age': age},
+                                                                                             {'classes': classes}), num_parallel_calls=tf.data.AUTOTUNE).cache()
             dataset = dataset.batch(hparams[BATCH_SIZE_RANGE])
             # dataset = dataset.repeat()
+            dataset = dataset.prefetch(config.BUFFER_SIZE)
             train_eval_datasets.append(dataset)
         return train_eval_datasets
-
-
-if __name__ == '__main__':
-    pass
