@@ -20,7 +20,6 @@ def metrics():
     METRIC_AUC = 'AUC'
     METRIC_PRECISION = tf.keras.metrics.Precision(name='precision')
     METRIC_RECALL = tf.keras.metrics.Recall(name='recall')
-    # METRIC_SPECIFICITY = ''
     return [METRIC_ACCURACY, METRIC_CATEGORICAL_ACCURACY, METRIC_AUC, METRIC_PRECISION, METRIC_RECALL]
 
 
@@ -30,3 +29,5 @@ def metrics():
 # activations = get_activations(model=custom_model, x=test)
 # keract.display_activations(activations=activations, save=True, directory='test')
 # keract.display_heatmaps(activations, test, save=True, directory='test')
+
+# keras.utils.plot_model(custom_model, 'custom_model.png', rankdir='LR', show_layer_names=False)

@@ -1,3 +1,5 @@
+import os
+
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.data.experimental import AutoShardPolicy
@@ -13,7 +15,7 @@ from hyperparameters import ACTIVATION_OPTIONS, HWC_RANGE, HP_MODELS, HP_OPTIMIZ
     DROPOUT_RANGE
 from log_lr_callback import LRTensorBoard
 
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 # -----------------------------==================DISTRIBUTED SETUP =======================---------------------------- #
 # # Fake SLURM ENVARS. Expected values for requesting 2 nodes (o1, o2)
 # os.environ['SLURM_STEP_NUM_TASKS'] = '1'
@@ -26,11 +28,12 @@ from log_lr_callback import LRTensorBoard
 # os.system("unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY")
 
 # -----------------------------==================DISTRIBUTED SETUP =======================---------------------------- #
-# slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver()
-# distr = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver)
 
 
 def training(hparams, log_dir):
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+    # slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver()
+    # distr = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver)
     distr = tf.distribute.OneDeviceStrategy(device='/cpu')  # Testing distribution operations
     models = {'xception': (Xception, tf.keras.applications.xception.preprocess_input),
               'inception': (InceptionV3, tf.keras.applications.inception_v3.preprocess_input),
@@ -87,18 +90,15 @@ def training(hparams, log_dir):
     train_data, eval_data = MelData(hparams=hparams)
     train_data, eval_data = train_data.with_options(options), eval_data.with_options(options)
 
-    tensorboard_callback = TensorBoard(log_dir=log_dir, update_freq='epoch')
+    tensorboard_callback = TensorBoard(log_dir=log_dir, update_freq='epoch', profile_batch=(1,5))
     model_ckpt_callback = ModelCheckpoint(filepath='models/' + log_dir.split('/')[-1], save_freq='epoch',
                                           monitor='val_accuracy', save_best_only=True),
     clr_callback = CyclicLR(base_lr=hparams[LEARNING_RATE_RANGE], max_lr=hparams[LEARNING_RATE_RANGE] * 5,
                             step_size=100, mode='exp_range', gamma=0.99994)
     lr_log_callback = LRTensorBoard(log_dir=log_dir, update_freq='epoch', profile_batch=0)
-    # cm_callback = LambdaCallback(on_epoch_end=log_confusion_matrix)
     hp_callback = hp.KerasCallback(log_dir, hparams)
     es_callback = EarlyStopping(monitor='val_accuracy', verbose=1, patience=10, mode='max')
     cm_callback = CMTensorboard(log_dir=log_dir, update_freq='epoch', eval_data=eval_data, profile_batch=0)
     custom_model.fit(train_data, validation_data=eval_data, epochs=5,
                      callbacks=[tensorboard_callback, model_ckpt_callback, clr_callback,
                                 lr_log_callback, cm_callback, hp_callback, es_callback])
-
-# keras.utils.plot_model(custom_model, 'custom_model.png', rankdir='LR', show_layer_names=False)

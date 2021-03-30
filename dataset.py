@@ -4,7 +4,6 @@ import pandas as pd
 import tensorflow as tf
 from sklearn import utils
 from tensorflow import data
-import config
 from hyperparameters import BATCH_SIZE_RANGE, HWC_RANGE
 
 all_data = pd.read_csv('all_data.csv', index_col=0)
@@ -42,13 +41,6 @@ class MelData(tf.data.Dataset, ABC):
             classes = tf.one_hot(classes_dict[mode_data[3]], depth=len(classes_dict), name='classes')
             yield image, image_type, sex, anatom_site, age, classes
 
-    @staticmethod
-    def _read_image(sample_data, hparams):
-        sample_data = tf.io.read_file(filename=sample_data)
-        sample_data = tf.image.decode_image(contents=sample_data, channels=3, dtype=tf.uint8)
-        sample_data = tf.image.resize_with_pad(sample_data, hparams[HWC_RANGE], hparams[HWC_RANGE])
-        return sample_data
-
     def __new__(cls, hparams, *args, **kwargs):
         train_eval_datasets = []
         for mode in ('train', 'eval'):
@@ -67,10 +59,12 @@ class MelData(tf.data.Dataset, ABC):
                                                                     tf.TensorSpec(shape=len(classes_dict),
                                                                                   dtype=tf.float32, name='classes')),
                                                   args=[mode])
-            dataset = dataset.map(lambda image, image_type, sex, anatom_site, age, classes: ({'image': cls._read_image(image, hparams), 'image_type': image_type, 'sex': sex, 'anatom_site': anatom_site, 'age': age},
-                                                                                             {'classes': classes}), num_parallel_calls=tf.data.AUTOTUNE).cache()
-            dataset = dataset.batch(hparams[BATCH_SIZE_RANGE])
-            # dataset = dataset.repeat()
-            dataset = dataset.prefetch(config.BUFFER_SIZE)
+            dataset = dataset.prefetch(tf.data.AUTOTUNE)
+            dataset = dataset.map(lambda image, image_type, sex, anatom_site, age, classes: (
+                {'image': tf.image.resize_with_pad(tf.image.decode_image(tf.io.read_file(image)), hparams[HWC_RANGE], hparams[HWC_RANGE]),
+                 'image_type': image_type, 'sex': sex, 'anatom_site': anatom_site, 'age': age},
+                {'classes': classes}), num_parallel_calls=tf.data.AUTOTUNE)
+            dataset = dataset.batch(hparams[BATCH_SIZE_RANGE]).cache()
+
             train_eval_datasets.append(dataset)
         return train_eval_datasets
