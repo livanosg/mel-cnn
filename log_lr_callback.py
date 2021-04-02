@@ -1,5 +1,5 @@
 from tensorflow.keras.callbacks import TensorBoard
-from tensorflow.keras import backend as K
+
 
 class LRTensorBoard(TensorBoard):
     def __init__(self, log_dir, **kwargs):  # add other arguments to __init__ if you need
@@ -7,5 +7,5 @@ class LRTensorBoard(TensorBoard):
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
-        logs.update({'lr': K.eval(self.model.optimizer.lr)})
+        logs.update({'lr': self.model.optimizer.lr})
         super().on_epoch_end(epoch, logs)
