@@ -1,5 +1,5 @@
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from hyperparameters import HWC_RNG, BATCH_SIZE_RANGE, DROPOUT_LST, RELU_A_LST, OPTIMIZER_LST, LR_LST, MODEL_LST
 from train_model import training
 

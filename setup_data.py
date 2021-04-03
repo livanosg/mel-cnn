@@ -1,7 +1,9 @@
-import pandas as pd
 import os
+import pandas as pd
+import numpy as np
 
-def merge_datasets():
+
+def initialize_datasets(save=False):
     columns = ['dataset_id', 'image', 'image_type', 'sex', 'age_approx', 'anatom_site_general', 'class']
     seven_pt = pd.read_csv('data/7pt.csv')
     dermofit = pd.read_csv('data/dermofit.csv')
@@ -17,28 +19,34 @@ def merge_datasets():
         for column in columns:
             if column not in dataset:
                 dataset[column] = None
-    return pd.concat(datasets, ignore_index=True)
+    datasets = pd.concat(datasets, ignore_index=True)
+    image_type_map = {0: 'clinic', 1: 'derm'}  # Change string values to numeric.
+    datasets['image_type'] = datasets['image_type'].map(image_type_map)
+    for id in datasets['dataset_id'].unique():
+        datasets.loc[datasets['dataset_id'] == id, 'image'] = datasets.loc[datasets['dataset_id'] == id, 'image'].map(
+            lambda x: os.path.join('data', id, 'data', x))
+    if save:
+        datasets.to_csv('all_data_init.csv', index=False)
+    return datasets
 
 
-def string_to_num(dataset):  # Change string values to numeric.
-    image_type_map = {0: 'clinic', 1: 'derm'}
-    dataset['image_type'] = dataset['image_type'].map(image_type_map)
-    for idx in dataset.index:
-        dataset.loc[idx, 'image'] = os.path.join('data', dataset.loc[idx, 'dataset_id'], 'data',
-                                                 dataset.loc[idx, 'image'])
-    return dataset
+def concat_columns(df, contains):
+    part_columns = []
+    for key in df.columns.str.contains(contains):
+        part_columns.append(np.array(df.loc[:, key].values).reshape(-1, 1))
+        df.pop(key)
+    array = np.concatenate(part_columns, axis=1)
+    return array
 
 
-def fix_image_names(dataset):  # Fix isic19 and isic20 file names.
-    dataset.loc[dataset['dataset_id'] == 'isic19', 'image'] = dataset.loc[
-                                                                  dataset['dataset_id'] == 'isic19', 'image'] + '.jpg'
-    dataset.loc[dataset['dataset_id'] == 'isic20', 'image'] = dataset.loc[
-                                                                  dataset['dataset_id'] == 'isic20', 'image'] + '.jpg'
-    return dataset
+def prep_data(file='all_data_init.csv'):
+    all_data = pd.read_csv(file)
+    all_data.loc[:, 'age_approx'].fillna(-10, inplace=True)
+    all_data = pd.get_dummies(all_data, columns=['image_type', 'sex', 'anatom_site_general', 'class'], dtype=int)
+    all_data.to_csv('all_data_v2.csv', index=False)
 
 
-def setup_data(to_file):
-    fix_image_names(string_to_num(merge_datasets())).to_csv(to_file)
-
-
-setup_data('all_data.csv')
+if __name__ == '__main__':
+    initialize_datasets(save=True)
+    prep_data()
+    exit()

@@ -13,7 +13,7 @@ from tensorflow.python.data.experimental import AutoShardPolicy
 
 from clr_callback import CyclicLR
 from confusion_matrix_plot import CMTensorboard
-from dataset import MelData
+from dataset import MelData, get_class_weights
 from hyperparameters import RELU_A_LST, HWC_RNG, MODEL_LST, OPTIMIZER_LST, LR_LST, DROPOUT_LST, metrics, \
     BATCH_SIZE_RANGE
 from log_lr_callback import LRTensorBoard
@@ -66,7 +66,7 @@ def training(hparams, log_dir):
     datasets = MelData(hparams=hparams)
     train_data, eval_data = datasets.get_datasets()
     train_data, eval_data = train_data.with_options(options), eval_data.with_options(options)
-    weights = datasets.get_weights()
+    weights = get_class_weights(datasets.train_data)
 
     with distr.scope():
         # -----------------------------================ Image part =================---------------------------------- #
@@ -81,8 +81,8 @@ def training(hparams, log_dir):
 
         # -----------------------------================ Values part =================--------------------------------- #
         image_type_input = keras.Input(shape=(2,), name='image_type', dtype=tf.float32)
-        sex_input = keras.Input(shape=(3,), name='sex', dtype=tf.float32)
-        anatom_site_input = keras.Input(shape=(8,), name='anatom_site', dtype=tf.float32)
+        sex_input = keras.Input(shape=(2,), name='sex', dtype=tf.float32)
+        anatom_site_input = keras.Input(shape=(6,), name='anatom_site', dtype=tf.float32)
         age_input = keras.Input(shape=(1,), name='age', dtype=tf.float32)
         concat_inputs = keras.layers.Concatenate()([image_type_input, sex_input, anatom_site_input, age_input])
         concat_inputs = keras.layers.Dropout(rate=hparams[DROPOUT_LST])(concat_inputs)
@@ -125,5 +125,5 @@ def training(hparams, log_dir):
     custom_model.fit(train_data, validation_data=eval_data, epochs=30,
                      callbacks=[tensorboard_callback, model_ckpt_callback, clr_callback,
                                 lr_log_callback, cm_callback, hp_callback, es_callback],
-                     verbose=2)
+                     verbose=1)
     tf.keras.backend.clear_session()
