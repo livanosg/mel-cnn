@@ -1,7 +1,8 @@
 import io
 import itertools
-import tensorflow as tf
+
 import numpy as np
+import tensorflow as tf
 from matplotlib import pyplot as plt
 from tensorflow.python.data.experimental import AutoShardPolicy
 from tensorflow.python.keras.callbacks import TensorBoard

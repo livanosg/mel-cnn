@@ -1,7 +1,7 @@
-from tensorflow.keras.callbacks import *
+import numpy as np
 # noinspection PyPep8Naming
 from tensorflow.keras import backend as K
-import numpy as np
+from tensorflow.keras.callbacks import *
 
 
 # noinspection PyUnusedLocal

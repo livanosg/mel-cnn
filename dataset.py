@@ -1,7 +1,8 @@
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow import data
-import numpy as np
+
 from config import CLASSES_DICT, ANATOM_SITE_DICT, SEX_DICT, IMAGE_TYPE_DICT
 
 

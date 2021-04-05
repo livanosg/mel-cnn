@@ -1,6 +1,7 @@
 import json
-import os
 import math
+import os
+
 import tensorflow as tf
 from tensorboard.plugins.hparams import api as hp
 from tensorflow import keras
@@ -10,12 +11,12 @@ from tensorflow.keras.applications.xception import Xception
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping
 from tensorflow.python.data.experimental import AutoShardPolicy
 
-from losses import weighted_categorical_crossentropy
 from clr_callback import CyclicLR
 from confusion_matrix_plot import CMTensorboard
 from dataset import MelData, get_class_weights
 from hyperparameters import RELU_A, HWC_DOM, MODEL_LST, OPTIMIZER_LST, LR_LST, DROPOUT_LST, BATCH_SIZE_RANGE, metrics
 from log_lr_callback import LRTensorBoard
+from losses import weighted_categorical_crossentropy
 
 
 # https://stackoverflow.com/questions/66059593/multiworkermirroredstrategy-hangs-after-starting-grpc-server]
@@ -41,9 +42,12 @@ def training(partition, hparams, log_dir):
         # set_tf_config(slurm_resolver)
         slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver(rpc_layer='nccl').task_type
         strategy = tf.distribute.MultiWorkerMirroredStrategy(slurm_resolver)
+        save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}" + f"-{strategy.cluster_resolver.task_type}-{strategy.cluster_resolver.task_id}"
     elif partition == 'ml':
         strategy = tf.distribute.MirroredStrategy()
+        save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}"
     elif partition == 'local':
+        save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}"
         strategy = tf.distribute.OneDeviceStrategy(device='/cpu')  # Testing distribution operations
     else:
         raise ValueError(f"Unknow partition value: {partition}. Available options: 'gpu', 'ml', 'local'")
@@ -112,10 +116,6 @@ def training(partition, hparams, log_dir):
     validation_steps = math.ceil(datasets.eval_len / hparams[BATCH_SIZE_RANGE])
     tensorboard_callback = TensorBoard(log_dir=log_dir, update_freq='epoch', profile_batch=(1, 5))
     bckp_rstr_callback = tf.keras.callbacks.experimental.BackupAndRestore('tmp/')
-
-    save_path = {"gpu": "models/" + log_dir.split("/")[-1] + "-{epoch:03d}" + f"-{strategy.cluster_resolver.task_type}-{strategy.cluster_resolver.task_id}",
-                 "ml":  "models/" + log_dir.split("/")[-1] + "-{epoch:03d}",
-                 "local": "models/" + log_dir.split("/")[-1] + "-{epoch:03d}"}
 
     model_ckpt_callback = ModelCheckpoint(filepath=save_path[partition],
                                           save_freq='epoch',
