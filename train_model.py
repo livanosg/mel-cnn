@@ -41,8 +41,9 @@ def training(partition, hparams, log_dir):
     print(f'Running at {partition} partition.')
     if partition == 'gpu':
         # set_tf_config(slurm_resolver)
-        slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver().task_type
+        slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver()
         strategy = tf.distribute.MultiWorkerMirroredStrategy(slurm_resolver)
+        print(slurm_resolver.cluster_spec().as_dict())
         save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}" + f"-{strategy.cluster_resolver.task_type}-{strategy.cluster_resolver.task_id}"
     elif partition == 'ml':
         strategy = tf.distribute.MirroredStrategy()
