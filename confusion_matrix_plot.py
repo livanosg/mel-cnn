@@ -19,7 +19,7 @@ def plot_confusion_matrix(cm, class_names):
     """
 
     figure = plt.figure(figsize=(8, 8))
-    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.get_cmap('inferno'))
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.get_cmap('cividis'))  # magma, inferno, plasma, viridis, cividis, twilight, twilight_shifted, turbo
     plt.title("Confusion matrix")
     plt.colorbar()
     tick_marks = np.arange(len(class_names))
@@ -27,9 +27,9 @@ def plot_confusion_matrix(cm, class_names):
     plt.yticks(tick_marks, class_names)
 
     # Normalize the confusion matrix.
-    cm = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], decimals=2)
+    cm = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], decimals=3)
     # Use white text if squares are dark; otherwise black.
-    threshold = 0.8  # cm.max() / 2.
+    threshold = cm.max() / 2.
 
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         color = "white" if cm[i, j] > threshold else "black"
@@ -64,12 +64,13 @@ class CMTensorboard(TensorBoard):
         options = tf.data.Options()
         options.experimental_distribute.auto_shard_policy = AutoShardPolicy.DATA
         options.experimental_threading.max_intra_op_parallelism = 1
-        self.eval_data = eval_data.with_options(options=options).repeat(1)
+        self.eval_data = eval_data.with_options(options=options)  #.repeat(1)
 
     def on_epoch_end(self, epoch, logs=None):
         test_pred_raw = self.model.predict(self.eval_data)
         test_pred = np.argmax(test_pred_raw, axis=1)
-        labels = np.concatenate([np.argmax(label['classes'], axis=1) for label in self.eval_data.map(lambda x, y: y).as_numpy_iterator()])
+        labels = np.concatenate([np.argmax(label['classes'], axis=1) for label in
+                                 self.eval_data.map(lambda x, y: y).as_numpy_iterator()])
         cm = np.asarray(tf.math.confusion_matrix(labels=labels, predictions=test_pred, num_classes=len(CLASSES_DICT)))
         figure = plot_confusion_matrix(cm, class_names=CLASSES_DICT.keys())
         cm_image = plot_to_image(figure)

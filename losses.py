@@ -1,3 +1,4 @@
+# noinspection PyPep8Naming
 from tensorflow.keras import backend as K
 
 
@@ -22,8 +23,8 @@ def weighted_categorical_crossentropy(weights):
         # clip to prevent NaN's and Inf's
         y_pred = K.clip(y_pred, K.epsilon(), 1 - K.epsilon())
         # calc
-        loss = y_true * K.log(y_pred) * weights
-        loss = -K.sum(loss, -1)
-        return loss
+        w_loss = y_true * K.log(y_pred) * weights
+        w_loss = -K.sum(w_loss, -1)
+        return w_loss
 
     return loss

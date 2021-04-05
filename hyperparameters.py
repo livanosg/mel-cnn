@@ -5,10 +5,11 @@ from tensorboard.plugins.hparams import api as hp
 
 LR_LST = hp.HParam('learning_rate', hp.Discrete([1e-2, 1e-3, 1e-4, 1e-5]))
 BATCH_SIZE_RANGE = hp.HParam('batch_size', hp.Discrete([4, 8, 16, 32, 64, 128, 256]))
-HWC_RNG = hp.HParam('hwc', hp.Discrete([224, 256, 300, 512]))
+HWC_DOM = hp.HParam('hwc', hp.Discrete([224, 256, 300, 512]))
 DROPOUT_LST = hp.HParam('dropout', hp.RealInterval(0.1, 0.5))
-RELU_A_LST = hp.HParam('relu_a', hp.Discrete([0., 0.001, 0.005, 0.01, 0.05, 0.1, 0.5]))
-OPTIMIZER_LST = hp.HParam('optimizer', hp.Discrete(['ftrl', 'sgd', 'rmsprop', 'adadelta', 'adagrad', 'adamax', 'nadam', 'adam']))
+RELU_A = hp.HParam('relu_a', hp.Discrete([0., 0.001, 0.005, 0.01, 0.05, 0.1, 0.5]))
+OPTIMIZER_LST = hp.HParam('optimizer', hp.Discrete(['ftrl', 'sgd', 'rmsprop', 'adadelta', 'adagrad', 'adamax', 'nadam',
+                                                    'adam']))
 MODEL_LST = hp.HParam('models', hp.Discrete(['xception', 'inception', 'efficientnet0', 'efficientnet1']))
 
 

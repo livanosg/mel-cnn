@@ -1,6 +1,6 @@
 import os
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 
 def initialize_datasets(save=False):
@@ -22,9 +22,10 @@ def initialize_datasets(save=False):
     datasets = pd.concat(datasets, ignore_index=True)
     image_type_map = {0: 'clinic', 1: 'derm'}  # Change string values to numeric.
     datasets['image_type'] = datasets['image_type'].map(image_type_map)
-    for id in datasets['dataset_id'].unique():
-        datasets.loc[datasets['dataset_id'] == id, 'image'] = datasets.loc[datasets['dataset_id'] == id, 'image'].map(
-            lambda x: os.path.join('data', id, 'data', x))
+    for dataset_id in datasets['dataset_id'].unique():
+        datasets.loc[datasets['dataset_id'] == dataset_id, 'image'] =\
+            datasets.loc[datasets['dataset_id'] == dataset_id, 'image']\
+                .map(lambda x: os.path.join('data', dataset_id, 'data', x))
     if save:
         datasets.to_csv('all_data_init.csv', index=False)
     return datasets
