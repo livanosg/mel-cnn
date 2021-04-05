@@ -16,7 +16,7 @@ def init_datasets():
     classes = np.concatenate([all_data[f'class_{key}'].values.reshape(-1, 1) for key in CLASSES_DICT.keys()], axis=1)
     zipped = list(zip(image, image_type, sex, anatom_site, age, classes))
     np.random.shuffle(zipped)
-    train_data = np.asarray(zipped[:int(len(all_data) * 0.8)], dtype=object)[:500]
+    train_data = np.asarray(zipped[:int(len(all_data) * 0.8)], dtype=object)
     eval_data = np.asarray(zipped[int(len(all_data) * 0.8):], dtype=object)
     return train_data, eval_data
 
