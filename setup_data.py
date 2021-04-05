@@ -1,9 +1,8 @@
-import os
-import numpy as np
+# import os
 import pandas as pd
 
 
-def initialize_datasets(save=False):
+def setup_datasets(save=False):
     columns = ['dataset_id', 'image', 'image_type', 'sex', 'age_approx', 'anatom_site_general', 'class']
     seven_pt = pd.read_csv('data/7pt.csv')
     dermofit = pd.read_csv('data/dermofit.csv')
@@ -24,20 +23,10 @@ def initialize_datasets(save=False):
     datasets['image_type'] = datasets['image_type'].map(image_type_map)
     for dataset_id in datasets['dataset_id'].unique():
         datasets.loc[datasets['dataset_id'] == dataset_id, 'image'] =\
-            datasets.loc[datasets['dataset_id'] == dataset_id, 'image']\
-                .map(lambda x: os.path.join('data', dataset_id, 'data', x))
+            datasets.loc[datasets['dataset_id'] == dataset_id, 'image'].map(lambda x: f'data/{dataset_id}/data/{x}')
     if save:
         datasets.to_csv('all_data_init.csv', index=False)
     return datasets
-
-
-def concat_columns(df, contains):
-    part_columns = []
-    for key in df.columns.str.contains(contains):
-        part_columns.append(np.array(df.loc[:, key].values).reshape(-1, 1))
-        df.pop(key)
-    array = np.concatenate(part_columns, axis=1)
-    return array
 
 
 def prep_data(file='all_data_init.csv'):
@@ -48,6 +37,6 @@ def prep_data(file='all_data_init.csv'):
 
 
 if __name__ == '__main__':
-    initialize_datasets(save=True)
+    setup_datasets(save=True)
     prep_data()
     exit()
