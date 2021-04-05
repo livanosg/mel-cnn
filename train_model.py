@@ -117,7 +117,7 @@ def training(partition, hparams, log_dir):
     tensorboard_callback = TensorBoard(log_dir=log_dir, update_freq='epoch', profile_batch=(1, 5))
     bckp_rstr_callback = tf.keras.callbacks.experimental.BackupAndRestore('tmp/')
 
-    model_ckpt_callback = ModelCheckpoint(filepath=save_path[partition],
+    model_ckpt_callback = ModelCheckpoint(filepath=save_path,
                                           save_freq='epoch',
                                           monitor='val_accuracy', save_best_only=True)
     # steps_per_epoch < step_size | step_size 2-8 x steps_per_epoch
