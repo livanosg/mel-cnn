@@ -38,9 +38,10 @@ def set_tf_config(resolver, environment=None):
 
 
 def training(partition, hparams, log_dir):
+    print(f'Running at {partition} partition.')
     if partition == 'gpu':
         # set_tf_config(slurm_resolver)
-        slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver(rpc_layer='nccl').task_type
+        slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver().task_type
         strategy = tf.distribute.MultiWorkerMirroredStrategy(slurm_resolver)
         save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}" + f"-{strategy.cluster_resolver.task_type}-{strategy.cluster_resolver.task_id}"
     elif partition == 'ml':
@@ -132,5 +133,5 @@ def training(partition, hparams, log_dir):
                      validation_data=eval_data, validation_steps=validation_steps,
                      callbacks=[bckp_rstr_callback, tensorboard_callback, model_ckpt_callback, clr_callback,
                                 lr_log_callback, cm_callback, hp_callback, es_callback],
-                     verbose=1)
+                     verbose=2)
     tf.keras.backend.clear_session()

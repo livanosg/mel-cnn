@@ -3,7 +3,7 @@ import sys
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 # os.system("unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY")
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
 
 from hyperparameters import HWC_DOM, BATCH_SIZE_RANGE, DROPOUT_LST, RELU_A, OPTIMIZER_LST, LR_LST, MODEL_LST
