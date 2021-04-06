@@ -9,15 +9,18 @@ from config import CLASSES_DICT, ANATOM_SITE_DICT, SEX_DICT, IMAGE_TYPE_DICT
 def init_datasets():
     all_data = pd.read_csv('all_data_v2.csv', index_col=0)
     image = all_data['image'].map(lambda x: tf.convert_to_tensor(x, dtype=tf.string)).values
-    image_type = np.concatenate([all_data[f'image_type_{key}'].values.reshape(-1, 1) for key in IMAGE_TYPE_DICT.keys()], axis=1)
+    image_type = np.concatenate([all_data[f'image_type_{key}'].values.reshape(-1, 1) for key in IMAGE_TYPE_DICT.keys()],
+                                axis=1)
     sex = np.concatenate([all_data[f'sex_{key}'].values.reshape(-1, 1) for key in SEX_DICT.keys()], axis=1)
-    anatom_site = np.concatenate([all_data[f'anatom_site_general_{key}'].values.reshape(-1, 1) for key in ANATOM_SITE_DICT.keys()], axis=1)
+    anatom_site = np.concatenate(
+        [all_data[f'anatom_site_general_{key}'].values.reshape(-1, 1) for key in ANATOM_SITE_DICT.keys()], axis=1)
     age = np.expand_dims(np.asarray(all_data['age_approx'].values, dtype=float), axis=1)
     classes = np.concatenate([all_data[f'class_{key}'].values.reshape(-1, 1) for key in CLASSES_DICT.keys()], axis=1)
     zipped = list(zip(image, image_type, sex, anatom_site, age, classes))
+    np.random.seed(1)
     np.random.shuffle(zipped)
-    train_data = np.asarray(zipped[:int(len(all_data) * 0.8)], dtype=object)
-    eval_data = np.asarray(zipped[int(len(all_data) * 0.8):], dtype=object)
+    train_data = np.asarray(zipped[:int(len(all_data) * 0.8)], dtype=object)[:200]
+    eval_data = np.asarray(zipped[int(len(all_data) * 0.8):], dtype=object)[:100]
     return train_data, eval_data
 
 
@@ -43,25 +46,21 @@ class MelData:
         else:
             raise ValueError(f"{data_split} is not a valid option. Choose between 'train' and 'eval'.")
         dataset = data.Dataset.from_generator(lambda: (tuple(sample) for sample in data_split),
-                                              output_signature=(tf.TensorSpec(shape=[],
-                                                                              dtype=tf.string, name='image'),
-                                                                tf.TensorSpec(shape=self.train_data[:, 1][0].shape,
-                                                                              dtype=tf.float32, name='image_type'),
-                                                                tf.TensorSpec(shape=self.train_data[:, 2][0].shape,
-                                                                              dtype=tf.float32, name='sex'),
-                                                                tf.TensorSpec(shape=self.train_data[:, 3][0].shape,
-                                                                              dtype=tf.float32,
-                                                                              name=' anatom_site'),
-                                                                tf.TensorSpec(shape=[1],
-                                                                              dtype=tf.float32, name='age'),
-                                                                tf.TensorSpec(shape=self.train_data[:, 5][0].shape,
-                                                                              dtype=tf.float32, name='classes')))
+                                              output_types=(
+                                                  tf.string, tf.float32, tf.float32, tf.float32, tf.float32,
+                                                  tf.float32),
+                                              output_shapes=(tf.TensorShape(self.train_data[:, 0][0].shape),
+                                                             tf.TensorShape(self.train_data[:, 1][0].shape),
+                                                             tf.TensorShape(self.train_data[:, 2][0].shape),
+                                                             tf.TensorShape(self.train_data[:, 3][0].shape),
+                                                             tf.TensorShape(self.train_data[:, 4][0].shape),
+                                                             tf.TensorShape(self.train_data[:, 5][0].shape)))
         dataset = dataset.map(lambda image, image_type, sex, anatom_site, age, classes: (
             {'image': tf.image.resize_with_pad(tf.image.decode_image(tf.io.read_file(image)), self.hwc, self.hwc),
              'image_type': image_type, 'sex': sex, 'anatom_site': anatom_site, 'age': age},
-            {'classes': classes}), num_parallel_calls=tf.data.AUTOTUNE)
+            {'classes': classes}), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.batch(self.batch_size)
         dataset = dataset.cache()
-        dataset = dataset.prefetch(tf.data.AUTOTUNE)
+        dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
         dataset = dataset.repeat(repeat)
         return dataset

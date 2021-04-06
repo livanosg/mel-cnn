@@ -59,24 +59,24 @@ def plot_to_image(figure):
     return image
 
 
-class CMTensorboard(TensorBoard):
-    def __init__(self, eval_data, log_dir, **kwargs):  # add other arguments to __init__ if you need
-        super().__init__(log_dir=log_dir, **kwargs)
-        options = tf.data.Options()
-        options.experimental_distribute.auto_shard_policy = AutoShardPolicy.DATA
-        options.experimental_threading.max_intra_op_parallelism = 1
-        self.eval_data = eval_data.with_options(options=options)  #.repeat(1)
-
-    def on_epoch_end(self, epoch, logs=None):
-        test_pred_raw = self.model.predict(self.eval_data)
-        test_pred = np.argmax(test_pred_raw, axis=1)
-        labels = np.concatenate([np.argmax(label['classes'], axis=1) for label in
-                                 self.eval_data.map(lambda x, y: y).as_numpy_iterator()])
-        cm = np.asarray(tf.math.confusion_matrix(labels=labels, predictions=test_pred, num_classes=len(CLASSES_DICT)))
-        figure = plot_confusion_matrix(cm, class_names=CLASSES_DICT.keys())
-        cm_image = plot_to_image(figure)
-        file_writer = tf.summary.create_file_writer(self.log_dir + '/cm')
-        # Log the confusion matrix as an image summary.
-        with file_writer.as_default():
-            tf.summary.image("Confusion Matrix", cm_image, step=epoch)
-        super().on_epoch_end(epoch, logs)
+# class CMTensorboard(TensorBoard):
+#     def __init__(self, eval_data, log_dir, **kwargs):  # add other arguments to __init__ if you need
+#         super().__init__(log_dir=log_dir, **kwargs)
+#         options = tf.data.Options()
+#         options.experimental_distribute.auto_shard_policy = AutoShardPolicy.DATA
+#         options.experimental_threading.max_intra_op_parallelism = 1
+#         self.eval_data = eval_data.with_options(options=options)  #.repeat(1)
+#
+#     def on_epoch_end(self, epoch, logs=None):
+#         test_pred_raw = self.model.predict(self.eval_data)
+#         test_pred = np.argmax(test_pred_raw, axis=1)
+#         labels = np.concatenate([np.argmax(label['classes'], axis=1) for label in
+#                                  self.eval_data.map(lambda x, y: y).as_numpy_iterator()])
+#         cm = np.asarray(tf.math.confusion_matrix(labels=labels, predictions=test_pred, num_classes=len(CLASSES_DICT)))
+#         figure = plot_confusion_matrix(cm, class_names=CLASSES_DICT.keys())
+#         cm_image = plot_to_image(figure)
+#         file_writer = tf.summary.create_file_writer(self.log_dir + '/cm')
+#         # Log the confusion matrix as an image summary.
+#         with file_writer.as_default():
+#             tf.summary.image("Confusion Matrix", cm_image, step=epoch)
+#         super().on_epoch_end(epoch, logs)

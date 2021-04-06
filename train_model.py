@@ -3,19 +3,17 @@ import math
 import os
 
 import tensorflow as tf
-from tensorboard.plugins.hparams import api as hp
 from tensorflow import keras
 from tensorflow.keras.applications.efficientnet import EfficientNetB0, EfficientNetB1
 from tensorflow.keras.applications.inception_v3 import InceptionV3
 from tensorflow.keras.applications.xception import Xception
-from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping
+from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.python.data.experimental import AutoShardPolicy
 
 from clr_callback import CyclicLR
-from confusion_matrix_plot import CMTensorboard
 from dataset import MelData, get_class_weights
 from hyperparameters import RELU_A, HWC_DOM, MODEL_LST, OPTIMIZER_LST, LR_LST, DROPOUT_LST, BATCH_SIZE_RANGE, metrics
-from log_lr_callback import LRTensorBoard
+from log_lr_callback import AllTensorBoard
 from losses import weighted_categorical_crossentropy
 
 
@@ -37,14 +35,15 @@ def set_tf_config(resolver, environment=None):
     os.environ['TF_CONFIG'] = json.dumps(cfg)
 
 
-def training(partition, hparams, log_dir):
+def training(hparams, log_dir, partition='local'):
     print(f'Running at {partition} partition.')
     if partition == 'gpu':
         # set_tf_config(slurm_resolver)
         slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver()
-        strategy = tf.distribute.MultiWorkerMirroredStrategy(slurm_resolver)
+        strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(slurm_resolver)
         print(slurm_resolver.cluster_spec().as_dict())
-        save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}" + f"-{strategy.cluster_resolver.task_type}-{strategy.cluster_resolver.task_id}"
+        save_path = "models/" + log_dir.split("/")[
+            -1] + "-{epoch:03d}" + f"-{strategy.cluster_resolver.task_type}-{strategy.cluster_resolver.task_id}"
     elif partition == 'ml':
         strategy = tf.distribute.MirroredStrategy()
         save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}"
@@ -52,7 +51,7 @@ def training(partition, hparams, log_dir):
         save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}"
         strategy = tf.distribute.OneDeviceStrategy(device='/cpu')  # Testing distribution operations
     else:
-        raise ValueError(f"Unknow partition value: {partition}. Available options: 'gpu', 'ml', 'local'")
+        raise ValueError(f"Unknown partition value: {partition}. Available options: 'gpu', 'ml', 'local'")
     print(f'Number of replicas in sync: {strategy.num_replicas_in_sync}')
 
     models = {'xception': (Xception, tf.keras.applications.xception.preprocess_input),
@@ -78,9 +77,11 @@ def training(partition, hparams, log_dir):
         # -----------------------------================ Image part =================---------------------------------- #
         image_input = keras.Input(shape=(hparams[HWC_DOM], hparams[HWC_DOM], 3), name='image')
         base_model_preproc = models[hparams[MODEL_LST]][1](image_input)
-        base_model = models[hparams[MODEL_LST]][0](include_top=False, input_tensor=base_model_preproc)
+        print(base_model_preproc.shape)
+        base_model = models[hparams[MODEL_LST]][0](include_top=False,
+                                                   input_shape=base_model_preproc.shape[1:])(base_model_preproc)
         base_model.trainable = False
-        reduce_base = keras.layers.Conv2D(128, kernel_size=1, padding='same')(base_model.output)
+        reduce_base = keras.layers.Conv2D(128, kernel_size=1, padding='same')(base_model)
         flat = keras.layers.Flatten()(reduce_base)
         img_fcl_1 = keras.layers.Dense(64, relu(alpha=hparams[RELU_A]))(flat)
         img_fcl_2 = keras.layers.Dense(32, relu(alpha=hparams[RELU_A]))(img_fcl_1)
@@ -116,23 +117,18 @@ def training(partition, hparams, log_dir):
 
     steps_per_epoch = math.ceil(datasets.train_len / hparams[BATCH_SIZE_RANGE])
     validation_steps = math.ceil(datasets.eval_len / hparams[BATCH_SIZE_RANGE])
-    tensorboard_callback = TensorBoard(log_dir=log_dir, update_freq='epoch', profile_batch=(1, 5))
-    bckp_rstr_callback = tf.keras.callbacks.experimental.BackupAndRestore('tmp/')
-
-    model_ckpt_callback = ModelCheckpoint(filepath=save_path,
-                                          save_freq='epoch',
-                                          monitor='val_accuracy', save_best_only=True)
+    callbacks = []
+    if partition != 'local':
+        callbacks.append(tf.keras.callbacks.experimental.BackupAndRestore('tmp/'))
+    callbacks.append(ModelCheckpoint(filepath=save_path, save_best_only=True))
     # steps_per_epoch < step_size | step_size 2-8 x steps_per_epoch
-    clr_callback = CyclicLR(base_lr=hparams[LR_LST], max_lr=hparams[LR_LST] * 5,
-                            step_size=steps_per_epoch * 2, mode='exp_range', gamma=0.999)
-    lr_log_callback = LRTensorBoard(log_dir=log_dir, update_freq='epoch', profile_batch=0)
-    hp_callback = hp.KerasCallback(log_dir, hparams)
-    es_callback = EarlyStopping(monitor='val_accuracy', verbose=1, patience=10, mode='max')
-    cm_callback = CMTensorboard(log_dir=log_dir, update_freq='epoch', eval_data=datasets.get_dataset('eval', 1),
-                                profile_batch=0)
+    callbacks.append(CyclicLR(base_lr=hparams[LR_LST], max_lr=hparams[LR_LST] * 5,
+                              step_size=steps_per_epoch * 2, mode='exp_range', gamma=0.999))
+    callbacks.append(AllTensorBoard(log_dir=log_dir, hparams=hparams, eval_data=datasets.get_dataset('eval', 1),
+                                    update_freq='epoch', profile_batch=(2, 3)))
+    callbacks.append(EarlyStopping(monitor='val_accuracy', verbose=1, patience=10, mode='max'))
     custom_model.fit(train_data, epochs=200, steps_per_epoch=steps_per_epoch,
                      validation_data=eval_data, validation_steps=validation_steps,
-                     callbacks=[bckp_rstr_callback, tensorboard_callback, model_ckpt_callback, clr_callback,
-                                lr_log_callback, cm_callback, hp_callback, es_callback],
-                     verbose=2)
+                     callbacks=callbacks,
+                     verbose=1)
     tf.keras.backend.clear_session()
