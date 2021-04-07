@@ -19,8 +19,8 @@ def init_datasets():
     zipped = list(zip(image, image_type, sex, anatom_site, age, classes))
     np.random.seed(1)
     np.random.shuffle(zipped)
-    train_data = np.asarray(zipped[:int(len(all_data) * 0.8)], dtype=object)[:200]
-    eval_data = np.asarray(zipped[int(len(all_data) * 0.8):], dtype=object)[:100]
+    train_data = np.asarray(zipped[:int(len(all_data) * 0.8)], dtype=object)
+    eval_data = np.asarray(zipped[int(len(all_data) * 0.8):], dtype=object)
     return train_data, eval_data
 
 
