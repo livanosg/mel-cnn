@@ -22,38 +22,31 @@ from losses import weighted_categorical_crossentropy
 
 def set_tf_config(resolver, environment=None):
     """Set the TF_CONFIG env variable from the given cluster resolver"""
-    cfg = {
-        'cluster': resolver.cluster_spec().as_dict(),
-        'task': {
-            'type': resolver.get_task_info()[0],
-            'index': resolver.get_task_info()[1],
-        },
-        'rpc_layer': resolver.rpc_layer,
-    }
+    cfg = {'cluster': resolver.cluster_spec().as_dict(),
+           'task': {'type': resolver.get_task_info()[0], 'index': resolver.get_task_info()[1]},
+           'rpc_layer': resolver.rpc_layer}
     if environment:
         cfg['environment'] = environment
     os.environ['TF_CONFIG'] = json.dumps(cfg)
 
 
 def training(hparams, log_dir, partition='local'):
-    print(f'Running at {partition} partition.')
+    assert partition in ('gpu', 'ml', 'local')
+    os.system(f'Running at {partition} partition.')
+    save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}"
+    strategy_dict = {'gpu': tf.distribute.experimental.MultiWorkerMirroredStrategy,
+                     'ml': tf.distribute.MirroredStrategy,
+                     'local': tf.distribute.OneDeviceStrategy}
     if partition == 'gpu':
-        # set_tf_config(slurm_resolver)
         slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver()
-        strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(slurm_resolver)
-        print(slurm_resolver.cluster_spec().as_dict())
-        save_path = "models/" + log_dir.split("/")[
-            -1] + "-{epoch:03d}" + f"-{strategy.cluster_resolver.task_type}-{strategy.cluster_resolver.task_id}"
-    elif partition == 'ml':
-        strategy = tf.distribute.MirroredStrategy()
-        save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}"
-    elif partition == 'local':
-        save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}"
-        strategy = tf.distribute.OneDeviceStrategy(device='/cpu')  # Testing distribution operations
+        set_tf_config(slurm_resolver)
+        save_path += f"-{slurm_resolver.task_type}-{slurm_resolver.task_type}"
+    if partition == 'local':
+        strategy = strategy_dict[partition](device='cpu')
     else:
-        raise ValueError(f"Unknown partition value: {partition}. Available options: 'gpu', 'ml', 'local'")
-    print(f'Number of replicas in sync: {strategy.num_replicas_in_sync}')
+        strategy = strategy_dict[partition]()
 
+    os.system(f"echo 'Number of replicas in sync: {strategy.num_replicas_in_sync}'")
     models = {'xception': (Xception, tf.keras.applications.xception.preprocess_input),
               'inception': (InceptionV3, tf.keras.applications.inception_v3.preprocess_input),
               'efficientnet0': (EfficientNetB0, tf.keras.applications.efficientnet.preprocess_input),
@@ -67,17 +60,15 @@ def training(hparams, log_dir, partition='local'):
         options.experimental_distribute.auto_shard_policy = AutoShardPolicy.DATA
         options.experimental_threading.max_intra_op_parallelism = 1
         datasets = MelData(batch_size=hparams[BATCH_SIZE_RANGE] * strategy.num_replicas_in_sync, hwc=hparams[HWC_DOM])
-        train_data = datasets.get_dataset('train')
-        eval_data = datasets.get_dataset('eval')
-        print(f'Train length: {datasets.train_len} \nEval length: {datasets.eval_len}')
-        train_data, eval_data = train_data.with_options(options), eval_data.with_options(options)
+        train_data = datasets.get_dataset('train').with_options(options)
+        eval_data = datasets.get_dataset('eval').with_options(options)
+        os.system(f"echo 'Train length: {datasets.train_len}' \necho 'Eval length: {datasets.eval_len}'")
         weights = get_class_weights(datasets.train_data)
-        print(f'weights per class: {weights}')
+        os.system(f"echo 'weights per class: {weights}'")
 
         # -----------------------------================ Image part =================---------------------------------- #
         image_input = keras.Input(shape=(hparams[HWC_DOM], hparams[HWC_DOM], 3), name='image')
         base_model_preproc = models[hparams[MODEL_LST]][1](image_input)
-        print(base_model_preproc.shape)
         base_model = models[hparams[MODEL_LST]][0](include_top=False,
                                                    input_shape=base_model_preproc.shape[1:])(base_model_preproc)
         base_model.trainable = False
@@ -130,5 +121,5 @@ def training(hparams, log_dir, partition='local'):
     custom_model.fit(train_data, epochs=200, steps_per_epoch=steps_per_epoch,
                      validation_data=eval_data, validation_steps=validation_steps,
                      callbacks=callbacks,
-                     verbose=1)
+                     verbose=2)
     tf.keras.backend.clear_session()

@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import tensorflow as tf
 from tensorboard.plugins.hparams.api import KerasCallback
@@ -5,7 +7,7 @@ from tensorflow.python.data.experimental import AutoShardPolicy
 from tensorflow.python.keras.callbacks import TensorBoard
 
 from config import CLASSES_DICT
-from confusion_matrix_plot import plot_confusion_matrix, plot_to_image
+from cm_fn import plot_confusion_matrix, plot_to_image
 
 
 class AllTensorBoard(KerasCallback, TensorBoard):
@@ -19,20 +21,18 @@ class AllTensorBoard(KerasCallback, TensorBoard):
 
     def on_train_begin(self, logs=None):
         if 'lr' not in logs.keys():
-            print('lr not in keys')
             logs.update({'lr': self.model.optimizer.lr})
-        TensorBoard.on_train_begin(self, logs=logs)
+        TensorBoard.on_train_begin(self)
         KerasCallback.on_train_begin(self, logs=logs)
 
     def on_epoch_end(self, epoch, logs=None):
-        logs = logs or {}
         if 'lr' not in logs.keys():
-            print('lr not in keys')
+            os.system('echo "epoch_end: lr not in logs"')
             logs.update({'lr': self.model.optimizer.lr})
         test_pred_raw = self.model.predict(self.eval_data)
         test_pred = np.argmax(test_pred_raw, axis=1)
-        labels = np.concatenate([np.argmax(label['classes'], axis=1) for label in
-                                 self.eval_data.map(lambda x, y: y).as_numpy_iterator()])
+        labels = np.concatenate([np.argmax(label[1]['classes'], axis=1) for label in
+                                 self.eval_data.as_numpy_iterator()])
         cm = np.asarray(tf.math.confusion_matrix(labels=labels, predictions=test_pred, num_classes=len(CLASSES_DICT)))
         figure = plot_confusion_matrix(cm, class_names=CLASSES_DICT.keys())
         cm_image = plot_to_image(figure)
@@ -40,4 +40,4 @@ class AllTensorBoard(KerasCallback, TensorBoard):
             # Log the confusion matrix as an image summary.
             tf.summary.image("Confusion Matrix", cm_image, step=epoch)
         self._val_writer.flush()
-        TensorBoard.on_epoch_end(self, epoch=epoch, logs=logs)
+        TensorBoard.on_epoch_end(self, epoch=epoch)
