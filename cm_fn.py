@@ -15,8 +15,9 @@ def plot_confusion_matrix(cm, class_names):
        cm (array, shape = [n, n]): a confusion matrix of integer classes
        class_names (array, shape = [n]): String names of the integer classes
     """
+
     figure = plt.figure(figsize=(8, 8))
-    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.get_cmap('cividis'))  # magma, inferno, plasma, viridis, cividis, twilight, twilight_shifted, turbo
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.get_cmap('cividis'))
     plt.title("Confusion matrix")
     plt.colorbar()
     tick_marks = np.arange(len(class_names))

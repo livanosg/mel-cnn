@@ -27,7 +27,6 @@ class AllTensorBoard(KerasCallback, TensorBoard):
 
     def on_epoch_end(self, epoch, logs=None):
         if 'lr' not in logs.keys():
-            os.system('echo "epoch_end: lr not in logs"')
             logs.update({'lr': self.model.optimizer.lr})
         test_pred_raw = self.model.predict(self.eval_data)
         test_pred = np.argmax(test_pred_raw, axis=1)

@@ -26,5 +26,4 @@ def weighted_categorical_crossentropy(weights):
         w_loss = y_true * K.log(y_pred) * weights
         w_loss = -K.sum(w_loss, -1)
         return w_loss
-
     return loss

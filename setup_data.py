@@ -1,8 +1,8 @@
 import pandas as pd
+from config import COLUMNS
 
 
 def setup_datasets(save=False):
-    columns = ['dataset_id', 'image', 'image_type', 'sex', 'age_approx', 'anatom_site_general', 'class']
     seven_pt = pd.read_csv('data/7pt.csv')
     dermofit = pd.read_csv('data/dermofit.csv')
     isic19 = pd.read_csv('data/isic19.csv')
@@ -12,9 +12,9 @@ def setup_datasets(save=False):
     up = pd.read_csv('data/up.csv')
     datasets = [seven_pt, dermofit, isic19, isic20, mednode, ph2, up]
     for dataset in datasets:  # Drop columns that are not used for training and append missing columns with None values.
-        drop_list = list(set(dataset.keys()) - set(columns))
+        drop_list = list(set(dataset.keys()) - set(COLUMNS))
         dataset.drop(drop_list, axis=1, inplace=True)
-        for column in columns:
+        for column in COLUMNS:
             if column not in dataset:
                 dataset[column] = None
     datasets = pd.concat(datasets, ignore_index=True)

@@ -18,8 +18,6 @@ from losses import weighted_categorical_crossentropy
 
 
 # https://stackoverflow.com/questions/66059593/multiworkermirroredstrategy-hangs-after-starting-grpc-server]
-
-
 def set_tf_config(resolver, environment=None):
     """Set the TF_CONFIG env variable from the given cluster resolver"""
     cfg = {'cluster': resolver.cluster_spec().as_dict(),
@@ -32,19 +30,17 @@ def set_tf_config(resolver, environment=None):
 
 def training(hparams, log_dir, partition='local'):
     assert partition in ('gpu', 'ml', 'local')
-    os.system(f'Running at {partition} partition.')
+    os.system(f"echo 'Running at {partition} partition.'")
     save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}"
-    strategy_dict = {'gpu': tf.distribute.experimental.MultiWorkerMirroredStrategy,
-                     'ml': tf.distribute.MirroredStrategy,
-                     'local': tf.distribute.OneDeviceStrategy}
     if partition == 'gpu':
         slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver()
-        set_tf_config(slurm_resolver)
+        # set_tf_config(slurm_resolver)
         save_path += f"-{slurm_resolver.task_type}-{slurm_resolver.task_type}"
-    if partition == 'local':
-        strategy = strategy_dict[partition](device='cpu')
+        strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver)
+    elif partition == 'local':
+        strategy = tf.distribute.OneDeviceStrategy(device='cpu')
     else:
-        strategy = strategy_dict[partition]()
+        strategy = tf.distribute.MirroredStrategy()
 
     os.system(f"echo 'Number of replicas in sync: {strategy.num_replicas_in_sync}'")
     models = {'xception': (Xception, tf.keras.applications.xception.preprocess_input),
