@@ -36,7 +36,7 @@ def training(hparams, log_dir, partition='local'):
         slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver()
         # set_tf_config(slurm_resolver)
         save_path += f"-{slurm_resolver.task_type}-{slurm_resolver.task_type}"
-        strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver)
+        strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver)
     elif partition == 'local':
         strategy = tf.distribute.OneDeviceStrategy(device='cpu')
     else:
