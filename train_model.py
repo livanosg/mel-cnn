@@ -40,11 +40,11 @@ def training(hparams, log_dir, partition='local'):
     save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}"
     if partition == 'gpu':
         slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver()
-        tf.distribute.experimental.CommunicationOptions(implementation=tf.distribute.experimental.CommunicationImplementation.NCCL)
+        # tf.distribute.experimental.CommunicationOptions(implementation=tf.distribute.experimental.CommunicationImplementation.NCCL)
         # set_tf_config(slurm_resolver)
         save_path += f"-{slurm_resolver.task_type}-{slurm_resolver.task_type}"
         strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver,
-                                                             communication_options=tf.distribute.experimental.CollectiveCommunication.AUTO)
+                                                             communication_options=tf.distribute.experimental.CollectiveCommunication.NCCL)
     elif partition == 'local':
         strategy = tf.distribute.OneDeviceStrategy(device='cpu')
     else:
