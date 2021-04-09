@@ -9,4 +9,3 @@ ANATOM_SITE_DICT = {'head/neck': 0,
                     'oral/genital': 6}
 IMAGE_TYPE_DICT = {'clinic': 0, 'derm': 1}
 SEX_DICT = {'m': 0, 'f': 1}
-

@@ -5,6 +5,8 @@ import matplotlib
 import numpy as np
 import tensorflow as tf
 from matplotlib import pyplot as plt
+from tensorflow.python.keras.callbacks import TensorBoard
+from config import CLASSES_DICT
 matplotlib.use('cairo')
 
 
@@ -26,7 +28,7 @@ def plot_confusion_matrix(cm, class_names):
     # Normalize the confusion matrix.
     cm = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], decimals=3)
     # Use white text if squares are dark; otherwise black.
-    threshold = cm.max() / 2.
+    threshold = cm.max(initial=0) / 2.
 
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         color = "white" if cm[i, j] > threshold else "black"
@@ -49,3 +51,23 @@ def plot_to_image(figure):
     image = tf.image.decode_png(buf.getvalue(), channels=4)
     image = tf.expand_dims(image, 0)
     return image
+
+
+class CMLog(TensorBoard):
+    def __init__(self, log_dir, eval_data, update_freq):
+        super().__init__(log_dir=log_dir, update_freq=update_freq, histogram_freq=0, write_graph=False,
+                         write_images=False, profile_batch=0, embeddings_freq=0, embeddings_metadata=None)
+        self.eval_data = eval_data
+
+    def on_epoch_end(self, epoch, logs=None):
+        test_pred_raw = self.model.predict(self.eval_data)
+        test_pred = np.argmax(test_pred_raw, axis=1)
+        labels = np.concatenate([np.argmax(label[1]['classes'], axis=1)
+                                 for label in self.eval_data.as_numpy_iterator()])
+        cm = np.asarray(tf.math.confusion_matrix(labels=labels, predictions=test_pred, num_classes=len(CLASSES_DICT)))
+        figure = plot_confusion_matrix(cm, class_names=CLASSES_DICT.keys())
+        cm_image = plot_to_image(figure)
+        # Log the confusion matrix as an image summary.
+        with tf.summary.create_file_writer(logdir=self.log_dir).as_default(step=epoch):
+            tf.summary.image("Confusion Matrix", cm_image, step=epoch)
+        super(CMLog, self).on_epoch_end(epoch=epoch)

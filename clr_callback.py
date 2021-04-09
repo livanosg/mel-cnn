@@ -122,7 +122,7 @@ class CyclicLR(Callback):
         self.history.setdefault('lr', []).append(K.get_value(self.model.optimizer.lr))
         self.history.setdefault('iterations', []).append(self.trn_iterations)
 
-        # for k, v in logs.items():
+        # for k, v in logs_conda.items():
         #     self.history.setdefault(k, []).append(v)
 
         K.set_value(self.model.optimizer.lr, self.clr())

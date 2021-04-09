@@ -33,7 +33,7 @@ MANIFEST
 *.manifest
 *.spec
 
-# Installer logs
+# Installer logs_conda
 pip-log.txt
 pip-delete-this-directory.txt
 
@@ -128,6 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 /data/
-/logs/
+/logs_conda/
 /models/
 /tmp/

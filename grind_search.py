@@ -7,8 +7,7 @@ from train_model import training
 os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 # os.system("unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY")
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
-
-partition = 'local' # sys.argv[1]
+partition = sys.argv[1]
 run_num = 0
 for LR in LR_LST.domain.values:
     for batch_size in BATCH_SIZE_RANGE.domain.values:
