@@ -25,8 +25,9 @@ tf.config.threading.set_inter_op_parallelism_threads(16)
 def set_tf_config(resolver, environment=None):
     """Set the TF_CONFIG env variable from the given cluster resolver"""
     cfg = {'cluster': resolver.cluster_spec().as_dict(),
-           'task': {'type': resolver.get_task_info()[0], 'index': resolver.get_task_info()[1]},
-           'rpc_layer': resolver.rpc_layer}
+           'task': {'type': resolver.get_task_info()[0], 'index': resolver.get_task_info()[1]}
+           }
+           # 'rpc_layer': resolver.rpc_layer}
     if environment:
         cfg['environment'] = environment
     os.environ['TF_CONFIG'] = json.dumps(cfg)
@@ -34,13 +35,16 @@ def set_tf_config(resolver, environment=None):
 
 def training(hparams, log_dir, partition='local'):
     assert partition in ('gpu', 'ml', 'local')
+
     os.system(f"echo 'Running at {partition} partition.'")
     save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}"
     if partition == 'gpu':
         slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver()
+        tf.distribute.experimental.CommunicationOptions(implementation=tf.distribute.experimental.CommunicationImplementation.NCCL)
         # set_tf_config(slurm_resolver)
         save_path += f"-{slurm_resolver.task_type}-{slurm_resolver.task_type}"
-        strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver)
+        strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver,
+                                                             communication_options=tf.distribute.experimental.CollectiveCommunication.AUTO)
     elif partition == 'local':
         strategy = tf.distribute.OneDeviceStrategy(device='cpu')
     else:
@@ -57,12 +61,17 @@ def training(hparams, log_dir, partition='local'):
 
     with strategy.scope():
         # DATA
+
         options = tf.data.Options()
         options.experimental_distribute.auto_shard_policy = AutoShardPolicy.DATA
         options.experimental_threading.max_intra_op_parallelism = 1
         datasets = MelData(size=1000, batch_size=hparams[BATCH_SIZE_RANGE] * strategy.num_replicas_in_sync,
                            hwc=hparams[HWC_DOM])
+
         train_data = datasets.get_dataset('train', repeat=1).with_options(options)
+        if partition == 'gpu':
+            train_data = train_data.shard(strategy.num_replicas_in_sync, index=slurm_resolver.get_task_info()[1])
+
         eval_data = datasets.get_dataset('eval', repeat=1).with_options(options)
         os.system(f"echo 'Train length: {datasets.train_len}' \necho 'Eval length: {datasets.eval_len}'")
 
@@ -110,6 +119,7 @@ def training(hparams, log_dir, partition='local'):
         custom_model = tf.keras.Model([image_input, image_type_input, sex_input, anatom_site_input, age_input],
                                       [output_layer])
         custom_model.compile(hparams[OPTIMIZER_LST], loss=weighted_categorical_crossentropy(weights), metrics=metrics())
+
 
     # TRAIN
     steps_per_epoch = math.ceil(datasets.train_len / hparams[BATCH_SIZE_RANGE])
