@@ -39,7 +39,7 @@ def training(hparams, log_dir, partition='local'):
     os.system(f"echo 'Running at {partition} partition.'")
     save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}"
     if partition == 'gpu':
-        slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver(port_base=str(os.environ['SLURM_SRUN_COMM_PORT']))
+        slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver(port_base=int(os.environ['SLURM_SRUN_COMM_PORT']))
         communication_options = tf.distribute.experimental.CommunicationOptions(implementation=tf.distribute.experimental.CommunicationImplementation.RING)
         # set_tf_config(slurm_resolver)
         save_path += f"-{slurm_resolver.task_type}-{slurm_resolver.task_type}"
