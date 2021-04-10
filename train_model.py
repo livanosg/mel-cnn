@@ -73,7 +73,7 @@ def training(hparams, log_dir, partition='local'):
         base_model.trainable = False
         image_input = keras.Input(shape=(hparams[HWC_DOM], hparams[HWC_DOM], 3), name='image')
         base_prep_input = models[hparams[MODEL_LST]][1](image_input)
-        base_model = base_model(base_prep_input, trainable=False)
+        base_model = base_model(base_prep_input, training=False)
         reduce_base = keras.layers.Conv2D(512, kernel_size=3, padding='same')(base_model)
         reduce_base = keras.layers.BatchNormalization()(reduce_base)
         reduce_base = keras.layers.Dropout(rate=hparams[DROPOUT_LST])(reduce_base)
