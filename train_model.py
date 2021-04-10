@@ -120,13 +120,13 @@ def training(hparams, log_dir, partition='local'):
     # validation_steps = math.ceil(datasets.eval_len / hparams[BATCH_SIZE_RANGE])
     callbacks = [ModelCheckpoint(filepath=save_path, save_best_only=True),
                  TensorBoard(log_dir=log_dir, update_freq='epoch', profile_batch=(1, 100)),
-                 CMLog(log_dir=log_dir, eval_data=datasets.get_dataset('eval', 1).with_options(options),
-                       update_freq='epoch'),
+                 # CMLog(log_dir=log_dir, eval_data=datasets.get_dataset('eval', 1).with_options(options),
+                 #      update_freq='epoch'),
                  KerasCallback(writer=log_dir, hparams=hparams),
                  # steps_per_epoch < step_size | step_size 2-8 x steps_per_epoch
                  CyclicLR(base_lr=hparams[LR_LST], max_lr=hparams[LR_LST] * 5, step_size=steps_per_epoch * 2,
                           mode='exp_range', gamma=0.999),
-                 LrLog(log_dir=log_dir, update_freq='epoch'),
+                 # LrLog(log_dir=log_dir, update_freq='epoch'),
                  EarlyStopping(monitor='val_accuracy', verbose=1, patience=20, mode='max')]
     if partition != 'local':
         callbacks.append(tf.keras.callbacks.experimental.BackupAndRestore('tmp/'))
