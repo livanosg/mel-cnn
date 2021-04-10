@@ -151,5 +151,5 @@ def training(hparams, log_dir, partition='local'):
     if partition != 'local':
         callbacks.append(tf.keras.callbacks.experimental.BackupAndRestore('tmp/'))
 
-    custom_model.fit(train_data, epochs=500, validation_data=eval_data, callbacks=callbacks, verbose=1)
+    custom_model.fit(train_data, epochs=500, validation_data=eval_data, callbacks=callbacks, verbose=2)
     tf.keras.backend.clear_session()
