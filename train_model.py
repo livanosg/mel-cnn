@@ -119,7 +119,7 @@ def training(hparams, log_dir, partition='local'):
     steps_per_epoch = math.ceil(datasets.train_len / hparams[BATCH_SIZE_RANGE])
     # validation_steps = math.ceil(datasets.eval_len / hparams[BATCH_SIZE_RANGE])
     callbacks = [ModelCheckpoint(filepath=save_path, save_best_only=True),
-                 TensorBoard(log_dir=log_dir, update_freq='epoch', profile_batch=(1, 100)),
+                 TensorBoard(log_dir=log_dir, update_freq='epoch', profile_batch=0),
                  # CMLog(log_dir=log_dir, eval_data=datasets.get_dataset('eval', 1).with_options(options),
                  #      update_freq='epoch'),
                  KerasCallback(writer=log_dir, hparams=hparams),
