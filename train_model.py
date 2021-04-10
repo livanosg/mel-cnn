@@ -134,5 +134,5 @@ def training(hparams, log_dir, partition='local'):
     custom_model.fit(train_data, epochs=500,
                      validation_data=eval_data,
                      callbacks=callbacks,
-                     verbose=1)
+                     verbose=0)
     tf.keras.backend.clear_session()
