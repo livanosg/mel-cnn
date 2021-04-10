@@ -70,4 +70,4 @@ class CMLog(TensorBoard):
         # Log the confusion matrix as an image summary.
         with tf.summary.create_file_writer(logdir=self.log_dir).as_default(step=epoch):
             tf.summary.image("Confusion Matrix", cm_image, step=epoch)
-        super(CMLog, self).on_epoch_end(epoch=epoch)
+        super().on_epoch_end(epoch, logs)

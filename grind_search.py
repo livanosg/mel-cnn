@@ -6,9 +6,8 @@ from train_model import training
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 # os.system("unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY")
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
-partition = sys.argv[1]
 run_num = 0
 for LR in LR_LST.domain.values:
     for batch_size in BATCH_SIZE_RANGE.domain.values:
@@ -30,5 +29,5 @@ for LR in LR_LST.domain.values:
                                 os.makedirs(f'logs/run-{run_num}')
                             with open(f'logs/run-{run_num}/hyperparams.txt', 'a') as f:
                                 print(hparams_dict, file=f)
-                            training(partition=partition, hparams=hparams, log_dir=f'logs/run-{run_num}')
+                            training(partition=sys.argv[1], hparams=hparams, log_dir=f'logs/run-{run_num}')
                             run_num += 1
