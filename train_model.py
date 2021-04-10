@@ -57,7 +57,7 @@ def training(hparams, log_dir, partition='local'):
         return tf.keras.layers.LeakyReLU(alpha=alpha)
 
     # DATA
-    datasets = MelData(size=5000, batch_size=hparams[BATCH_SIZE_RANGE] * strategy.num_replicas_in_sync, hwc=hparams[HWC_DOM])
+    datasets = MelData(size=-1, batch_size=hparams[BATCH_SIZE_RANGE] * strategy.num_replicas_in_sync, hwc=hparams[HWC_DOM])
     train_data = datasets.get_dataset('train', repeat=1)
     eval_data = datasets.get_dataset('eval', repeat=1)
     os.system(f"echo 'Train length: {datasets.train_len}'\necho 'Eval length: {datasets.eval_len}'\n")
