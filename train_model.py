@@ -32,7 +32,7 @@ def training(hparams, log_dir, nodes='local'):
               'efficientnet1': (applications.efficientnet.EfficientNetB1, applications.efficientnet.preprocess_input)}
 
     # DATA
-    datasets = MelData(size=1000, batch_size=hparams[BATCH_SIZE_RANGE] * strategy.num_replicas_in_sync,
+    datasets = MelData(size=-1, batch_size=hparams[BATCH_SIZE_RANGE] * strategy.num_replicas_in_sync,
                        hwc=hparams[HWC_DOM])
     with strategy.scope():
         # MODEL
