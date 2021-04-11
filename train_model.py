@@ -61,7 +61,7 @@ def training(hparams, log_dir, nodes='local'):
 
     os.system(f"echo 'Train length: {datasets.train_len} | Eval length: {datasets.eval_len}'\n"
               f"echo 'Weights per class: {datasets.get_class_weights()}'")
-    custom_model.fit(x=datasets.get_dataset('train', repeat=1), epochs=500, steps_per_epoch=steps_per_epoch, shuffle=False,
-                     validation_data=datasets.get_dataset('eval', repeat=1), validation_steps=validation_steps,
+    custom_model.fit(x=datasets.get_dataset('train', repeat=1), epochs=500, shuffle=False,
+                     validation_data=datasets.get_dataset('eval', repeat=1),
                      callbacks=callbacks, verbose=2)
     tf.keras.backend.clear_session()
