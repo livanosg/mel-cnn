@@ -1,10 +1,78 @@
+import io
+import itertools
 import numpy as np
-# noinspection PyPep8Naming
+import tensorflow as tf
 from tensorflow.keras import backend as K
-from tensorflow.keras.callbacks import *
+from tensorflow.python.keras.callbacks import Callback, TensorBoard
+import matplotlib
+from matplotlib import pyplot as plt
+
+from config import CLASSES_DICT
 
 
-# noinspection PyUnusedLocal
+class EnrTensorboard(TensorBoard):
+    def __init__(self, eval_data, **kwargs):
+        super().__init__(**kwargs)
+        self.eval_data = eval_data
+        matplotlib.use('cairo')
+
+    @staticmethod
+    def plot_confusion_matrix(cm, class_names):
+        """
+        Returns a matplotlib figure containing the plotted confusion matrix.
+        Args:
+           cm (array, shape = [n, n]): a confusion matrix of integer classes
+           class_names (array, shape = [n]): String names of the integer classes
+        """
+
+        figure = plt.figure(figsize=(8, 8))
+        plt.imshow(cm, interpolation='nearest', cmap=plt.cm.get_cmap('cividis'))
+        plt.title("Confusion matrix")
+        plt.colorbar()
+        tick_marks = np.arange(len(class_names))
+        plt.xticks(tick_marks, class_names, rotation=45)
+        plt.yticks(tick_marks, class_names)
+        # Normalize the confusion matrix.
+        cm = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], decimals=3)
+        # Use white text if squares are dark; otherwise black.
+        threshold = cm.max(initial=0) / 2.
+
+        for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+            color = "white" if cm[i, j] > threshold else "black"
+            plt.text(j, i, cm[i, j], horizontalalignment="center", color=color)
+        plt.tight_layout()
+        plt.ylabel('True label')
+        plt.xlabel('Predicted label')
+        return figure
+
+    @staticmethod
+    def plot_to_image(figure):
+        """
+        Converts the matplotlib plot specified by 'figure' to a PNG image and
+        returns it. The supplied figure is closed and inaccessible after this call.
+        """
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        plt.close(figure)
+        buf.seek(0)
+        image = tf.image.decode_png(buf.getvalue(), channels=4)
+        image = tf.expand_dims(image, 0)
+        return image
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        logs.update({'lr': self.model.optimizer.lr})
+
+        test_pred_raw = self.model.predict(self.eval_data, batch_size=self.eval_data.cardinality())
+        test_pred = np.argmax(test_pred_raw, axis=1)
+        labels = np.concatenate([np.argmax(label[1]['classes'], axis=1) for label in self.eval_data.as_numpy_iterator()])
+        cm = np.asarray(tf.math.confusion_matrix(labels=labels, predictions=test_pred, num_classes=len(CLASSES_DICT)))
+        cm_image = self.plot_to_image(self.plot_confusion_matrix(cm, class_names=CLASSES_DICT.keys()))
+        with super()._val_writer.as_default():
+            tf.summary.image("Confusion Matrix", cm_image, step=epoch)
+        super().on_epoch_end(epoch=epoch, logs=logs)
+
+
 class CyclicLR(Callback):
     """This callback implements a cyclical learning rate policy (CLR).
     The method cycles the learning rate between two boundaries with some constant frequency,
@@ -104,25 +172,17 @@ class CyclicLR(Callback):
             return self.base_lr + (self.max_lr - self.base_lr) * np.maximum(0, (1 - x)) * self.scale_fn(
                 self.clr_iterations)
 
-    # noinspection PyDefaultArgument
-    def on_train_begin(self, logs={}):
-        logs = logs or {}
-
+    def on_train_begin(self, logs=None):
         if self.clr_iterations == 0:
             K.set_value(self.model.optimizer.lr, self.base_lr)
         else:
             K.set_value(self.model.optimizer.lr, self.clr())
 
     def on_batch_end(self, epoch, logs=None):
-
-        logs = logs or {}
         self.trn_iterations += 1
         self.clr_iterations += 1
 
         self.history.setdefault('lr', []).append(K.get_value(self.model.optimizer.lr))
         self.history.setdefault('iterations', []).append(self.trn_iterations)
-
-        # for k, v in logs_conda.items():
-        #     self.history.setdefault(k, []).append(v)
 
         K.set_value(self.model.optimizer.lr, self.clr())

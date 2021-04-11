@@ -1,11 +1,10 @@
 import os
 import sys
-
+from datetime import datetime
 from hyperparameters import HWC_DOM, BATCH_SIZE_RANGE, DROPOUT_LST, RELU_A, OPTIMIZER_LST, LR_LST, MODEL_LST
 from train_model import training
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
-# os.system("unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY")
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
 run_num = 0
@@ -25,9 +24,10 @@ for LR in LR_LST.domain.values:
                                        MODEL_LST: model}
                             hparams_dict = {h.name: hparams[h] for h in hparams}
                             print(hparams_dict)
-                            if not os.path.exists(f'logs/run-{run_num}'):
-                                os.makedirs(f'logs/run-{run_num}')
-                            with open(f'logs/run-{run_num}/hyperparams.txt', 'a') as f:
+                            log_dir = f'logs/run-{str(run_num).zfill(4)}-{datetime.now().strftime("%d%m%y%H%M%S")}'
+                            if not os.path.exists(log_dir):
+                                os.makedirs(log_dir)
+                            with open(log_dir + '/hyperparams.txt', 'a') as f:
                                 print(hparams_dict, file=f)
-                            training(partition=sys.argv[1], hparams=hparams, log_dir=f'logs/run-{run_num}')
+                            training(nodes=sys.argv[1], hparams=hparams, log_dir=log_dir)
                             run_num += 1
