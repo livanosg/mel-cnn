@@ -2,17 +2,16 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow import data
-from tensorflow.python.data.experimental import AutoShardPolicy
 from config import CLASSES_DICT, ANATOM_SITE_DICT, SEX_DICT, IMAGE_TYPE_DICT
 
 
 def pd_to_np_dict(df):
     data_dct = {'image': np.asarray(df.loc[:, 'image'].values),
-                'image_type': np.concatenate([np.asarray(df.loc[:, f'image_type_{key}'].values, dtype=float).reshape(-1, 1) for key in IMAGE_TYPE_DICT.keys()], axis=1),
-                'sex': np.concatenate([np.asarray(df.loc[:, f'sex_{key}'].values, dtype=float).reshape(-1, 1) for key in SEX_DICT.keys()], axis=1),
-                'anatom_site': np.concatenate([np.asarray(df.loc[:, f'anatom_site_general_{key}'].values, dtype=float).reshape(-1, 1) for key in ANATOM_SITE_DICT.keys()], axis=1),
-                'age': np.expand_dims(np.asarray(df.loc[:, 'age_approx'].values, dtype=float), axis=1),
-                'classes': np.concatenate([np.asarray(df.loc[:, f'class_{key}'].values, dtype=float).reshape(-1, 1) for key in CLASSES_DICT.keys()], axis=1)}
+                'image_type': np.concatenate([np.asarray(df.loc[:, f'image_type_{key}'].values, dtype=np.float16).reshape(-1, 1) for key in IMAGE_TYPE_DICT.keys()], axis=1),
+                'sex': np.concatenate([np.asarray(df.loc[:, f'sex_{key}'].values, dtype=np.float16).reshape(-1, 1) for key in SEX_DICT.keys()], axis=1),
+                'anatom_site': np.concatenate([np.asarray(df.loc[:, f'anatom_site_general_{key}'].values, dtype=np.float16).reshape(-1, 1) for key in ANATOM_SITE_DICT.keys()], axis=1),
+                'age': np.expand_dims(np.asarray(df.loc[:, 'age_approx'].values, dtype=np.float16), axis=1),
+                'classes': np.concatenate([np.asarray(df.loc[:, f'class_{key}'].values, dtype=np.float16).reshape(-1, 1) for key in CLASSES_DICT.keys()], axis=1)}
     del df
     return data_dct
 
@@ -44,11 +43,12 @@ class MelData:
             dataset = data.Dataset.from_tensor_slices(self.eval_data)
         else:
             raise ValueError(f"{data_split} is not a valid option. Choose between 'train' and 'eval'.")
-        dataset = dataset.map(self._to_dict, num_parallel_calls=tf.data.AUTOTUNE)
+        dataset = dataset.map(self._to_dict, num_parallel_calls=tf.data.AUTOTUNE).cache()
         dataset = dataset.batch(self.batch_size)
-        dataset = dataset.prefetch(tf.data.AUTOTUNE)
-        dataset = dataset.repeat(repeat)
         options = tf.data.Options()
-        options.experimental_distribute.auto_shard_policy = AutoShardPolicy.DATA
+        options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
         options.experimental_threading.max_intra_op_parallelism = 1
-        return dataset.with_options(options)
+        dataset = dataset.with_options(options)
+        dataset = dataset.repeat(repeat)
+        return dataset.prefetch(tf.data.AUTOTUNE)
+

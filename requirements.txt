@@ -1,7 +1,6 @@
 matplotlib==3.4.1
 cairocffi==1.2.0
 numpy==1.19.5
-pandas==1.2.3
-scikit-learn==0.24.1
+pandas==1.2.4
 tensorboard-plugin-profile==2.4.0
 tensorflow==2.4.1

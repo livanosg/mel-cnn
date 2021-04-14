@@ -4,8 +4,8 @@ from datetime import datetime
 from hyperparameters import HWC_DOM, BATCH_SIZE_RANGE, DROPOUT_LST, RELU_A, OPTIMIZER_LST, LR_LST, MODEL_LST
 from train_model import training
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
 run_num = 0
 for LR in LR_LST.domain.values:

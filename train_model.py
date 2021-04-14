@@ -21,7 +21,7 @@ def training(hparams, log_dir, nodes='local'):
         save_path += f"-{slurm_resolver.task_type}-{slurm_resolver.task_type}"
         strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver)
     elif nodes == 'local':
-        strategy = tf.distribute.OneDeviceStrategy(device='cpu')
+        strategy = tf.distribute.OneDeviceStrategy(device='gpu')
     else:
         strategy = tf.distribute.MirroredStrategy()
     os.system(f"echo 'Number of replicas in sync: {strategy.num_replicas_in_sync}'")
@@ -47,7 +47,7 @@ def training(hparams, log_dir, nodes='local'):
                              metrics=metrics())
     # TRAIN
     steps_per_epoch = math.ceil(datasets.train_len / hparams[BATCH_SIZE_RANGE])
-    validation_steps = math.ceil(datasets.eval_len / hparams[BATCH_SIZE_RANGE])
+    # validation_steps = math.ceil(datasets.eval_len / hparams[BATCH_SIZE_RANGE])
     callbacks = [ModelCheckpoint(filepath=save_path, save_best_only=True),
                  EnrTensorboard(eval_data=datasets.get_dataset('eval', 1), log_dir=log_dir, update_freq='epoch', profile_batch=(2, 4)),
                  KerasCallback(writer=log_dir, hparams=hparams),
@@ -63,5 +63,5 @@ def training(hparams, log_dir, nodes='local'):
               f"echo 'Weights per class: {datasets.get_class_weights()}'")
     custom_model.fit(x=datasets.get_dataset('train', repeat=1), epochs=500, shuffle=False,
                      validation_data=datasets.get_dataset('eval', repeat=1),
-                     callbacks=callbacks, verbose=2)
+                     callbacks=callbacks, verbose=1)
     tf.keras.backend.clear_session()
