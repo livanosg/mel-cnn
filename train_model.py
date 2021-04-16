@@ -10,7 +10,8 @@ from metrics import metrics
 from callbacks import EnrTensorboard, CyclicLR
 
 
-def training(args, hparams, log_dir, mode="singledevice"):
+def training(args, hparams, hp_keys, log_dir, mode="singledevice"):
+
     assert mode in ("multinode", "singlenode", "singledevice")
     os.system(f"echo 'Running mode: {mode}.'")
     save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}"
@@ -30,28 +31,25 @@ def training(args, hparams, log_dir, mode="singledevice"):
               'effnet1': (applications.efficientnet.EfficientNetB1, applications.efficientnet.preprocess_input)}
 
     # DATA
-    datasets = MelData(size=args.dataset_size, batch_size=list(hparams["batch_size"].values())[0] * strategy.num_replicas_in_sync,
-                       hwc=list(hparams["img_size"].values())[0])
+    datasets = MelData(size=args.dataset_size,
+                       batch_size=hparams[hp_keys[3]] * strategy.num_replicas_in_sync,
+                       hwc=hparams[hp_keys[2]])
     with strategy.scope():
-        # MODEL
-        # -----------------------------================ Image part =================---------------------------------- #
-        custom_model = model_fn(model_list=models[list(hparams["model"].values())[0]],
-                                input_shape=(list(hparams["img_size"].values())[0], list(hparams["img_size"].values())[0], 3),
-                                dropout_rate=list(hparams["dropout_rate"].values())[0],
-                                alpha=list(hparams["relu_grad"].values())[0])
-        custom_model.compile(optimizer=list(hparams["optimizer"].values())[0],
+        custom_model = model_fn(model_list=models[hparams[hp_keys[0]]],
+                                input_shape=(hparams[hp_keys[2]], hparams[hp_keys[2]], 3),
+                                dropout_rate=hparams[hp_keys[5]],
+                                alpha=hparams[hp_keys[6]])
+        custom_model.compile(optimizer=hparams[hp_keys[1]],
                              loss='categorical_crossentropy',
                              loss_weights={'classes': datasets.get_class_weights()},
                              metrics=metrics())
-    # TRAIN
-    merge = {}
-    [merge.update(pair) for pair in hparams.values()]
-    steps_per_epoch = math.ceil(datasets.train_len / list(hparams["batch_size"].values())[0])
+    steps_per_epoch = math.ceil(datasets.train_len / hparams[hp_keys[3]])
+    lr = hparams[hp_keys[4]] * strategy.num_replicas_in_sync
     # validation_steps = math.ceil(datasets.eval_len / hparams[BATCH_SIZE_RANGE])
     callbacks = [ModelCheckpoint(filepath=save_path, save_best_only=True),
-                 EnrTensorboard(eval_data=datasets.get_dataset('eval', 1), log_dir=log_dir, update_freq='epoch', profile_batch=(2, 4)),
-                 KerasCallback(writer=log_dir + "/hparams", hparams=merge),
-                 CyclicLR(base_lr=list(hparams["lr"].values())[0], max_lr=list(hparams["lr"].values())[0] * 5, step_size=steps_per_epoch * 2, mode='exp_range', gamma=0.999),
+                 EnrTensorboard(eval_data=datasets.get_dataset('eval', 1), log_dir=log_dir, update_freq='epoch', profile_batch=0),
+                 KerasCallback(writer=log_dir, hparams=hparams),
+                 CyclicLR(base_lr=lr, max_lr=lr * 5, step_size=steps_per_epoch * 5, mode='exp_range', gamma=0.999),
                  EarlyStopping(verbose=1, patience=args.early_stop)]
     if mode != 'singledevice':
         callbacks.append(tf.keras.callbacks.experimental.BackupAndRestore(log_dir + '/tmp'))

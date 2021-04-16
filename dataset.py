@@ -51,4 +51,3 @@ class MelData:
         dataset = dataset.with_options(options)
         dataset = dataset.repeat(repeat)
         return dataset.prefetch(tf.data.AUTOTUNE)
-
