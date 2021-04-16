@@ -23,7 +23,7 @@ def grind(args):
                                            hp_keys[6]: relu_grad}
                                 log_dir = f'logs/run-{str(run_num).zfill(4)}-{datetime.now().strftime("%d%m%y%H%M%S")}'
                                 try:
-                                    log_dir += f"-{os.environ['SLURM_PROCID']}"
+                                    log_dir += f"-{os.environ['SLURMD_NODENAME']}"
                                 except KeyError:
                                     pass
                                 if not os.path.exists(log_dir):
