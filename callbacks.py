@@ -26,8 +26,7 @@ class EnrTensorboard(TensorBoard):
         """
 
         figure = plt.figure(figsize=(7, 7))
-        plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
-        plt.title("Confusion matrix")
+        plt.imshow(cm, interpolation='nearest', cmap=plt.cm.get_cmap("binary"))  # https://matplotlib.org/1.2.1/_images/show_colormaps.png
         plt.colorbar()
         tick_marks = np.arange(len(class_names))
         plt.xticks(tick_marks, class_names, rotation=45)

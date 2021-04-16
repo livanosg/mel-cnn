@@ -12,14 +12,14 @@ from callbacks import EnrTensorboard, CyclicLR
 
 def training(args, hparams, hp_keys, log_dir, mode="singledevice"):
 
-    assert mode in ("multinode", "singlenode", "singledevice")
+    assert mode in ("multinode", "onenode", "onedevice")
     os.system(f"echo 'Running mode: {mode}.'")
     save_path = "models/" + log_dir.split("/")[-1] + "-{epoch:03d}"
     if mode == 'multinode':
         slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver()
         save_path += f"-{slurm_resolver.task_type}-{slurm_resolver.task_type}"
         strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver)
-    elif mode == 'singledevice':
+    elif mode == 'onedevice':
         strategy = tf.distribute.OneDeviceStrategy(device=':/gpu')
     else:
         strategy = tf.distribute.MirroredStrategy()
@@ -56,9 +56,8 @@ def training(args, hparams, hp_keys, log_dir, mode="singledevice"):
 
     with open(log_dir + '/hyperparams.txt', 'a') as f:
         print(datasets.get_class_weights(), file=f)
-
-    os.system(f"echo 'Train length: {datasets.train_len} | Eval length: {datasets.eval_len}'\n"
-              f"echo 'Weights per class: {datasets.get_class_weights()}'")
+        print(f"Train length: {datasets.train_len} | Eval length: {datasets.eval_len}", file=f)
+        print(f"Weights per class: {datasets.get_class_weights()}", file=f)
     if args.verbose >= 2:
         verbose = 1
     elif args.verbose == 1:

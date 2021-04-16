@@ -16,14 +16,14 @@ def parse_module():
     parser.add_argument("--batch-size", "-btch", nargs="+", required=True, type=int, help="Select batch size.")
     parser.add_argument("--epochs", "-e", required=True, type=int, help="Select epochs.")
     parser.add_argument("--early-stop", "-es", required=True, type=int, help="Select early stop epochs.")
-    parser.add_argument("--mode", "-nm", required=True, type=str, choices=["multinode", "singlenode", "singledevice"], help="Select training mode.")
+    parser.add_argument("--mode", "-nm", required=True, type=str, choices=["multinode", "onenode", "onedevice"], help="Select training mode.")
     parser.add_argument("--verbose", "-v", action="count", default=0, help="Set verbosity.")
     return parser
 
 
 if __name__ == '__main__':
     args = parse_module().parse_args()
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
     if args.verbose > 3:
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"
