@@ -25,7 +25,7 @@ def grind(args):
                                 if not os.path.exists(log_dir):
                                     os.makedirs(log_dir)
                                 with open(log_dir + '/hyperparams.txt', 'a') as f:
-                                    dicts = {key: hparams[key] for key in hparams}
+                                    dicts = {key.name: hparams[key] for key in hparams}
                                     print(dicts, file=f)
                                 training(args=args, hparams=hparams, hp_keys=hp_keys, log_dir=log_dir, mode=args.mode)
                                 run_num += 1
