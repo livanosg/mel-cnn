@@ -22,11 +22,12 @@ def crop(image, size=224):
     cv2.imwrite(f"proc_{size}/" + image, src)
 
 
-all_data = pd.read_csv('all_data_v2.csv')
-images = all_data["image"]
-pool = mp.Pool(mp.cpu_count())
-SIZE = 500
-pool.starmap(crop, [(image, SIZE) for image in images])
-pool.close()
-# dst = cv.equalizeHist(src3)
-# cv.imshow('Equalized Image 3', dst)
+if __name__ == '__main__':
+    all_data = pd.read_csv('all_data_v2.csv')
+    images = all_data["image"]
+    pool = mp.Pool(mp.cpu_count())
+    SIZE = 500
+    pool.starmap(crop, [(image, SIZE) for image in images])
+    pool.close()
+    # dst = cv.equalizeHist(src3)
+    # cv.imshow('Equalized Image 3', dst)
