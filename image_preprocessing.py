@@ -27,7 +27,7 @@ if __name__ == '__main__':
     images = all_data["image"]
     print(f"CPU threads: {mp.cpu_count()}.")
     pool = mp.Pool(mp.cpu_count())
-    SIZE = 500
+    SIZE = 224
     pool.starmap(crop, [(image, SIZE) for image in images])
     pool.close()
     # dst = cv.equalizeHist(src3)
