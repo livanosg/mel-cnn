@@ -25,6 +25,7 @@ def crop(image, size=224):
 if __name__ == '__main__':
     all_data = pd.read_csv('all_data_v2.csv')
     images = all_data["image"]
+    print(f"CPU threads: {mp.cpu_count()}.")
     pool = mp.Pool(mp.cpu_count())
     SIZE = 500
     pool.starmap(crop, [(image, SIZE) for image in images])
