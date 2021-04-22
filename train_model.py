@@ -31,7 +31,7 @@ def training(args, hparams, hp_keys, log_dir, mode="singledevice"):
               'effnet1': (applications.efficientnet.EfficientNetB1, applications.efficientnet.preprocess_input)}
 
     # DATA
-    datasets = MelData(size=args.dataset_size,
+    datasets = MelData(frac=args.dataset_frac,
                        batch_size=hparams[hp_keys[3]] * strategy.num_replicas_in_sync,
                        hwc=hparams[hp_keys[2]])
     with strategy.scope():
@@ -47,7 +47,7 @@ def training(args, hparams, hp_keys, log_dir, mode="singledevice"):
     lr = hparams[hp_keys[4]] * strategy.num_replicas_in_sync
     # validation_steps = math.ceil(datasets.eval_len / hparams[BATCH_SIZE_RANGE])
     callbacks = [ModelCheckpoint(filepath=save_path, save_best_only=True),
-                 EnrTensorboard(eval_data=datasets.get_dataset('eval', 1), log_dir=log_dir, update_freq='epoch', profile_batch=0),
+                 EnrTensorboard(eval_data=datasets.get_dataset('eval', 1), log_dir=log_dir, update_freq='epoch', profile_batch=(1, 10)),
                  KerasCallback(writer=log_dir, hparams=hparams),
                  CyclicLR(base_lr=lr, max_lr=lr * 5, step_size=steps_per_epoch * 5, mode='exp_range', gamma=0.999),
                  EarlyStopping(verbose=1, patience=args.early_stop)]
@@ -55,7 +55,7 @@ def training(args, hparams, hp_keys, log_dir, mode="singledevice"):
         callbacks.append(tf.keras.callbacks.experimental.BackupAndRestore(log_dir + '/tmp'))
 
     with open(log_dir + '/hyperparams.txt', 'a') as f:
-        print(datasets.get_class_weights(), file=f)
+        print(f"{args}", file=f)
         print(f"Train length: {datasets.train_len} | Eval length: {datasets.eval_len}", file=f)
         print(f"Weights per class: {datasets.get_class_weights()}", file=f)
     if args.verbose >= 2:

@@ -7,7 +7,7 @@ from grind_search import grind
 def parse_module():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", "-m", nargs="+", choices=["incept", "xept", "effnet0", "effnet1"], default="effnet0", help="Select pretrained model.")
-    parser.add_argument("--dataset-size", "-dt", required=True, type=int, help="Dataset size. -1 fetches all data samples.")
+    parser.add_argument("--dataset-frac", "-frac", required=True, type=float, help="Dataset fraction.")
     parser.add_argument("--dropout-rate", "-dor", nargs="+", required=True, type=float, help="Select dropout rate.")
     parser.add_argument("--learning-rate", "-lr", nargs="+", required=True, type=float, help="Select learning rate.")
     parser.add_argument("--image_size", "-is", nargs="+", required=True, type=int, help="Select image size.")
