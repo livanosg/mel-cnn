@@ -11,6 +11,7 @@ def parse_module():
     parser.add_argument("--dropout-rate", "-dor", nargs="+", required=True, type=float, help="Select dropout rate.")
     parser.add_argument("--learning-rate", "-lr", nargs="+", required=True, type=float, help="Select learning rate.")
     parser.add_argument("--image_size", "-is", nargs="+", required=True, type=int, help="Select image size.")
+    parser.add_argument("--colour", "-clr", nargs="+", required=True, type=str, help="Select image size.")
     parser.add_argument("--relu-grad", "-rg", nargs="+", required=True, type=float, help="Select leaky relu gradient.")
     parser.add_argument("--optimizer", "-opt", nargs="+", required=True, choices=["adam", "ftrl", "sgd", "rmsprop", "adadelta", "adagrad", "adamax", "nadam"], type=str, help="Select optimizer.")
     parser.add_argument("--batch-size", "-btch", nargs="+", required=True, type=int, help="Select batch size.")

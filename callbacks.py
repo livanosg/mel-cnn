@@ -63,8 +63,6 @@ class EnrTensorboard(TensorBoard):
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
-        logs.update({'lr': self.model.optimizer.lr})
-
         test_pred_raw = self.model.predict(self.eval_data, batch_size=self.eval_data.cardinality())
         test_pred = np.argmax(test_pred_raw, axis=1)
         labels = np.concatenate([np.argmax(label[1]['classes'], axis=1) for label in self.eval_data.as_numpy_iterator()])
@@ -73,6 +71,18 @@ class EnrTensorboard(TensorBoard):
         with super()._val_writer.as_default():
             tf.summary.image("Confusion Matrix", cm_image, step=epoch)
         super().on_epoch_end(epoch=epoch, logs=logs)
+
+
+class LearningRateLogger(tf.keras.callbacks.Callback):
+    """ Log learning rate """
+    def __init__(self):
+        super().__init__()
+        self._supports_tf_logs = True
+
+    def on_epoch_end(self, epoch, logs=None):
+        if logs is None or "learning_rate" in logs:
+            return
+        logs["learning_rate"] = self.model.optimizer.lr
 
 
 class CyclicLR(Callback):

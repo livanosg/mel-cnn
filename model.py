@@ -1,42 +1,58 @@
+import tensorflow as tf
+from tensorflow.keras.layers.experimental import preprocessing
+from tensorflow.keras import applications
+import tensorflow_addons as tfa
 from tensorflow import keras
 from tensorflow import dtypes
 
 
-def model_fn(model_list, input_shape, dropout_rate, alpha):
-    base_model = model_list[0](include_top=False, input_shape=input_shape)
-    base_model.trainable = False
+def model_fn(model, input_shape, dropout_rate, alpha):
+    models = {'xept': (applications.xception.Xception, applications.xception.preprocess_input),
+              'incept': (applications.inception_v3.InceptionV3, applications.inception_v3.preprocess_input),
+              'effnet0': (applications.efficientnet.EfficientNetB0, applications.efficientnet.preprocess_input),
+              'effnet1': (applications.efficientnet.EfficientNetB1, applications.efficientnet.preprocess_input)}
+
+    data_augmentation = keras.Sequential([preprocessing.Resizing(height=input_shape[-3], width=input_shape[-2], interpolation="nearest"),
+                                          preprocessing.RandomContrast(0.5),
+                                          preprocessing.RandomFlip(),
+                                          preprocessing.RandomRotation(factor=0.5, interpolation="nearest"),
+                                          tf.keras.layers.Lambda(function=tfa.image.equalize),
+                                          tf.keras.layers.Lambda(function=models[model][1]),
+                                          ])
     image_input = keras.Input(shape=input_shape, name='image')
-    base_prep_input = model_list[1](image_input)
-    base_model = base_model(base_prep_input, training=False)
-    reduce_base = keras.layers.Conv2D(256, kernel_size=3, padding='same')(base_model)
-    reduce_base = keras.layers.BatchNormalization()(reduce_base)
-    reduce_base = keras.layers.Dropout(rate=dropout_rate)(reduce_base)
-    reduce_base = keras.layers.Conv2D(128, kernel_size=3, padding='same')(reduce_base)
-    reduce_base = keras.layers.BatchNormalization()(reduce_base)
-    reduce_base = keras.layers.Dropout(rate=dropout_rate)(reduce_base)
-    reduce_base = keras.layers.Conv2D(64, kernel_size=3, padding='same')(reduce_base)
-    reduce_base = keras.layers.BatchNormalization()(reduce_base)
-    reduce_base = keras.layers.Dropout(rate=dropout_rate)(reduce_base)
-    flat = keras.layers.Flatten()(reduce_base)
-    flat = keras.layers.Dense(256, keras.layers.LeakyReLU(alpha=alpha))(flat)
-    flat = keras.layers.BatchNormalization()(flat)
-    flat = keras.layers.Dropout(rate=dropout_rate)(flat)
-    flat = keras.layers.Dense(256, activation=keras.layers.LeakyReLU(alpha=alpha))(flat)
-    flat = keras.layers.BatchNormalization()(flat)
-    flat = keras.layers.Dropout(rate=dropout_rate)(flat)
-    flat = keras.layers.Dense(128, activation=keras.layers.LeakyReLU(alpha=alpha))(flat)
-    flat = keras.layers.BatchNormalization()(flat)
-    flat = keras.layers.Dropout(rate=dropout_rate)(flat)
-    flat = keras.layers.Dense(128, activation=keras.layers.LeakyReLU(alpha=alpha))(flat)
-    flat = keras.layers.BatchNormalization()(flat)
-    flat = keras.layers.Dropout(rate=dropout_rate)(flat)
-    flat = keras.layers.Dense(64, activation=keras.layers.LeakyReLU(alpha=alpha))(flat)
-    flat = keras.layers.BatchNormalization()(flat)
-    flat = keras.layers.Dropout(rate=dropout_rate)(flat)
-    flat = keras.layers.Dense(64, activation=keras.layers.LeakyReLU(alpha=alpha))(flat)
-    flat = keras.layers.BatchNormalization()(flat)
-    flat = keras.layers.Dropout(rate=dropout_rate)(flat)
-    img_fcl_2 = keras.layers.Dense(64, activation=keras.layers.LeakyReLU(alpha=alpha))(flat)
+    preprocessed_input = data_augmentation(image_input)
+    base_model = models[model][0](include_top=False, input_shape=input_shape)
+    base_model.trainable = False
+    base_model = base_model(preprocessed_input, training=False)
+    custom_conv_layers = keras.layers.Conv2D(256, kernel_size=3, padding='same')(base_model)
+    custom_conv_layers = keras.layers.BatchNormalization()(custom_conv_layers)
+    custom_conv_layers = keras.layers.Dropout(rate=dropout_rate)(custom_conv_layers)
+    custom_conv_layers = keras.layers.Conv2D(128, kernel_size=3, padding='same')(custom_conv_layers)
+    custom_conv_layers = keras.layers.BatchNormalization()(custom_conv_layers)
+    custom_conv_layers = keras.layers.Dropout(rate=dropout_rate)(custom_conv_layers)
+    custom_conv_layers = keras.layers.Conv2D(64, kernel_size=3, padding='same')(custom_conv_layers)
+    custom_conv_layers = keras.layers.BatchNormalization()(custom_conv_layers)
+    custom_conv_layers = keras.layers.Dropout(rate=dropout_rate)(custom_conv_layers)
+    custom_fc_layers = keras.layers.Flatten()(custom_conv_layers)
+    custom_fc_layers = keras.layers.Dense(256, keras.layers.LeakyReLU(alpha=alpha))(custom_fc_layers)
+    custom_fc_layers = keras.layers.BatchNormalization()(custom_fc_layers)
+    custom_fc_layers = keras.layers.Dropout(rate=dropout_rate)(custom_fc_layers)
+    custom_fc_layers = keras.layers.Dense(256, activation=keras.layers.LeakyReLU(alpha=alpha))(custom_fc_layers)
+    custom_fc_layers = keras.layers.BatchNormalization()(custom_fc_layers)
+    custom_fc_layers = keras.layers.Dropout(rate=dropout_rate)(custom_fc_layers)
+    custom_fc_layers = keras.layers.Dense(128, activation=keras.layers.LeakyReLU(alpha=alpha))(custom_fc_layers)
+    custom_fc_layers = keras.layers.BatchNormalization()(custom_fc_layers)
+    custom_fc_layers = keras.layers.Dropout(rate=dropout_rate)(custom_fc_layers)
+    custom_fc_layers = keras.layers.Dense(128, activation=keras.layers.LeakyReLU(alpha=alpha))(custom_fc_layers)
+    custom_fc_layers = keras.layers.BatchNormalization()(custom_fc_layers)
+    custom_fc_layers = keras.layers.Dropout(rate=dropout_rate)(custom_fc_layers)
+    custom_fc_layers = keras.layers.Dense(64, activation=keras.layers.LeakyReLU(alpha=alpha))(custom_fc_layers)
+    custom_fc_layers = keras.layers.BatchNormalization()(custom_fc_layers)
+    custom_fc_layers = keras.layers.Dropout(rate=dropout_rate)(custom_fc_layers)
+    custom_fc_layers = keras.layers.Dense(64, activation=keras.layers.LeakyReLU(alpha=alpha))(custom_fc_layers)
+    custom_fc_layers = keras.layers.BatchNormalization()(custom_fc_layers)
+    custom_fc_layers = keras.layers.Dropout(rate=dropout_rate)(custom_fc_layers)
+    custom_fc_layers = keras.layers.Dense(64, activation=keras.layers.LeakyReLU(alpha=alpha))(custom_fc_layers)
 
     # -----------------------------================ Values part =================--------------------------------- #
     image_type_input = keras.Input(shape=(2,), name='image_type', dtype=dtypes.float32)
@@ -45,26 +61,26 @@ def model_fn(model_list, input_shape, dropout_rate, alpha):
     age_input = keras.Input(shape=(1,), name='age', dtype=dtypes.float32)
     concat_inputs = keras.layers.Concatenate()([image_type_input, sex_input, anatom_site_input, age_input])
     concat_inputs = keras.layers.Dropout(rate=dropout_rate)(concat_inputs)
-    fc_1 = keras.layers.Dense(512, activation=keras.layers.LeakyReLU(alpha=alpha), )(concat_inputs)
-    fc_1 = keras.layers.Dropout(rate=dropout_rate)(fc_1)
-    fc_2 = keras.layers.Dense(256, activation=keras.layers.LeakyReLU(alpha=alpha))(fc_1)
-    fc_2 = keras.layers.Dropout(rate=dropout_rate)(fc_2)
-    fc_3 = keras.layers.Dense(256, activation=keras.layers.LeakyReLU(alpha=alpha))(fc_2)
-    fc_3 = keras.layers.Dropout(rate=dropout_rate)(fc_3)
-    fc_4 = keras.layers.Dense(128, activation=keras.layers.LeakyReLU(alpha=alpha))(fc_3)
-    fc_4 = keras.layers.Dropout(rate=dropout_rate)(fc_4)
-    fc_5 = keras.layers.Dense(128, activation=keras.layers.LeakyReLU(alpha=alpha))(fc_4)
-    fc_5 = keras.layers.Dropout(rate=dropout_rate)(fc_5)
-    fc_6 = keras.layers.Dense(64, activation=keras.layers.LeakyReLU(alpha=alpha))(fc_5)
-    fc_6 = keras.layers.Dropout(rate=dropout_rate)(fc_6)
+    custom_fc2_layers = keras.layers.Dense(512, activation=keras.layers.LeakyReLU(alpha=alpha), )(concat_inputs)
+    custom_fc2_layers = keras.layers.Dropout(rate=dropout_rate)(custom_fc2_layers)
+    custom_fc2_layers = keras.layers.Dense(256, activation=keras.layers.LeakyReLU(alpha=alpha))(custom_fc2_layers)
+    custom_fc2_layers = keras.layers.Dropout(rate=dropout_rate)(custom_fc2_layers)
+    custom_fc2_layers = keras.layers.Dense(256, activation=keras.layers.LeakyReLU(alpha=alpha))(custom_fc2_layers)
+    custom_fc2_layers = keras.layers.Dropout(rate=dropout_rate)(custom_fc2_layers)
+    custom_fc2_layers = keras.layers.Dense(128, activation=keras.layers.LeakyReLU(alpha=alpha))(custom_fc2_layers)
+    custom_fc2_layers = keras.layers.Dropout(rate=dropout_rate)(custom_fc2_layers)
+    custom_fc2_layers = keras.layers.Dense(128, activation=keras.layers.LeakyReLU(alpha=alpha))(custom_fc2_layers)
+    custom_fc2_layers = keras.layers.Dropout(rate=dropout_rate)(custom_fc2_layers)
+    custom_fc2_layers = keras.layers.Dense(64, activation=keras.layers.LeakyReLU(alpha=alpha))(custom_fc2_layers)
+    custom_fc2_layers = keras.layers.Dropout(rate=dropout_rate)(custom_fc2_layers)
 
     # -----------------------------================= Concat part =================---------------------------------#
-    final_concat = keras.layers.Concatenate()([fc_6, img_fcl_2])
-    fc_all = keras.layers.Dense(32, activation=keras.layers.LeakyReLU(alpha=alpha))(final_concat)
-    fc_all = keras.layers.BatchNormalization()(fc_all)
-    fc_all = keras.layers.Dropout(rate=dropout_rate)(fc_all)
-    fc_all = keras.layers.Dense(32, activation=keras.layers.LeakyReLU(alpha=alpha))(fc_all)
-    fc_all = keras.layers.BatchNormalization()(fc_all)
-    fc_all = keras.layers.Dropout(rate=dropout_rate)(fc_all)
-    output_layer = keras.layers.Dense(5, activation='softmax', name='classes')(fc_all)
+    common_layers = keras.layers.Concatenate()([custom_fc2_layers, custom_fc_layers])
+    common_layers = keras.layers.Dense(32, activation=keras.layers.LeakyReLU(alpha=alpha))(common_layers)
+    common_layers = keras.layers.BatchNormalization()(common_layers)
+    common_layers = keras.layers.Dropout(rate=dropout_rate)(common_layers)
+    common_layers = keras.layers.Dense(32, activation=keras.layers.LeakyReLU(alpha=alpha))(common_layers)
+    common_layers = keras.layers.BatchNormalization()(common_layers)
+    common_layers = keras.layers.Dropout(rate=dropout_rate)(common_layers)
+    output_layer = keras.layers.Dense(5, activation='softmax', name='classes')(common_layers)
     return keras.Model([image_input, image_type_input, sex_input, anatom_site_input, age_input], [output_layer])
