@@ -41,9 +41,6 @@ class MelData:
         self.colour = colour
         self.train_data, self.eval_data, self.train_len, self.eval_len = train_val_dct(frac=frac, hw=self.hw, colour=self.colour)
 
-    def read_decode_image(self, image_path):
-        image = tf.image.decode_image(tf.io.read_file(image_path), channels=3, dtype=tf.float32)
-        return image
 
     def _to_dict(self, sample):
         return {"image": self.read_decode_image(sample["image"]),
