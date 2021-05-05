@@ -7,13 +7,14 @@ from tensorflow.python.keras.callbacks import Callback, TensorBoard
 import matplotlib
 from matplotlib import pyplot as plt
 
-from config import CLASSES_DICT
+from config import MAPPER
 
 
 class EnrTensorboard(TensorBoard):
-    def __init__(self, eval_data, **kwargs):
+    def __init__(self, dataclass, **kwargs):
         super().__init__(**kwargs)
-        self.eval_data = eval_data
+        self.dataclass = dataclass
+        self.eval_data = self.dataclass.get_dataset('val', 1)
         matplotlib.use('cairo')
 
     @staticmethod
@@ -27,18 +28,19 @@ class EnrTensorboard(TensorBoard):
 
         figure = plt.figure(figsize=(7, 7))
         plt.imshow(cm, interpolation='nearest', cmap=plt.cm.get_cmap("binary"))  # https://matplotlib.org/1.2.1/_images/show_colormaps.png
+        plt.title("Confusion matrix")
         plt.colorbar()
         tick_marks = np.arange(len(class_names))
         plt.xticks(tick_marks, class_names, rotation=45)
         plt.yticks(tick_marks, class_names)
-        # Normalize the confusion matrix.
+        # Compute the labels from the normalized confusion matrix.
         labels = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], decimals=3)
         # Use white text if squares are dark; otherwise black.
         threshold = cm.max() / 2.
-
         for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
             color = "white" if cm[i, j] > threshold else "black"
             plt.text(j, i, labels[i, j], horizontalalignment="center", color=color)
+
         plt.tight_layout()
         plt.ylabel('True label')
         plt.xlabel('Predicted label')
@@ -63,26 +65,22 @@ class EnrTensorboard(TensorBoard):
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
-        test_pred_raw = self.model.predict(self.eval_data, batch_size=self.eval_data.cardinality())
-        test_pred = np.argmax(test_pred_raw, axis=1)
-        labels = np.concatenate([np.argmax(label[1]['classes'], axis=1) for label in self.eval_data.as_numpy_iterator()])
-        cm = np.asarray(tf.math.confusion_matrix(labels=labels, predictions=test_pred, num_classes=len(CLASSES_DICT)))
-        cm_image = self.plot_to_image(self.plot_confusion_matrix(cm, class_names=CLASSES_DICT.keys()))
+        logs["learning_rate"] = self.model.optimizer.lr
+
+        # Use the model to predict the values from the validation dataset.
+        labels = []
+        test_pred = self.model.predict(self.eval_data)
+        results = np.argmax(test_pred, axis=1)
+        for data in self.eval_data:
+            labels.append(np.argmax(data[1]["class"], axis=1))
+        labels = np.concatenate(labels)
+        # Calculate the confusion matrix
+        cm = np.asarray(tf.math.confusion_matrix(labels=labels, predictions=results, num_classes=len(MAPPER["class"])))
+        figure = self.plot_confusion_matrix(cm, class_names=MAPPER["class"].keys())
+        cm_image = self.plot_to_image(figure)
         with super()._val_writer.as_default():
             tf.summary.image("Confusion Matrix", cm_image, step=epoch)
         super().on_epoch_end(epoch=epoch, logs=logs)
-
-
-class LearningRateLogger(tf.keras.callbacks.Callback):
-    """ Log learning rate """
-    def __init__(self):
-        super().__init__()
-        self._supports_tf_logs = True
-
-    def on_epoch_end(self, epoch, logs=None):
-        if logs is None or "learning_rate" in logs:
-            return
-        logs["learning_rate"] = self.model.optimizer.lr
 
 
 class CyclicLR(Callback):

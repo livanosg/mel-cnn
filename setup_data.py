@@ -23,6 +23,7 @@ def setup_datasets(save=False):
             all_data.loc[all_data['dataset_id'] == dataset_id, 'image'].map(lambda x: f'data/{dataset_id}/data/{x}')
     all_data.loc[:, 'age_approx'].fillna(-10, inplace=True)
     all_data.loc[:, "age_approx"] = round(all_data.loc[:, "age_approx"] / 10) * 10
+    all_data.loc[:, "age_approx"] = all_data.loc[:, "age_approx"].astype(int)
     if save:
         all_data.to_csv('all_data_init.csv', index=False, columns=COLUMNS)
     return datasets
