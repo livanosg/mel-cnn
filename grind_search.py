@@ -1,37 +1,30 @@
-import os
-from datetime import datetime
-from hyperparameters import hyperparameters_list
+from config import directories
+from hyperparameters import hp_dict
 from train_model import training
 
 
 def grind(args):
-    hp_keys = hyperparameters_list(args=args)
+    hp = hp_dict(args=args)
     run_num = 0
-    for model in hp_keys[0].domain.values:
-        for optimizer in hp_keys[1].domain.values:
-            for img_size in hp_keys[2].domain.values:
-                for colour in hp_keys[3].domain.values:
-                    for batch in hp_keys[4].domain.values:
-                        for lr in hp_keys[5].domain.values:
-                            for do_rate in hp_keys[6].domain.values:
-                                for relu_grad in hp_keys[7].domain.values:
-                                    hparams = {hp_keys[0]: model,
-                                               hp_keys[1]: optimizer,
-                                               hp_keys[2]: img_size,
-                                               hp_keys[3]: colour,
-                                               hp_keys[4]: batch,
-                                               hp_keys[5]: lr,
-                                               hp_keys[6]: do_rate,
-                                               hp_keys[7]: relu_grad}
-                                    log_dir = f'logs/run-{str(run_num).zfill(4)}-{datetime.now().strftime("%d%m%y%H%M%S")}'
-                                    try:
-                                        log_dir += f"-{os.environ['SLURMD_NODENAME']}"
-                                    except KeyError:
-                                        pass
-                                    if not os.path.exists(log_dir):
-                                        os.makedirs(log_dir)
-                                    with open(log_dir + '/hyperparams.txt', 'a') as f:
-                                        dicts = {key.name: hparams[key] for key in hparams}
-                                        print(dicts, file=f)
-                                    training(args=args, hparams=hparams, hp_keys=hp_keys, log_dir=log_dir, mode=args.mode)
+    for model in hp["model"].domain.values:
+        for optimizer in hp["optimizer"].domain.values:
+            for img_size in hp["img_size"].domain.values:
+                for colour in hp["colour"].domain.values:
+                    for batch_size in hp["batch_size"].domain.values:
+                        for lr in hp["lr"].domain.values:
+                            for dropout in hp["dropout"].domain.values:
+                                for relu_grad in hp["relu_grad"].domain.values:
+                                    hparams = {hp["model"]: model,
+                                               hp["optimizer"]: optimizer,
+                                               hp["img_size"]: img_size,
+                                               hp["colour"]: colour,
+                                               hp["batch_size"]: batch_size,
+                                               hp["lr"]: lr,
+                                               hp["dropout"]: dropout,
+                                               hp["relu_grad"]: relu_grad}
+
+                                    dir_dict = directories(run_num=run_num, img_size=img_size, colour=colour)
+                                    with open(dir_dict["trial_config"], "a") as f:
+                                        [print(f"{key.name}: {hparams[key]}", file=f) for key in hparams.keys()]
+                                    training(args=args, hparams=hparams, dir_dict=dir_dict)
                                     run_num += 1

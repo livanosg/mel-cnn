@@ -1,6 +1,5 @@
-import argparse
 import os
-
+import argparse
 from grind_search import grind
 
 
@@ -17,18 +16,18 @@ def parse_module():
     parser.add_argument("--batch-size", "-btch", nargs="+", required=True, type=int, help="Select batch size.")
     parser.add_argument("--epochs", "-e", required=True, type=int, help="Select epochs.")
     parser.add_argument("--early-stop", "-es", required=True, type=int, help="Select early stop epochs.")
-    parser.add_argument("--mode", "-nm", required=True, type=str, choices=["multinode", "onenode", "onedevice"], help="Select training mode.")
+    parser.add_argument("--nodes", "-nod", required=True, type=str, choices=["multi", "one"], help="Select training nodes mode.")
     parser.add_argument("--verbose", "-v", action="count", default=0, help="Set verbosity.")
     return parser
 
 
-if __name__ == '__main__':
-    args = parse_module().parse_args()
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
-    os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
-    if args.verbose > 3:
+if __name__ == "__main__":
+    args = parse_module().parse_args().__dict__
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+    os.environ["TF_GPU_THREAD_MODE"] = "gpu_private"
+    # 0 = all logs, 1 = filter out INFO, 2 = 1 + WARNING, 3 = 2 + ERROR
+    if args["verbose"] > 3:
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"
     else:
-        os.environ["TF_CPP_MIN_LOG_LEVEL"] = f"{3 - args.verbose}"
-        # 0 = all logs, 1 = filter out INFO, 2 = 1 + WARNING, 3 = 2 + ERROR
+        os.environ["TF_CPP_MIN_LOG_LEVEL"] = f"{3 - args['verbose']}"
     grind(args=args)

@@ -9,7 +9,6 @@ from config import MAPPER
 
 def model_fn(model, input_shape, dropout_rate, alpha):
     init = tf.keras.initializers.GlorotNormal()
-
     models = {'xept': (applications.xception.Xception, applications.xception.preprocess_input),
               'incept': (applications.inception_v3.InceptionV3, applications.inception_v3.preprocess_input),
               'effnet0': (applications.efficientnet.EfficientNetB0, applications.efficientnet.preprocess_input),
