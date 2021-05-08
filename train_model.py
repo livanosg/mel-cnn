@@ -52,7 +52,7 @@ def training(args, hparams, dir_dict):
                  KerasCallback(writer=dir_dict["logs"], hparams=hparams),
                  CyclicLR(base_lr=lr, max_lr=lr * 5, step_size=steps_per_epoch * 8, mode='exp_range', gamma=0.999),
                  EarlyStopping(verbose=1, patience=args["early_stop"]),
-                 tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=dir_dict["backup"] + '/tmp')]
+                 tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=dir_dict["backup"])]
     # ------------------------------------------------- Train model -------------------------------------------------- #
     if args["verbose"] == 1:
         verbose = 2

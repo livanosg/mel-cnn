@@ -12,7 +12,7 @@ class MelData:
         self.features.pop("dataset_id")
         self.features.fillna(-10, inplace=True)
         self.features.replace(to_replace=MAPPER, inplace=True)
-        self.features["image"] = img_folder + self.features["image"]
+        self.features["image"] = img_folder + "/" + self.features["image"]
         self.train_data, self.val_data = map(self.ohe_map, self.split_data(train_frac=0.8, frac=self.frac))
 
     def split_data(self, train_frac, frac):
@@ -77,8 +77,8 @@ class MelData:
 
 
 if __name__ == '__main__':
-    img_folder = directories(run_num=0, img_size=224, colour="rgb")["image_folder"]
-    a = MelData("all_data_init.csv", frac=0.1, img_folder=img_folder, batch=1)
+    img_fldr = directories(run_num=0, img_size=224, colour="rgb")["image_folder"]
+    a = MelData("all_data_init.csv", frac=0.1, img_folder=img_fldr, batch=1)
     a = a.get_dataset(mode="train", repeat=1)
     for i in a.as_numpy_iterator():
         print(i)

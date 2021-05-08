@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
-from prep_dataset import create_dataset
+
+from prep_dataset import check_create_dataset
 
 COLUMNS = ["dataset_id", "image", "image_type", "sex", "age_approx", "anatom_site_general", "class"]
 IMAGE_TYPE_MAP = {"clinic": 0, "derm": 1}
@@ -18,23 +19,19 @@ MAPPER = {"image_type": IMAGE_TYPE_MAP,
           "anatom_site_general": ANATOM_SITE_MAP,
           "class": CLASSES_DICT}
 
-IMAGE_FOLDER = "/proc_{}_{}/"
+IMAGE_FOLDER = "proc_{}_{}"
 
 
 def directories(run_num, img_size, colour):
     dir_dict = {"main": os.path.dirname(os.path.abspath(__file__))}
     trial = f"run-{str(run_num).zfill(4)}-{datetime.now().strftime('%d%m%y%H%M%S')}"
-    dir_dict["logs"] = dir_dict["main"] + f"/logs/{trial}"
-    dir_dict["trial"] = dir_dict["main"] + f"/trials/{trial}"
-    dir_dict["trial_config"] = dir_dict["trial"] + "/log_conf.txt"
-    dir_dict["save_path"] = dir_dict["trial"] + f"/models/best-model"  # + "{epoch:03d}"
-    dir_dict["backup"] = dir_dict["trial"] + "/tmp"
-    dir_dict["image_folder"] = dir_dict["main"] + IMAGE_FOLDER.format(str(img_size), colour)
-    if not os.path.exists(dir_dict["image_folder"]):
-        print(f"Dataset {dir_dict['image_folder']} does not exists\n"
-              f"Create dataset")
-        create_dataset(img_size=img_size, colour=colour, folder_format=IMAGE_FOLDER)
-        print("Done!")
+    dir_dict["logs"] = os.path.join(dir_dict["main"], "logs", trial)
+    dir_dict["trial"] = os.path.join(dir_dict["main"], "trials", trial)
+    dir_dict["trial_config"] = os.path.join(dir_dict["trial"], "log_conf.txt")
+    dir_dict["save_path"] = os.path.join(dir_dict["trial"], "models", "best-model")  # + "{epoch:03d}"
+    dir_dict["backup"] = os.path.join(dir_dict["trial"], "backup")
+    dir_dict["image_folder"] = os.path.join(dir_dict["main"], IMAGE_FOLDER.format(str(img_size), colour))
+    check_create_dataset(dir_dict["image_folder"])
     try:
         dir_dict["logs"] += f"-{os.environ['SLURMD_NODENAME']}"
         dir_dict["trial"] += f"-{os.environ['SLURMD_NODENAME']}"
