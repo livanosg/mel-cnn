@@ -38,6 +38,3 @@ def check_create_dataset(data_dir):
     else:
         print(f"Dataset {data_dir} exists!\n"
               f"Dataset Specs: img_size: {img_size}, colour: {colour}")
-
-if __name__ == '__main__':
-    check_create_dataset()

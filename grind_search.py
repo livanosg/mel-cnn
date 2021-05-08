@@ -1,5 +1,6 @@
 from config import directories
 from hyperparameters import hp_dict
+from prep_dataset import check_create_dataset
 from train_model import training
 
 
@@ -24,6 +25,7 @@ def grind(args):
                                                hp["relu_grad"]: relu_grad}
 
                                     dir_dict = directories(run_num=run_num, img_size=img_size, colour=colour)
+                                    check_create_dataset(dir_dict["image_folder"])
                                     with open(dir_dict["trial_config"], "a") as f:
                                         [print(f"{key.name}: {hparams[key]}", file=f) for key in hparams.keys()]
                                     training(args=args, hparams=hparams, dir_dict=dir_dict)

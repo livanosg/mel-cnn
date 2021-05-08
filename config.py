@@ -31,7 +31,6 @@ def directories(run_num, img_size, colour):
     dir_dict["save_path"] = os.path.join(dir_dict["trial"], "models", "best-model")  # + "{epoch:03d}"
     dir_dict["backup"] = os.path.join(dir_dict["trial"], "backup")
     dir_dict["image_folder"] = os.path.join(dir_dict["main"], IMAGE_FOLDER.format(str(img_size), colour))
-    check_create_dataset(dir_dict["image_folder"])
     try:
         dir_dict["logs"] += f"-{os.environ['SLURMD_NODENAME']}"
         dir_dict["trial"] += f"-{os.environ['SLURMD_NODENAME']}"
@@ -43,5 +42,5 @@ def directories(run_num, img_size, colour):
 
 
 if __name__ == "__main__":
-    directories(10, img_size=224, colour="grey")
-    directories(10, img_size=500, colour="grey")
+    check_create_dataset(directories(10, img_size=224, colour="grey")["image_folder"])
+    check_create_dataset(directories(10, img_size=500, colour="grey")["image_folder"])
