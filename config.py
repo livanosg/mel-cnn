@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from image_preprocessing import create_dataset
+from prep_dataset import create_dataset
 
 COLUMNS = ["dataset_id", "image", "image_type", "sex", "age_approx", "anatom_site_general", "class"]
 IMAGE_TYPE_MAP = {"clinic": 0, "derm": 1}
