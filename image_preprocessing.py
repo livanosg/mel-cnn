@@ -24,6 +24,7 @@ def resize_conv_colour(image, folder_format, img_size=224, colour="grey"):
 
 
 def create_dataset(img_size, colour, folder_format):
+    os.environ["OMP_NUM_THREADS"] = "1"
     all_data = pd.read_csv('all_data_init.csv')
     images = all_data["image"]
     pool = mp.Pool(mp.cpu_count())
