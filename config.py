@@ -43,5 +43,5 @@ def directories(run_num, img_size, colour):
 
 
 if __name__ == "__main__":
-    a = directories(10, img_size=100, colour="rgb")
-    [print(a[key]) for key in a]
+    directories(10, img_size=224, colour="grey")
+    directories(10, img_size=500, colour="grey")
