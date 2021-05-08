@@ -31,7 +31,11 @@ def check_create_dataset(data_dir):
         os.environ["OMP_NUM_THREADS"] = "1"
         all_data = pd.read_csv('all_data_init.csv')
         images = all_data["image"]
-        pool = mp.Pool(mp.cpu_count())
+        if mp.cpu_count() > 32:
+            threads = 32
+        else:
+            threads = mp.cpu_count()
+        pool = mp.Pool(threads)
         pool.starmap(resize_conv_colour, [(image, data_dir, int(img_size), colour) for image in images])
         pool.close()
         print("Done!")
