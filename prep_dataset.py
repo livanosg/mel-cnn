@@ -25,10 +25,10 @@ def resize_conv_colour(image, new_dir, img_size=224, colour="grey"):
 
 def check_create_dataset(data_dir):
     _, img_size, colour = os.path.basename(data_dir).split(sep="_")
+    os.environ["OMP_NUM_THREADS"] = "1"
     if not os.path.exists(data_dir):
         print(f"Dataset {data_dir} does not exists\n"
               f"Create dataset with Specs: img_size: {img_size}, colour: {colour}")
-        os.environ["OMP_NUM_THREADS"] = "1"
         all_data = pd.read_csv('all_data_init.csv')
         images = all_data["image"]
         if mp.cpu_count() > 32:
