@@ -4,8 +4,10 @@ import os
 import cv2
 import pandas as pd
 
+from config import directories, IMAGE_FOLDER
 
-def resize_conv_colour(image, new_dir, img_size=224, colour="grey"):
+
+def resize_conv_colour(image, img_size=224, colour="grey"):
     assert colour in ("grey", "rgb")
     src = cv2.imread(image)
     if colour == "grey":
@@ -18,27 +20,35 @@ def resize_conv_colour(image, new_dir, img_size=224, colour="grey"):
         left, right = math.ceil(dx / 2), math.floor(dx / 2)
         src = cv2.copyMakeBorder(src, 0, 0, left, right, borderType=cv2.BORDER_CONSTANT)
     src = cv2.resize(src=src, dsize=(img_size, img_size), interpolation=cv2.INTER_NEAREST_EXACT)
-    path = os.path.join(new_dir, image)
+    path = os.path.join(IMAGE_FOLDER.format(str(img_size), colour), image)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     cv2.imwrite(path, src)
 
 
-def check_create_dataset(data_dir):
-    _, img_size, colour = os.path.basename(data_dir).split(sep="_")
+def check_create_dataset(img_size, colour, force=False):
+    dir_dict = directories(1, img_size=img_size, colour=colour)
     os.environ["OMP_NUM_THREADS"] = "1"
-    if not os.path.exists(data_dir):
-        print(f"Dataset {data_dir} does not exists\n"
-              f"Create dataset with Specs: img_size: {img_size}, colour: {colour}")
+    if not os.path.exists(dir_dict["image_folder"]) or force is True:
+        if not force:
+            log_info = "Dataset {} does not exists\nCreate dataset with Specs: img_size: {}, colour: {}"
+        else:
+            log_info = "Overwriting dataset in {}\nDataset Specs: img_size: {}, colour: {}"
+        print(log_info.format(dir_dict['image_folder'], img_size, colour))
         all_data = pd.read_csv('all_data_init.csv')
-        images = all_data["image"]
         if mp.cpu_count() > 32:
             threads = 32
         else:
             threads = mp.cpu_count()
         pool = mp.Pool(threads)
-        pool.starmap(resize_conv_colour, [(image, data_dir, int(img_size), colour) for image in images])
+        pool.starmap(resize_conv_colour, [(image, int(img_size), colour) for image in all_data["image"]])
         pool.close()
         print("Done!")
     else:
-        print(f"Dataset {data_dir} exists!\n"
-              f"Dataset Specs: img_size: {img_size}, colour: {colour}")
+        log_info = "Dataset {} exists!\nDataset Specs: img_size: {}, colour: {}"
+        print(log_info.format(dir_dict['image_folder'], img_size, colour))
+
+
+if __name__ == '__main__':
+    check_create_dataset(img_size=224, colour="grey")
+    check_create_dataset(img_size=500, colour="grey")
+    exit()

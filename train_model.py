@@ -1,4 +1,6 @@
 import math
+import os.path
+
 import tensorflow as tf
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorboard.plugins.hparams.api import KerasCallback
@@ -49,7 +51,7 @@ def training(args, hparams, dir_dict):
     # ---------------------------------------------------- Config ---------------------------------------------------- #
     callbacks = [ModelCheckpoint(filepath=save_path, save_best_only=True),
                  EnrTensorboard(dataclass=datasets, log_dir=dir_dict["logs"], update_freq='epoch', profile_batch=0),
-                 KerasCallback(writer=dir_dict["logs"], hparams=hparams),
+                 KerasCallback(writer=dir_dict["logs"], hparams=hparams, trial_id=os.path.basename(dir_dict["trial"])),
                  CyclicLR(base_lr=lr, max_lr=lr * 5, step_size=steps_per_epoch * 8, mode='exp_range', gamma=0.999),
                  EarlyStopping(verbose=1, patience=args["early_stop"]),
                  tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=dir_dict["backup"])]
