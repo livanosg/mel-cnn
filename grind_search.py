@@ -25,7 +25,7 @@ def grind(args):
                                                hp["relu_grad"]: relu_grad}
 
                                     dir_dict = directories(run_num=run_num, img_size=img_size, colour=colour)
-                                    check_create_dataset(dir_dict["image_folder"])
+                                    check_create_dataset(img_size=args["image_size"], colour=args["colour"])
                                     with open(dir_dict["trial_config"], "a") as f:
                                         [print(f"{key.name}: {hparams[key]}", file=f) for key in hparams.keys()]
                                     training(args=args, hparams=hparams, dir_dict=dir_dict)
