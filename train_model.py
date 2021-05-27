@@ -13,6 +13,11 @@ from callbacks import EnrTensorboard, CyclicLR
 
 def training(args, hparams, dir_dict):
     tf.random.set_seed(1312)
+    if args["binary"] == "binary":
+        binary = True
+    else:
+        binary = False
+
     assert args["nodes"] in ("multi", "one")
     save_path = dir_dict["save_path"]
     if args["nodes"] == 'multi':
@@ -25,7 +30,7 @@ def training(args, hparams, dir_dict):
     hp_key = {key.name: key for key in hparams.keys()}
     global_batch = hparams[hp_key["batch_size"]] * strategy.num_replicas_in_sync
     datasets = MelData(file="all_data_init.csv", frac=args["dataset_frac"],
-                       batch=global_batch, img_folder=dir_dict["image_folder"])
+                       batch=global_batch, img_folder=dir_dict["image_folder"], binary=binary)
     data_info = datasets.data_info()
     with open(dir_dict["trial_config"], 'a') as f:
         print(f"Epochs: {args['epochs']}\n"
@@ -44,7 +49,7 @@ def training(args, hparams, dir_dict):
                  "adamax": tf.keras.optimizers.Adamax, "nadam": tf.keras.optimizers.Nadam}
     with strategy.scope():
         custom_model = model_fn(model=hparams[hp_key["model"]], input_shape=(hparams[hp_key["img_size"]], hparams[hp_key["img_size"]], 3),
-                                dropout_rate=hparams[hp_key["dropout"]], alpha=hparams[hp_key["relu_grad"]])
+                                dropout_rate=hparams[hp_key["dropout"]], alpha=hparams[hp_key["relu_grad"]], binary=binary)
         custom_model.compile(optimizer=optimizer[hparams[hp_key["optimizer"]]](learning_rate=lr),
                              loss=weighted_categorical_crossentropy(weights=datasets.get_class_weights()),
                              metrics=metrics())

@@ -5,13 +5,17 @@ import pandas as pd
 
 
 class MelData:
-    def __init__(self, file: str, frac: float = 1., img_folder: str = None, batch: int = None):
+    def __init__(self, file: str, frac: float = 1., img_folder: str = None, batch: int = None, binary=False):
         self.batch = batch
         self.frac = frac
+        self.binary = binary
         self.features = pd.read_csv(file, dtype="str")
         self.features.pop("dataset_id")
         self.features.fillna(-10, inplace=True)
         self.features.replace(to_replace=MAPPER, inplace=True)
+        if self.binary:
+            binary_map = {"class": {0: 0, 1: 0, 2: 1, 3: 1, 4: 0}}
+            self.features.replace(to_replace=binary_map, inplace=True)
         self.features["image"] = img_folder + "/" + self.features["image"]
         self.train_data, self.val_data = map(self.ohe_map, self.split_data(train_frac=0.8, frac=self.frac))
 
@@ -32,15 +36,18 @@ class MelData:
         val_data = pd.concat(val_data).sample(frac=1., random_state=1312)
         return dict(train_data), dict(val_data)
 
-    @staticmethod
-    def ohe_map(features):
+    def ohe_map(self, features):
         """ Turn features to one-hot encoded vectors. Also return a pair of (features, labels) dicts.
         Inputs:
         features: dictionary of features int encoded."""
         for key in features.keys():
             if key != "image":
-                features[key] = tf.keras.backend.one_hot(indices=np.asarray(features[key]),
-                                                         num_classes=len(MAPPER[key]))
+                if self.binary and key == "class":
+                    features[key] = tf.keras.backend.one_hot(indices=np.asarray(features[key]),
+                                                             num_classes=2)
+                else:
+                    features[key] = tf.keras.backend.one_hot(indices=np.asarray(features[key]),
+                                                             num_classes=len(MAPPER[key]))
         labels = {"class": features.pop("class")}
         return features, labels
 

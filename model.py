@@ -7,7 +7,11 @@ from tensorflow import dtypes
 from config import MAPPER
 
 
-def model_fn(model, input_shape, dropout_rate, alpha):
+def model_fn(model, input_shape, dropout_rate, alpha, binary):
+    if binary:
+        classes = 2
+    else:
+        classes = 5
     init = tf.keras.initializers.GlorotNormal()
     models = {'xept': (applications.xception.Xception, applications.xception.preprocess_input),
               'incept': (applications.inception_v3.InceptionV3, applications.inception_v3.preprocess_input),
@@ -84,5 +88,5 @@ def model_fn(model, input_shape, dropout_rate, alpha):
     common_layers = keras.layers.Dense(32, activation=keras.layers.LeakyReLU(alpha=alpha), kernel_initializer=init)(common_layers)
     common_layers = keras.layers.BatchNormalization()(common_layers)
     common_layers = keras.layers.Dropout(rate=dropout_rate)(common_layers)
-    output_layer = keras.layers.Dense(5, activation='softmax', kernel_initializer=init, name='class')(common_layers)
+    output_layer = keras.layers.Dense(classes, activation='softmax', kernel_initializer=init, name='class')(common_layers)
     return keras.Model([image_input, image_type_input, sex_input, anatom_site_input, age_input], [output_layer])
