@@ -11,10 +11,10 @@ from config import MAPPER
 
 
 class EnrTensorboard(TensorBoard):
-    def __init__(self, dataclass, **kwargs):
+    def __init__(self, data, classes, **kwargs):
         super().__init__(**kwargs)
-        self.dataclass = dataclass
-        self.eval_data = self.dataclass.get_dataset('val', 1)
+        self.eval_data = data
+        self.classes = classes
         matplotlib.use('cairo')
 
     @staticmethod
@@ -75,8 +75,12 @@ class EnrTensorboard(TensorBoard):
             labels.append(np.argmax(data[1]["class"], axis=1))
         labels = np.concatenate(labels)
         # Calculate the confusion matrix
-        cm = np.asarray(tf.math.confusion_matrix(labels=labels, predictions=results, num_classes=len(MAPPER["class"])))
-        figure = self.plot_confusion_matrix(cm, class_names=MAPPER["class"].keys())
+        cm = np.asarray(tf.math.confusion_matrix(labels=labels, predictions=results, num_classes=self.classes))
+        if self.classes == 2:
+            class_names = ["benign", "malignant"]
+        else:
+            class_names = MAPPER["class"].keys()
+        figure = self.plot_confusion_matrix(cm, class_names=class_names)
         cm_image = self.plot_to_image(figure)
         with super()._val_writer.as_default():
             tf.summary.image("Confusion Matrix", cm_image, step=epoch)

@@ -5,17 +5,15 @@ import pandas as pd
 
 
 class MelData:
-    def __init__(self, file: str, frac: float = 1., img_folder: str = None, batch: int = None, binary=False):
+    def __init__(self, file: str, frac: float = 1., img_folder: str = None, batch: int = None, classes=5):
+        assert classes in (2, 5)
         self.batch = batch
         self.frac = frac
-        self.binary = binary
+        self.classes = classes
         self.features = pd.read_csv(file, dtype="str")
         self.features.pop("dataset_id")
         self.features.fillna(-10, inplace=True)
         self.features.replace(to_replace=MAPPER, inplace=True)
-        if self.binary:
-            binary_map = {"class": {0: 0, 1: 0, 2: 1, 3: 1, 4: 0}}
-            self.features.replace(to_replace=binary_map, inplace=True)
         self.features["image"] = img_folder + "/" + self.features["image"]
         self.train_data, self.val_data = map(self.ohe_map, self.split_data(train_frac=0.8, frac=self.frac))
 
@@ -34,20 +32,24 @@ class MelData:
             val_data.append(val_data_class_frac.sample(frac=frac, random_state=1312))
         train_data = pd.concat(train_data).sample(frac=1., random_state=1312)
         val_data = pd.concat(val_data).sample(frac=1., random_state=1312)
+        if self.classes == 2:
+            MAPPER["class"] = {0: 0, 1: 0, 2: 1, 3: 1, 4: 0}
+            train_data.replace(to_replace=MAPPER, inplace=True)
+            val_data.replace(to_replace=MAPPER, inplace=True)
         return dict(train_data), dict(val_data)
 
     def ohe_map(self, features):
         """ Turn features to one-hot encoded vectors. Also return a pair of (features, labels) dicts.
         Inputs:
         features: dictionary of features int encoded."""
+
         for key in features.keys():
-            if key != "image":
-                if self.binary and key == "class":
-                    features[key] = tf.keras.backend.one_hot(indices=np.asarray(features[key]),
-                                                             num_classes=2)
-                else:
-                    features[key] = tf.keras.backend.one_hot(indices=np.asarray(features[key]),
-                                                             num_classes=len(MAPPER[key]))
+            if key == "class":
+                features[key] = tf.keras.backend.one_hot(indices=np.asarray(features[key]), num_classes=self.classes)
+            elif key != "image":
+                features[key] = tf.keras.backend.one_hot(indices=np.asarray(features[key]), num_classes=len(MAPPER[key]))
+            else:
+                pass
         labels = {"class": features.pop("class")}
         return features, labels
 
@@ -80,13 +82,14 @@ class MelData:
 
     def get_class_weights(self):
         return np.divide(self.data_info()["train_len"],
-                         np.multiply(np.sum(self.train_data[1]["class"], axis=0), len(MAPPER["class"])))
+                         np.multiply(np.sum(self.train_data[1]["class"], axis=0), self.classes))
 
 
 if __name__ == '__main__':
     img_fldr = directories(run_num=0, img_size=224, colour="rgb")["image_folder"]
-    a = MelData("all_data_init.csv", frac=0.1, img_folder=img_fldr, batch=1)
-    a = a.get_dataset(mode="train", repeat=1)
-    for i in a.as_numpy_iterator():
+    a = MelData("all_data_init.csv", frac=0.1, img_folder=img_fldr, batch=1, classes=2)
+    b = a.get_dataset(mode="train", repeat=1)
+    print(a.get_class_weights())
+    for i in b.as_numpy_iterator():
         print(i)
         break

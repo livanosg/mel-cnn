@@ -7,11 +7,7 @@ from tensorflow import dtypes
 from config import MAPPER
 
 
-def model_fn(model, input_shape, dropout_rate, alpha, binary):
-    if binary:
-        classes = 2
-    else:
-        classes = 5
+def model_fn(model, input_shape, dropout_rate, alpha, classes):
     init = tf.keras.initializers.GlorotNormal()
     models = {'xept': (applications.xception.Xception, applications.xception.preprocess_input),
               'incept': (applications.inception_v3.InceptionV3, applications.inception_v3.preprocess_input),

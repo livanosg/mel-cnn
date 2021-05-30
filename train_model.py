@@ -13,11 +13,6 @@ from callbacks import EnrTensorboard, CyclicLR
 
 def training(args, hparams, dir_dict):
     tf.random.set_seed(1312)
-    if args["binary"] == "binary":
-        binary = True
-    else:
-        binary = False
-
     assert args["nodes"] in ("multi", "one")
     save_path = dir_dict["save_path"]
     if args["nodes"] == 'multi':
@@ -30,7 +25,7 @@ def training(args, hparams, dir_dict):
     hp_key = {key.name: key for key in hparams.keys()}
     global_batch = hparams[hp_key["batch_size"]] * strategy.num_replicas_in_sync
     datasets = MelData(file="all_data_init.csv", frac=args["dataset_frac"],
-                       batch=global_batch, img_folder=dir_dict["image_folder"], binary=binary)
+                       batch=global_batch, img_folder=dir_dict["image_folder"], classes=args["classes"])
     data_info = datasets.data_info()
     with open(dir_dict["trial_config"], 'a') as f:
         print(f"Epochs: {args['epochs']}\n"
@@ -49,13 +44,13 @@ def training(args, hparams, dir_dict):
                  "adamax": tf.keras.optimizers.Adamax, "nadam": tf.keras.optimizers.Nadam}
     with strategy.scope():
         custom_model = model_fn(model=hparams[hp_key["model"]], input_shape=(hparams[hp_key["img_size"]], hparams[hp_key["img_size"]], 3),
-                                dropout_rate=hparams[hp_key["dropout"]], alpha=hparams[hp_key["relu_grad"]], binary=binary)
+                                dropout_rate=hparams[hp_key["dropout"]], alpha=hparams[hp_key["relu_grad"]], classes=args["classes"])
         custom_model.compile(optimizer=optimizer[hparams[hp_key["optimizer"]]](learning_rate=lr),
                              loss=weighted_categorical_crossentropy(weights=datasets.get_class_weights()),
-                             metrics=metrics())
+                             metrics=metrics(args["classes"]))
     # ---------------------------------------------------- Config ---------------------------------------------------- #
     callbacks = [ModelCheckpoint(filepath=save_path, save_best_only=True),
-                 EnrTensorboard(dataclass=datasets, log_dir=dir_dict["logs"], update_freq='epoch', profile_batch=0),
+                 EnrTensorboard(data=datasets.get_dataset('val', 1), classes=args["classes"], log_dir=dir_dict["logs"], update_freq='epoch', profile_batch=0),
                  KerasCallback(writer=dir_dict["logs"], hparams=hparams, trial_id=os.path.basename(dir_dict["trial"])),
                  CyclicLR(base_lr=lr, max_lr=lr * 5, step_size=steps_per_epoch * 8, mode='exp_range', gamma=0.999),
                  EarlyStopping(verbose=1, patience=args["early_stop"]),

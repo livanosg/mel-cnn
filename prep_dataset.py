@@ -4,7 +4,7 @@ import os
 import cv2
 import pandas as pd
 
-from config import directories, IMAGE_FOLDER
+from config import IMAGE_FOLDER
 
 
 def resize_conv_colour(image, img_size=224, colour="grey"):
@@ -25,8 +25,7 @@ def resize_conv_colour(image, img_size=224, colour="grey"):
     cv2.imwrite(path, src)
 
 
-def check_create_dataset(img_size, colour, force=False):
-    dir_dict = directories(1, img_size=img_size, colour=colour)
+def check_create_dataset(img_size, colour, dir_dict, force=False):
     os.environ["OMP_NUM_THREADS"] = "1"
     if not os.path.exists(dir_dict["image_folder"]) or force is True:
         if not force:
