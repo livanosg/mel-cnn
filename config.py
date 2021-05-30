@@ -13,14 +13,14 @@ MAPPER = {"image_type": {"clinic": 0, "derm": 1},
 IMAGE_FOLDER = "proc_{}_{}"
 
 
-def directories(run_num, img_size, colour):
+def directories(trial_id, run_num, img_size, colour):
     dir_dict = {"main": os.path.dirname(os.path.abspath(__file__))}
-    trial = f"run-{str(run_num).zfill(4)}-{datetime.now().strftime('%d%m%y%H%M%S')}"
+    trial = f"{trial_id}-run-{str(run_num).zfill(4)}"
     dir_dict["logs"] = os.path.join(dir_dict["main"], "logs", trial)
     dir_dict["trial"] = os.path.join(dir_dict["main"], "trials", trial)
     try:
-        dir_dict["logs"] += f"-{os.environ['SLURMD_NODENAME']}"
-        dir_dict["trial"] += f"-{os.environ['SLURMD_NODENAME']}"
+        dir_dict["logs"] = f"{os.environ['SLURMD_NODENAME']}-" + dir_dict["logs"]
+        dir_dict["trial"] = f"{os.environ['SLURMD_NODENAME']}-" + dir_dict["trial"]
     except KeyError:
         pass
     os.makedirs(dir_dict["logs"], exist_ok=True)
