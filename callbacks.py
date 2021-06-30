@@ -78,6 +78,8 @@ class EnrTensorboard(TensorBoard):
         cm = np.asarray(tf.math.confusion_matrix(labels=labels, predictions=results, num_classes=self.classes))
         if self.classes == 2:
             class_names = ["benign", "malignant"]
+        elif self.classes == 3:
+            class_names = ["NV", "MEL", "other"]
         else:
             class_names = MAPPER["class"].keys()
         figure = self.plot_confusion_matrix(cm, class_names=class_names)

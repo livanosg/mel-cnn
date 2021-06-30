@@ -1,9 +1,12 @@
-from config import MAPPER, directories
+import cv2
+
+from augmentations import Augmentations
+from config import MAPPER, directories, BEN_MAL_MAPPER, NEV_MEL_OTHER_MAPPER
 import tensorflow as tf
 import numpy as np
 import pandas as pd
 
-
+# TODO select benign, malignant, 5classes or nevus, melanoma outputs
 class MelData:
     def __init__(self, file: str, frac: float = 1., img_folder: str = None, batch: int = None, classes=5):
         assert classes in (2, 5)
@@ -33,9 +36,14 @@ class MelData:
         train_data = pd.concat(train_data).sample(frac=1., random_state=1312)
         val_data = pd.concat(val_data).sample(frac=1., random_state=1312)
         if self.classes == 2:
-            MAPPER["class"] = {0: 0, 1: 0, 2: 1, 3: 1, 4: 0}
+            MAPPER["class"] = BEN_MAL_MAPPER["class"]
             train_data.replace(to_replace=MAPPER, inplace=True)
             val_data.replace(to_replace=MAPPER, inplace=True)
+        if self.classes == 3:
+            MAPPER["class"] = NEV_MEL_OTHER_MAPPER["class"]
+            train_data.replace(to_replace=MAPPER, inplace=True)
+            val_data.replace(to_replace=MAPPER, inplace=True)
+
         return dict(train_data), dict(val_data)
 
     def ohe_map(self, features):
@@ -54,9 +62,16 @@ class MelData:
         return features, labels
 
     @staticmethod
-    def imread(features, labels):
+    def data_augm(filename):
+        filename = cv2.imread(filename.numpy().decode('ascii'))
+        augms = Augmentations()
+        filename = augms(input_image=filename)
+        return filename
+
+    def imread(self, features, labels):
         """Read image from (features, labels) dicts and return"""
-        features["image"] = tf.image.decode_image(tf.io.read_file(features["image"]), channels=3)
+        features["image"] = tf.py_function(self.data_augm, [features["image"]], tf.dtypes.uint8)
+        # features["image"] = tf.image.decode_image(tf.io.read_file(features["image"]), channels=3)
         return features, labels
 
     def data_info(self):

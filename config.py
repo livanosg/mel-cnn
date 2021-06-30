@@ -10,6 +10,9 @@ MAPPER = {"image_type": {"clinic": 0, "derm": 1},
                                   "upper_extremity": 3, "lower_extremity": 4,
                                   "palms/soles": 5, "oral/genital": 6},
           "class": {"NV": 0, "NNV": 1, "MEL": 2, "NMC": 3, "SUS": 4}}
+
+BEN_MAL_MAPPER = {"class": {0: 0, 1: 0, 2: 1, 3: 1, 4: 0}}  # Group 0: NV, NNV, SUS | 1: MEL, NMC
+NEV_MEL_OTHER_MAPPER = {"class": {0: 0, 1: 2, 2: 1, 3: 2, 4: 2}}  # Group 0: NV, | 1: MEL | 2: NNV, SUS, NMC
 IMAGE_FOLDER = "proc_{}_{}"
 
 
