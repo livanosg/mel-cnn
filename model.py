@@ -57,3 +57,4 @@ def model_fn(model, input_shape, dropout_rate, alpha, classes):
     common_layers = keras.layers.BatchNormalization()(common_layers)
     output_layer = keras.layers.Dense(classes, activation='softmax', kernel_initializer=init, name='class')(common_layers)
     return keras.Model([image_input, image_type_input, sex_input, anatom_site_input, age_input], [output_layer])
+
