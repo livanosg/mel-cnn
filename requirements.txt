@@ -4,3 +4,5 @@ numpy==1.19.5
 pandas==1.2.4
 tensorboard-plugin-profile==2.4.0
 tensorflow==2.4.1
+opencv-python~=4.5.2.54
+tensorboard~=2.4.1

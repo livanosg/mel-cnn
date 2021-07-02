@@ -9,7 +9,7 @@ import pandas as pd
 # TODO select benign, malignant, 5classes or nevus, melanoma outputs
 class MelData:
     def __init__(self, file: str, frac: float = 1., img_folder: str = None, batch: int = None, classes=5):
-        assert classes in (2, 5)
+        assert classes in (2, 3, 5)
         self.batch = batch
         self.frac = frac
         self.classes = classes
@@ -68,9 +68,15 @@ class MelData:
         filename = augms(input_image=filename)
         return filename
 
-    def imread(self, features, labels):
+    def train_imread(self, features, labels):
         """Read image from (features, labels) dicts and return"""
         features["image"] = tf.py_function(self.data_augm, [features["image"]], tf.dtypes.uint8)
+        # features["image"] = tf.image.decode_image(tf.io.read_file(features["image"]), channels=3)
+        return features, labels
+
+    def val_imread(self, features, labels):
+        """Read image from (features, labels) dicts and return"""
+        features["image"] = tf.py_function(cv2.imread, [features["image"].numpy().decode('ascii')], tf.dtypes.uint8)
         # features["image"] = tf.image.decode_image(tf.io.read_file(features["image"]), channels=3)
         return features, labels
 
@@ -86,7 +92,11 @@ class MelData:
         else:
             raise ValueError(f"{mode} is not a valid mode.")
         dataset = tf.data.Dataset.from_tensor_slices(dataset)
-        dataset = dataset.map(self.imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        if mode == "train":
+            dataset = dataset.map(self.train_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        if mode == "val":
+            dataset = dataset.map(self.val_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+
         dataset = dataset.batch(self.batch)
         options = tf.data.Options()
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
@@ -101,7 +111,7 @@ class MelData:
 
 
 if __name__ == '__main__':
-    img_fldr = directories(run_num=0, img_size=224, colour="rgb")["image_folder"]
+    img_fldr = directories(trial_id=1, run_num=0, img_size=224, colour="rgb")["image_folder"]
     a = MelData("all_data_init.csv", frac=0.1, img_folder=img_fldr, batch=1, classes=2)
     b = a.get_dataset(mode="train", repeat=1)
     print(a.get_class_weights())
