@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-def weighted_categorical_crossentropy(weights):
+def weighted_categorical_crossentropy(reg_loss, weights):
     """
     A weighted version of keras.objectives.categorical_crossentropy
 
@@ -24,6 +24,6 @@ def weighted_categorical_crossentropy(weights):
         # calc
         w_loss = y_true * tf.math.log(y_pred) * weights
         w_loss = -tf.reduce_sum(w_loss, -1)
-        return w_loss
+        return w_loss + reg_loss
 
     return loss

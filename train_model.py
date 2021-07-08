@@ -46,7 +46,7 @@ def training(args, hparams, dir_dict):
         custom_model = model_fn(model=hparams[hp_key["model"]], input_shape=(hparams[hp_key["img_size"]], hparams[hp_key["img_size"]], 3),
                                 dropout_rate=hparams[hp_key["dropout"]], alpha=hparams[hp_key["relu_grad"]], classes=args["classes"])
         custom_model.compile(optimizer=optimizer[hparams[hp_key["optimizer"]]](learning_rate=lr),
-                             loss=weighted_categorical_crossentropy(weights=datasets.get_class_weights()),
+                             loss=weighted_categorical_crossentropy(reg_loss=custom_model.losses, weights=datasets.get_class_weights()),
                              metrics=metrics(args["classes"]))
     # ---------------------------------------------------- Config ---------------------------------------------------- #
     callbacks = [ModelCheckpoint(filepath=save_path, save_best_only=True),
