@@ -21,11 +21,16 @@ def training(args, hparams, dir_dict):
         strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver)
     else:
         strategy = tf.distribute.MirroredStrategy()
+
+    if args["mode"] is "5cls":
+        classes = 5
+    else:
+        classes = 2
     # --------------------------------------------------- Dataset ---------------------------------------------------- #
     hp_key = {key.name: key for key in hparams.keys()}
     global_batch = hparams[hp_key["batch_size"]] * strategy.num_replicas_in_sync
-    datasets = MelData(file="all_data_init.csv", frac=args["dataset_frac"],
-                       batch=global_batch, img_folder=dir_dict["image_folder"], classes=args["classes"])
+    datasets = MelData(file="all_data.csv", trial=dir_dict["trial"], frac=args["dataset_frac"],
+                       batch=global_batch, img_folder=dir_dict["image_folder"], mode=args["mode"])
     data_info = datasets.data_info()
     with open(dir_dict["trial_config"], 'a') as f:
         print(f"Epochs: {args['epochs']}\n"
@@ -44,15 +49,15 @@ def training(args, hparams, dir_dict):
                  "adamax": tf.keras.optimizers.Adamax, "nadam": tf.keras.optimizers.Nadam}
     with strategy.scope():
         custom_model = model_fn(model=hparams[hp_key["model"]], input_shape=(hparams[hp_key["img_size"]], hparams[hp_key["img_size"]], 3),
-                                dropout_rate=hparams[hp_key["dropout"]], alpha=hparams[hp_key["relu_grad"]], classes=args["classes"])
+                                dropout_rate=hparams[hp_key["dropout"]], alpha=hparams[hp_key["relu_grad"]], classes=classes)
         custom_model.compile(optimizer=optimizer[hparams[hp_key["optimizer"]]](learning_rate=lr),
-                             loss=weighted_categorical_crossentropy(reg_loss=custom_model.losses, weights=datasets.get_class_weights()),
-                             metrics=metrics(args["classes"]))
+                             loss=weighted_categorical_crossentropy(weights=datasets.get_class_weights()),
+                             metrics=metrics(classes))
     # ---------------------------------------------------- Config ---------------------------------------------------- #
     callbacks = [ModelCheckpoint(filepath=save_path, save_best_only=True),
-                 EnrTensorboard(data=datasets.get_dataset('val', 1), classes=args["classes"], log_dir=dir_dict["logs"], update_freq='epoch', profile_batch=0),
+                 EnrTensorboard(data=datasets.get_dataset('val', 1), classes=classes, log_dir=dir_dict["logs"], update_freq='epoch', profile_batch=0, mode=args["mode"]),
                  KerasCallback(writer=dir_dict["logs"], hparams=hparams, trial_id=os.path.basename(dir_dict["trial"])),
-                 CyclicLR(base_lr=lr, max_lr=lr * 5, step_size=steps_per_epoch * 8, mode='exp_range', gamma=0.999),
+                 # CyclicLR(base_lr=lr, max_lr=lr * 5, step_size=steps_per_epoch * 8, mode='exp_range', gamma=0.999),
                  EarlyStopping(verbose=1, patience=args["early_stop"]),
                  tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=dir_dict["backup"])]
     # ------------------------------------------------- Train model -------------------------------------------------- #

@@ -17,7 +17,7 @@ def parse_module():
     parser.add_argument("--epochs", "-e", required=True, type=int, help="Select epochs.")
     parser.add_argument("--early-stop", "-es", required=True, type=int, help="Select early stop epochs.")
     parser.add_argument("--nodes", "-nod", required=True, type=str, choices=["multi", "one"], help="Select training nodes mode.")
-    parser.add_argument("--classes", "-cls", required=True, type=int, choices=[2,3, 5], help="Select classes.")
+    parser.add_argument("--mode", "-mod", required=True, type=str, choices=["5cls", "ben_mal", "nev_mel"], help="Select mode.")
     parser.add_argument("--verbose", "-v", action="count", default=0, help="Set verbosity.")
     return parser
 

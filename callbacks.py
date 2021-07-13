@@ -7,13 +7,12 @@ from tensorflow.python.keras.callbacks import Callback, TensorBoard
 import matplotlib
 from matplotlib import pyplot as plt
 
-from config import MAPPER
-
 
 class EnrTensorboard(TensorBoard):
-    def __init__(self, data, classes, **kwargs):
+    def __init__(self, data, mode, classes, **kwargs):
         super().__init__(**kwargs)
         self.eval_data = data
+        self.mode = mode
         self.classes = classes
         matplotlib.use('cairo')
 
@@ -76,12 +75,12 @@ class EnrTensorboard(TensorBoard):
         labels = np.concatenate(labels)
         # Calculate the confusion matrix
         cm = np.asarray(tf.math.confusion_matrix(labels=labels, predictions=results, num_classes=self.classes))
-        if self.classes == 2:
+        if self.mode == "ben_mal":
             class_names = ["benign", "malignant"]
-        elif self.classes == 3:
-            class_names = ["NV", "MEL", "other"]
+        elif self.mode == "nev_mel":
+            class_names = ["Nevus", "Melanoma"]
         else:
-            class_names = MAPPER["class"].keys()
+            class_names = ["nevus", "melanoma", "non-nevus benign", "non-melanocytic carc", "Suspicious benign"]
         figure = self.plot_confusion_matrix(cm, class_names=class_names)
         cm_image = self.plot_to_image(figure)
         with super()._val_writer.as_default():

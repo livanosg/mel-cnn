@@ -1,9 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras import applications
-import tensorflow_addons as tfa
 from tensorflow import keras
 from tensorflow import dtypes
-from config import MAPPER
 from tensorflow.keras import regularizers
 
 
@@ -35,10 +33,10 @@ def model_fn(model, input_shape, dropout_rate, alpha, classes):
     custom_fc_layers = keras.layers.Dropout(rate=dropout_rate)(custom_fc_layers)
 
     # -----------------------------================ Values part =================--------------------------------- #
-    image_type_input = keras.Input(shape=(len(MAPPER["image_type"]),), name='image_type', dtype=dtypes.float32)
-    sex_input = keras.Input(shape=(len(MAPPER["sex"]),), name='sex', dtype=dtypes.float32)
-    anatom_site_input = keras.Input(shape=(len(MAPPER["anatom_site_general"]),), name='anatom_site_general', dtype=dtypes.float32)
-    age_input = keras.Input(shape=(len(MAPPER["age_approx"]),), name='age_approx', dtype=dtypes.float32)
+    image_type_input = keras.Input(shape=(2,), name='image_type', dtype=dtypes.float32)
+    sex_input = keras.Input(shape=(2,), name='sex', dtype=dtypes.float32)
+    anatom_site_input = keras.Input(shape=(6,), name='anatom_site_general', dtype=dtypes.float32)
+    age_input = keras.Input(shape=(10,), name='age_approx', dtype=dtypes.float32)
     concat_inputs = keras.layers.Concatenate()([image_type_input, sex_input, anatom_site_input, age_input])
     concat_inputs = keras.layers.Dropout(rate=dropout_rate)(concat_inputs)
     custom_fc2_layers = keras.layers.Dense(256, activation=keras.layers.LeakyReLU(alpha=alpha), kernel_initializer=init, kernel_regularizer=regularizers.l2(0.0001))(concat_inputs)
