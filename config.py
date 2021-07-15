@@ -24,20 +24,21 @@ MAPPER = {"image_type": {"clinic": 0, "derm": 1},
                         'melanosis': 2, 'miscellaneous': 2, 'vascular lesion': 2, 'seborrheic keratosis': 2, 'DF': 2,
                         'PYO': 2, 'SK': 2, 'VASC': 2, 'BKL': 2, 'dermatofibroma': 2, 'lentigo': 2,
                         'basal cell carcinoma': 3, 'BCC': 3, 'IEC': 3, 'SCC': 3,
-                        'Atypical Nevus': 4, 'ANV': 4, 'AK': 4
+                        'Atypical Nevus': 4, 'ANV': 4, 'AK': 4,
+                        "unknown": 5
                         }
           }
 
-BEN_MAL_MAPPER = {"class": {0: 0, 2: 0, 1: 1, 3: 1, 4: 2}}  # Group 0: NV, NNV | 1: MEL, NMC | 2: SUS
-NEV_MEL_OTHER_MAPPER = {"class": {0: 0, 1: 1, 2: 2, 3: 2, 4: 2}}  # Group 0: NV, | 1: MEL | 2: NNV, NMC, SUS
+BEN_MAL_MAPPER = {"class": {0: 0, 2: 0, 5: 0, 1: 1, 3: 1, 4: 2}}  # Group 0: NV, NNV, unknown | 1: MEL, NMC | 2: SUS
+NEV_MEL_OTHER_MAPPER = {"class": {0: 0, 1: 1, 2: 2, 3: 2, 4: 2, 5: 2}}  # Group 0: NV, | 1: MEL | 2: NNV, NMC, SUS, unknown
 IMAGE_FOLDER = "proc_{}_{}"
 
 
-def directories(trial_id, run_num, img_size, colour):
+def directories(trial_id, mode, run_num, img_size, colour):
     dir_dict = {"main": os.path.dirname(os.path.abspath(__file__))}
     trial = f"{trial_id}-run-{str(run_num).zfill(4)}"
-    dir_dict["logs"] = os.path.join(dir_dict["main"], "logs", trial)
-    dir_dict["trial"] = os.path.join(dir_dict["main"], "trials", trial)
+    dir_dict["logs"] = os.path.join(dir_dict["main"], "logs", f"{trial}_{mode}")
+    dir_dict["trial"] = os.path.join(dir_dict["main"], "trials", f"{trial}_{mode}")
     try:
         dir_dict["logs"] = f"{os.environ['SLURMD_NODENAME']}-" + dir_dict["logs"]
         dir_dict["trial"] = f"{os.environ['SLURMD_NODENAME']}-" + dir_dict["trial"]

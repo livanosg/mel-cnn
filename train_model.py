@@ -6,7 +6,7 @@ from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorboard.plugins.hparams.api import KerasCallback
 from dataset import MelData
 from model import model_fn
-from losses import weighted_categorical_crossentropy
+from losses import weighted_categorical_crossentropy, custom_loss
 from metrics import metrics
 from callbacks import EnrTensorboard, CyclicLR
 
@@ -51,7 +51,7 @@ def training(args, hparams, dir_dict):
         custom_model = model_fn(model=hparams[hp_key["model"]], input_shape=(hparams[hp_key["img_size"]], hparams[hp_key["img_size"]], 3),
                                 dropout_rate=hparams[hp_key["dropout"]], alpha=hparams[hp_key["relu_grad"]], classes=classes)
         custom_model.compile(optimizer=optimizer[hparams[hp_key["optimizer"]]](learning_rate=lr),
-                             loss=weighted_categorical_crossentropy(weights=datasets.get_class_weights()),
+                             loss=custom_loss(weights=datasets.get_class_weights()),
                              metrics=metrics(classes))
     # ---------------------------------------------------- Config ---------------------------------------------------- #
     callbacks = [ModelCheckpoint(filepath=save_path, save_best_only=True),

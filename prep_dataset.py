@@ -1,7 +1,7 @@
 import multiprocessing as mp
 import math
 import os
-import cv2
+import cv2.cv2 as cv2
 import pandas as pd
 
 from config import IMAGE_FOLDER
@@ -48,6 +48,4 @@ def check_create_dataset(img_size, colour, dir_dict, force=False):
 
 
 if __name__ == '__main__':
-    check_create_dataset(img_size=224, colour="grey")
-    check_create_dataset(img_size=500, colour="grey")
     exit()

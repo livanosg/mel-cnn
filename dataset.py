@@ -5,10 +5,10 @@ import tensorflow as tf
 import numpy as np
 import pandas as pd
 
-
-# todo fix drop UNK from 5class, nev_mel and merge it to ben_mal
+# todo pick up + ? dataset for test
 class MelData:
-    def __init__(self, file: str, trial: str, frac: float = 1., img_folder: str = None, batch: int = None, mode="5cls",):
+    def __init__(self, file: str, trial: str, frac: float = 1., img_folder: str = None, batch: int = None,
+                 mode="5cls", ):
         assert mode in ("5cls", "ben_mal", "nev_mel")
         self.random_state = 1315
         self.mode = mode
@@ -24,7 +24,7 @@ class MelData:
         self.features["image"] = "data/" + self.features["dataset_id"] + "/data/" + self.features["image"]
         self.features.drop("dataset_id", axis=1, inplace=True)
         self.features["age_approx"] = self.features["age_approx"] - (
-                    self.features["age_approx"] % 10)  # group at decades
+                self.features["age_approx"] % 10)  # group at decades
         self.features.replace(to_replace=MAPPER, inplace=True)
         self.features.rename(columns={"diagnosis": "class"}, inplace=True)
         self.features["image"] = img_folder + "/" + self.features["image"]
@@ -38,23 +38,25 @@ class MelData:
          frac: fraction of initial data to be used.
          Outputs: a pair of (train data, validation data) dicts."""
         train_data = []
-        test_val_data = []
         val_data = []
         test_data = []
         if self.mode == "ben_mal":
             MAPPER["class"] = BEN_MAL_MAPPER["class"]
         elif self.mode == "nev_mel":
             MAPPER["class"] = NEV_MEL_OTHER_MAPPER["class"]
-        if self.mode in ["ben_mal", "nev_mel"]:
+        if self.mode in ["ben_mal", "nev_mel"]:  # drop Suspicious_benign from ben_mal and nev_mel
             self.features.replace(to_replace=MAPPER, inplace=True)
             self.features = self.features[self.features["class"] != 2]
+        if self.mode in ["5cls", "nev_mel"]:  # drop unknown_benign from 5cls and nev_mel
+            self.features = self.features[self.features["class"] != 5]
 
         for _class in range(self.classes):
-            class_data = self.features[self.features.loc[:, "class"] == _class]
+            class_data = self.features[self.features.loc[:, "class"] == _class]  # fraction per class
             train_data_class_frac = class_data.sample(frac=0.7, random_state=self.random_state)  # 70% for training
-            test_val_data_class_frac = class_data[~class_data.index.isin(train_data_class_frac.index)]  #
-            val_data_frac = test_val_data_class_frac.sample(frac=0.5, random_state=self.random_state)
-            test_data_frac = test_val_data_class_frac[~test_val_data_class_frac.index.isin(val_data_frac.index)]
+            test_val_data_class_frac = class_data[~class_data.index.isin(train_data_class_frac.index)]
+            val_data_frac = test_val_data_class_frac.sample(frac=0.5, random_state=self.random_state)  # 15% validation
+            test_data_frac = test_val_data_class_frac[
+                ~test_val_data_class_frac.index.isin(val_data_frac.index)]  # 15% test
             train_data.append(train_data_class_frac.sample(frac=frac, random_state=self.random_state))
             val_data.append(val_data_frac.sample(frac=frac, random_state=self.random_state))
             test_data.append(test_data_frac.sample(frac=frac, random_state=self.random_state))
@@ -65,9 +67,12 @@ class MelData:
         return dict(train_data), dict(val_data)
 
     def ohe_map(self, features):
-        """ Turn features to one-hot encoded vectors. Also return a pair of (features, labels) dicts.
+        """ Turn features to one-hot encoded vectors.
         Inputs:
-        features: dictionary of features int encoded."""
+            features: dictionary of features int encoded.
+        Outputs:
+            (features, labels) dicts.
+        """
 
         for key in features.keys():
             if key == "class":
@@ -97,9 +102,11 @@ class MelData:
         # features["image"] = tf.image.decode_image(tf.io.read_file(features["image"]), channels=3)
         return features, labels
 
-    def val_imread(self, features, labels):
+    @staticmethod
+    def val_imread(features, labels):
         """Read image from (features, labels) dicts and return"""
-        features["image"] = tf.py_function(cv2.imread, [features["image"]], tf.dtypes.uint8)
+        features["image"] = tf.py_function(lambda x: cv2.imread(x.numpy().decode('ascii')), [features["image"]],
+                                           tf.dtypes.uint8)
         # features["image"] = tf.image.decode_image(tf.io.read_file(features["image"]), channels=3)
         return features, labels
 
@@ -118,7 +125,7 @@ class MelData:
         if mode == "train":
             dataset = dataset.map(self.train_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         if mode == "val":
-            dataset = dataset.map(self.train_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+            dataset = dataset.map(self.val_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
         dataset = dataset.batch(self.batch)
         options = tf.data.Options()
