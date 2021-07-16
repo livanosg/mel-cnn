@@ -5,12 +5,13 @@ import tensorflow as tf
 import numpy as np
 import pandas as pd
 
+
 # todo pick up + ? dataset for test
 class MelData:
     def __init__(self, file: str, trial: str, frac: float = 1., img_folder: str = None, batch: int = None,
                  mode="5cls", ):
         assert mode in ("5cls", "ben_mal", "nev_mel")
-        self.random_state = 1315
+        self.random_state = 1312
         self.mode = mode
         self.trial = trial
         self.batch = batch
@@ -30,7 +31,7 @@ class MelData:
         self.features["image"] = img_folder + "/" + self.features["image"]
         values = self.features["image_type"].value_counts()
         self.weight_by_type = np.sum(values) / np.asarray(values)
-        self.train_data, self.val_data = map(self.ohe_map, self.split_data(frac=self.frac))
+        self.train_data, self.val_data, self.test_data = map(self.ohe_map, self.split_data(frac=self.frac))
 
     def split_data(self, frac):
         """Split data to train and val with a train_frac ratio. Also returns a fraction of initial dataset.
@@ -63,8 +64,7 @@ class MelData:
         train_data = pd.concat(train_data).sample(frac=1., random_state=self.random_state)
         val_data = pd.concat(val_data).sample(frac=1., random_state=self.random_state)
         test_data = pd.concat(test_data).sample(frac=1., random_state=self.random_state)
-        test_data.to_csv(f"{self.trial}/test_data.csv", index=False)
-        return dict(train_data), dict(val_data)
+        return dict(train_data), dict(val_data), dict(test_data)
 
     def ohe_map(self, features):
         """ Turn features to one-hot encoded vectors.
@@ -112,19 +112,22 @@ class MelData:
 
     def data_info(self):
         return {"train_len": len(self.train_data[1]["class"]),
-                "val_len": len(self.val_data[1]["class"])}
+                "val_len": len(self.val_data[1]["class"]),
+                "test_len": len(self.test_data[1]["class"])}
 
-    def get_dataset(self, mode=None, repeat=None):
+    def get_dataset(self, mode=None, repeat=1):
         if mode == "train":
             dataset = self.train_data
         elif mode == "val":
             dataset = self.val_data
+        elif mode == "test":
+            dataset = self.test_data
         else:
             raise ValueError(f"{mode} is not a valid mode.")
         dataset = tf.data.Dataset.from_tensor_slices(dataset)
         if mode == "train":
             dataset = dataset.map(self.train_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        if mode == "val":
+        if mode in ["val", "test"]:
             dataset = dataset.map(self.val_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
         dataset = dataset.batch(self.batch)
@@ -141,7 +144,7 @@ class MelData:
 
 
 if __name__ == '__main__':
-    img_fldr = directories(trial_id=1, run_num=0, img_size=224, colour="rgb")["image_folder"]
+    img_fldr = directories(trial_id=1, mode="nev_mel", run_num=0, img_size=224, colour="rgb")["image_folder"]
     a = MelData("all_data.csv", frac=0.1, img_folder=img_fldr, batch=1, mode="nev_mel", trial="test/")
     b = a.get_dataset(mode="train", repeat=1)
     print(a.get_class_weights())

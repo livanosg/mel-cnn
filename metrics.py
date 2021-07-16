@@ -1,12 +1,20 @@
-import tensorflow as tf
+import tensorflow.keras.backend as K
 import tensorflow_addons as tfa
 
 
 def metrics(classes):
     # macro: unweighted mean for each class
     f1_macro = tfa.metrics.F1Score(num_classes=classes, average='macro', name='f1_macro')
-    auc = tf.keras.metrics.AUC()
-    precision = tf.keras.metrics.Precision(name='precision')
-    recall = tf.keras.metrics.Recall(name='recall')
-    cat_accuracy = tf.keras.metrics.CategoricalAccuracy()
-    return [f1_macro, auc, precision, recall, cat_accuracy]
+    return [f1_macro]
+
+
+def sensitivity(y_true, y_pred):
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+    return true_positives / (possible_positives + K.epsilon())
+
+
+def specificity(y_true, y_pred):
+    true_negatives = K.sum(K.round(K.clip((1-y_true) * (1-y_pred), 0, 1)))
+    possible_negatives = K.sum(K.round(K.clip(1-y_true, 0, 1)))
+    return true_negatives / (possible_negatives + K.epsilon())

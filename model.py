@@ -8,7 +8,7 @@ from tensorflow.keras import regularizers
 def model_fn(model, input_shape, dropout_rate, alpha, classes):
     init = tf.keras.initializers.GlorotNormal()
     activ = keras.layers.LeakyReLU(alpha=alpha)
-    rglzr = regularizers.l1_l2(l1=0., l2=0.001)
+    rglzr = regularizers.l1_l2(l1=0., l2=0.0001)
 
     models = {'xept': (applications.xception.Xception, applications.xception.preprocess_input),
               'incept': (applications.inception_v3.InceptionV3, applications.inception_v3.preprocess_input),
