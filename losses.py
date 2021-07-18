@@ -30,32 +30,35 @@ def weighted_categorical_crossentropy(weights):
 
 
 def custom_loss(weights):
-    weights = tf.keras.backend.variable(weights)
+    with tf.name_scope('Weights'):
+        weights = tf.keras.backend.variable(weights)
+    with tf.name_scope('epsilon'):
+        e = tf.keras.backend.epsilon()
 
     def total_loss(y_true, y_pred):
-
         def log_dice_loss(dice_y_true, dice_y_pred):
             """both tensors are [b, h, w, classes] and y_pred is in probs form"""
             with tf.name_scope('Weighted_Generalized_Dice_Log_Loss'):
-                reduce_axis = list(range(len(dice_y_pred.shape)-1))
-                numerator = tf.reduce_sum(dice_y_true * dice_y_pred, axis=reduce_axis)
-                denominator = tf.reduce_sum(dice_y_true + dice_y_pred, axis=reduce_axis)
-                dice = tf.multiply(x=weights,  # Weights
-                                   y=tf.divide(x=tf.multiply(x=2., y=tf.add(x=numerator, y=1.)),  # Dice Score per class
-                                               y=tf.add(x=denominator, y=1.)))
-                dice = tf.math.reduce_mean(- tf.math.log(dice))
+                with tf.name_scope('Axis_to_reduce'):
+                    reduce_axis = list(range(len(dice_y_pred.shape)-1))
+                with tf.name_scope('Numerator'):
+                    numerator = tf.multiply(x=weights, y=tf.reduce_sum(dice_y_true * dice_y_pred, axis=reduce_axis))
+                with tf.name_scope('Denominator'):
+                    denominator = tf.multiply(x=weights, y=tf.reduce_sum(dice_y_true + dice_y_pred, axis=reduce_axis))
+                # Dice Score per class
+                with tf.name_scope('Dice_Division'):
+                    dice = tf.divide(x=tf.multiply(x=2., y=tf.add(x=numerator, y=e)),
+                                     y=tf.add(denominator, y=e))
+                with tf.name_scope('Batch_loss'):
+                    dice = tf.math.reduce_mean(- tf.math.log(dice))
                 return dice
 
         def weighted_crossentropy(wce_y_true, wce_y_pred):
             """ y_true: One-hot label
                 y_pred: Softmax output."""
-            # clip to prevent NaN's and Inf's
-            with tf.name_scope('Weighted_GCrossentropy_Loss'):
-                wce_y_pred = tf.clip_by_value(wce_y_pred, tf.keras.backend.epsilon(), 1 - tf.keras.backend.epsilon())
-                # calc
-                w_loss = wce_y_true * tf.math.log(wce_y_pred) * weights
-                w_loss = -tf.reduce_sum(w_loss, -1)
-                return w_loss
+            with tf.name_scope('Weighted_Crossentropy_Loss'):
+                w_loss = tf.keras.backend.categorical_crossentropy(tf.multiply(x=weights, y=wce_y_true), wce_y_pred)  # Loss per sample
+                return tf.reduce_mean(w_loss)  # Batch loss
 
-        return tf.math.multiply(.3, log_dice_loss(y_true, y_pred)) + tf.math.multiply(0.7, weighted_crossentropy(y_true, y_pred))
+        return tf.math.multiply(.6, log_dice_loss(y_true, y_pred)) + tf.math.multiply(0.4, weighted_crossentropy(y_true, y_pred))
     return total_loss

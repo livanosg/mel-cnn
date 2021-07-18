@@ -1,4 +1,4 @@
-dataset_id,diagnosis,anatom_site_general,sex,image,age_approx,image_type
+dataset_id,class,anatom_site_general,sex,image,age_approx,image_type
 7pt,basal cell carcinoma,torso,f,NEL/NEL025.JPG,,clinic
 7pt,basal cell carcinoma,torso,f,NEL/Nel026.jpg,,derm
 7pt,basal cell carcinoma,head/neck,f,NEL/NEL027.JPG,,clinic
