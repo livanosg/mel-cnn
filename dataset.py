@@ -1,4 +1,4 @@
-import cv2.cv2 as cv2
+import cv2
 from augmentations import Augmentations
 from config import MAPPER, directories, BEN_MAL_MAPPER, NEV_MEL_OTHER_MAPPER, CLASS_NAMES
 import tensorflow as tf

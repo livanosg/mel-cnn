@@ -1,5 +1,5 @@
 import numpy as np
-from cv2.cv2 import GaussianBlur, filter2D, warpAffine, getRotationMatrix2D, flip
+from cv2 import GaussianBlur, filter2D, warpAffine, getRotationMatrix2D, flip
 
 
 class Augmentations:

@@ -63,7 +63,7 @@ def training(args, hparams, dir_dict):
                  EnrTensorboard(data=datasets.get_dataset(mode='val'), class_names=CLASSES, log_dir=dir_dict["logs"],
                                 update_freq='epoch', profile_batch=0, mode=args["mode"]),
                  KerasCallback(writer=dir_dict["logs"], hparams=hparams, trial_id=os.path.basename(dir_dict["trial"])),
-                 TestCallback(test_data=datasets.get_dataset(mode="test"), mode=args["mode"],
+                 TestCallback(test_data=datasets.get_dataset(mode="test"), val_data=datasets.get_dataset(mode='val'), mode=args["mode"],
                               trial_path=dir_dict["trial"], class_names=CLASSES, classes=NUM_CLASSES, weights=weights),
                  CyclicLR(base_lr=lr, max_lr=lr * 5, step_size=steps_per_epoch * 8, mode='exp_range', gamma=0.999),
                  EarlyStopping(verbose=verbose, patience=args["early_stop"]),
