@@ -51,8 +51,8 @@ def directories(trial_id, mode, run_num, img_size, colour):
     dir_dict["logs"] = os.path.join(dir_dict["main"], "logs", f"{trial}_{mode}")
     dir_dict["trial"] = os.path.join(dir_dict["main"], "trials", f"{trial}_{mode}")
     try:
-        dir_dict["logs"] = f"{os.environ['SLURMD_NODENAME']}-" + dir_dict["logs"]
-        dir_dict["trial"] = f"{os.environ['SLURMD_NODENAME']}-" + dir_dict["trial"]
+        dir_dict["logs"] = dir_dict["logs"] + f"-{os.environ['SLURMD_NODENAME']}"
+        dir_dict["trial"] = dir_dict["trial"] + f"-{os.environ['SLURMD_NODENAME']}"
     except KeyError:
         pass
     os.makedirs(dir_dict["logs"], exist_ok=True)
