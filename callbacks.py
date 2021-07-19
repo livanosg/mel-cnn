@@ -6,14 +6,14 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.python.keras.callbacks import Callback, TensorBoard
-# import matplotlib
+import matplotlib
 from matplotlib import pyplot as plt
 from sklearn.metrics import roc_curve, precision_recall_curve, auc, det_curve, classification_report, confusion_matrix
 
 from losses import custom_loss
 from metrics import metrics
 
-# matplotlib.use('cairo')
+matplotlib.use('cairo')
 
 
 def plot_confusion_matrix(cm, class_names):
