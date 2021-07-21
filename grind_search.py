@@ -25,9 +25,10 @@ def grind(args):
                                                hp["lr"]: lr,
                                                hp["dropout"]: dropout,
                                                hp["relu_grad"]: relu_grad}
-                                    dir_dict = directories(trial_id=trial_id, mode=args["mode"], run_num=run_num, img_size=img_size, colour=colour)
+                                    dir_dict = directories(trial_id=trial_id, run_num=run_num, img_size=img_size, colour=colour, args=args)
                                     check_create_dataset(img_size=img_size, colour=colour, dir_dict=dir_dict)
-                                    with open(dir_dict["trial_config"], "a") as f:
-                                        [print(f"{key.name}: {hparams[key]}", file=f) for key in hparams.keys()]
+                                    with open(dir_dict["hparams_logs"], "a") as f:
+                                        [print(f"{key}: {args[key]}", file=f) for key in args.keys()]
+                                        # [print(f"{key.name}: {hparams[key]}", file=f) for key in hparams.keys()]
                                     training(args=args, hparams=hparams, dir_dict=dir_dict)
                                     run_num += 1

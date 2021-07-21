@@ -6,11 +6,12 @@ class Augmentations:
     def __call__(self, input_image):
         self.input_image = input_image
         # Random choice of augmentation method
-        all_processes = [self.rotate, self.flips, self.random_translation, self.s_n_p, self.sharp, self.gaussian_blur,
-                         self.contrast]
+        all_processes = [self.rotate, self.flips, self.random_translation, self.sharp, self.contrast]
         augm = np.random.choice(all_processes)
         self.input_image = augm()
-        if np.random.random() < 0.5:  # 2nd Data augmentation:
+        if np.random.random() < 0.5:  # Gaussian blurring
+            self.input_image = self.gaussian_blur()
+        if np.random.random() < 0.5:  # 2nd augmentation:
             all_processes.pop(all_processes.index(augm))
             augm = np.random.choice(all_processes)
             self.input_image = augm()
@@ -25,17 +26,6 @@ class Augmentations:
     def flips(self, ):
         flip_flag = np.random.randint(-1, 2)
         return flip(self.input_image, flip_flag)
-
-    def s_n_p(self):
-        p, b = 0.5, 0.0005
-        max_val = np.max(self.input_image)
-        num_salt = np.ceil(b * self.input_image.size * p)
-        coords = tuple([np.random.randint(0, dim - 1, int(num_salt)) for dim in self.input_image.shape])
-        self.input_image[coords] = max_val
-        num_pepper = np.ceil(b * self.input_image.size * (1. - p))
-        coords = tuple([np.random.randint(0, dim - 1, int(num_pepper)) for dim in self.input_image.shape])
-        self.input_image[coords] = 0
-        return self.input_image
 
     def sharp(self):
         kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])

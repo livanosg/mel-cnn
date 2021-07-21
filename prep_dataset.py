@@ -4,25 +4,23 @@ import os
 import cv2
 import pandas as pd
 
-from config import IMAGE_FOLDER
 
-
-def resize_conv_colour(image, img_size=224, colour="grey"):
+def resize_cvt_color(image_path, new_folder, img_size=224, colour="grey"):
     assert colour in ("grey", "rgb")
-    src = cv2.imread(image)
+    image = cv2.imread(image_path)
     if colour == "grey":
-        src = cv2.cvtColor(cv2.cvtColor(src, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2RGB)
-    dx = src.shape[0] - src.shape[1]
-    if dx < 0:
+        image = cv2.cvtColor(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2RGB)
+    dx = image.shape[0] - image.shape[1]  # Compare height-width
+    if dx < 0:  # If width > height
         top, bot = math.ceil(-dx / 2), math.floor(-dx / 2)
-        src = cv2.copyMakeBorder(src, top, bot, 0, 0, borderType=cv2.BORDER_CONSTANT)
-    else:
+        image = cv2.copyMakeBorder(image, top, bot, 0, 0, borderType=cv2.BORDER_CONSTANT)
+    else:  # If width < height
         left, right = math.ceil(dx / 2), math.floor(dx / 2)
-        src = cv2.copyMakeBorder(src, 0, 0, left, right, borderType=cv2.BORDER_CONSTANT)
-    src = cv2.resize(src=src, dsize=(img_size, img_size), interpolation=cv2.INTER_NEAREST_EXACT)
-    path = os.path.join(IMAGE_FOLDER.format(str(img_size), colour), image)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    cv2.imwrite(path, src)
+        image = cv2.copyMakeBorder(image, 0, 0, left, right, borderType=cv2.BORDER_CONSTANT)
+    image = cv2.resize(src=image, dsize=(img_size, img_size), interpolation=cv2.INTER_NEAREST_EXACT)
+    new_path = os.path.join(new_folder, image_path)
+    os.makedirs(os.path.dirname(new_path), exist_ok=True)
+    cv2.imwrite(new_path, image)
 
 
 def check_create_dataset(img_size, colour, dir_dict, force=False):
@@ -33,13 +31,15 @@ def check_create_dataset(img_size, colour, dir_dict, force=False):
         else:
             log_info = "Overwriting dataset in {}\nDataset Specs: img_size: {}, colour: {}"
         print(log_info.format(dir_dict['image_folder'], img_size, colour))
-        all_data = pd.read_csv('all_data_init.csv')
+        features = pd.read_csv('all_data.csv')
+        features["image"] = "data/" + features["dataset_id"] + "/data/" + features["image"]
+
         if mp.cpu_count() > 32:
             threads = 32
         else:
             threads = mp.cpu_count()
         pool = mp.Pool(threads)
-        pool.starmap(resize_conv_colour, [(image, int(img_size), colour) for image in all_data["image"]])
+        pool.starmap(resize_cvt_color, [(image_path, dir_dict['image_folder'], int(img_size), colour) for image_path in features["image"]])
         pool.close()
         print("Done!")
     else:

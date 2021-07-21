@@ -47,8 +47,9 @@ def custom_loss(weights):
                     denominator = tf.multiply(x=weights, y=tf.reduce_sum(dice_y_true + dice_y_pred, axis=reduce_axis))
                 # Dice Score per class
                 with tf.name_scope('Dice_Division'):
-                    dice = tf.divide(x=tf.multiply(x=2., y=tf.add(x=numerator, y=e)),
-                                     y=tf.add(denominator, y=e))
+                    division = tf.divide(x=tf.add(x=numerator, y=e),
+                                         y=tf.add(denominator, y=e))
+                    dice = tf.multiply(x=2., y=division)
                 with tf.name_scope('Batch_loss'):
                     dice = tf.math.reduce_mean(- tf.math.log(dice))
                 return dice

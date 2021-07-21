@@ -23,7 +23,7 @@ MAPPER = {"image_type": {"clinic": 0,
                'reed or spitz nevus': 0,
                'MEL': 1, 'melanoma': 1, 'Melanoma': 1, 'melanoma (in situ)': 1, 'melanoma (less than 0.76 mm)': 1,
                'melanoma (0.76 to 1.5 mm)': 1, 'melanoma (more than 1.5 mm)': 1, 'melanoma metastasis': 1,
-               'melanosis': 2, 'miscellaneous': 2, 'vascular lesion': 2, 'seborrheic keratosis': 2, 'DF': 2,
+               'NNV': 2, 'melanosis': 2, 'miscellaneous': 2, 'vascular lesion': 2, 'seborrheic keratosis': 2, 'DF': 2,
                'PYO': 2, 'SK': 2, 'VASC': 2, 'BKL': 2, 'dermatofibroma': 2, 'lentigo': 2,
                'basal cell carcinoma': 3, 'BCC': 3, 'IEC': 3, 'SCC': 3,
                'Atypical Nevus': 4, 'ANV': 4, 'AK': 4,
@@ -41,15 +41,14 @@ NEV_MEL_OTHER_MAPPER = {"class": {0: 0,  # Group 0: NV, | 1: MEL | 2: NNV, NMC, 
 IMAGE_FOLDER = "proc_{}_{}"
 CLASS_NAMES = {"ben_mal": ["Benign", "Malignant"],
                "nev_mel": ["Nevus", "Melanoma"],
-               "5cls": ["Nevus", "Melanoma", "Non-Nevus benign", "Non-Melanocytic Carcinoma", "Suspicious benign"]
-               }
+               "5cls": ["Nevus", "Melanoma", "Non-Nevus benign", "Non-Melanocytic Carcinoma", "Suspicious benign"]}
 
 
-def directories(trial_id, mode, run_num, img_size, colour):
-    dir_dict = {"main": os.path.dirname(os.path.abspath(__file__))}
+def directories(trial_id, run_num, img_size, colour, args):
     trial = f"{trial_id}-run-{str(run_num).zfill(4)}"
-    dir_dict["logs"] = os.path.join(dir_dict["main"], "logs", f"{trial}_{mode}")
-    dir_dict["trial"] = os.path.join(dir_dict["main"], "trials", f"{trial}_{mode}")
+    dir_dict = {"main": os.path.dirname(os.path.abspath(__file__))}
+    dir_dict["logs"] = os.path.join(dir_dict["main"], "logs", args['mode'], args['image_type'], trial)
+    dir_dict["trial"] = os.path.join(dir_dict["main"], "trials", args['mode'], args['image_type'], trial)
     try:
         dir_dict["logs"] = dir_dict["logs"] + f"-{os.environ['SLURMD_NODENAME']}"
         dir_dict["trial"] = dir_dict["trial"] + f"-{os.environ['SLURMD_NODENAME']}"
@@ -57,8 +56,8 @@ def directories(trial_id, mode, run_num, img_size, colour):
         pass
     os.makedirs(dir_dict["logs"], exist_ok=True)
     os.makedirs(dir_dict["trial"], exist_ok=True)
-    dir_dict["trial_config"] = os.path.join(dir_dict["trial"], "log_conf.txt")
+    dir_dict["hparams_logs"] = os.path.join(dir_dict["trial"], "hparams_log.txt")
     dir_dict["save_path"] = os.path.join(dir_dict["trial"], "models", "best-model")  # + "{epoch:03d}"
     dir_dict["backup"] = os.path.join(dir_dict["trial"], "backup")
-    dir_dict["image_folder"] = os.path.join(dir_dict["main"], IMAGE_FOLDER.format(str(img_size), colour))
+    dir_dict["image_folder"] = os.path.join(dir_dict["main"], f"proc_{img_size}_{colour}")
     return dir_dict
