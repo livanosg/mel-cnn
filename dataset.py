@@ -12,7 +12,6 @@ class MelData:
         self.random_state = 1312
         self.mode = args["mode"]
         self.frac = args["dataset_frac"]
-        print(self.frac)
         self.batch = batch
         self.image_folder = dir_dict["image_folder"]
         self.image_type = args["image_type"]
@@ -29,7 +28,6 @@ class MelData:
         else:
             # ------------------------============== Calculate Sample weights ===============------------------------- #
             value_counts = self.features["image_type"].value_counts(sort=False, ascending=True)
-            print(value_counts["clinic"])
             self.weight_by_type = np.sum(value_counts) / np.asarray([value_counts["clinic"], value_counts["derm"]])
             self.features["sample_weights"] = np.where(self.features["image_type"] == "clinic", self.weight_by_type[0], self.weight_by_type[1])
             # ------------------------=======================================================------------------------- #
@@ -160,12 +158,12 @@ class MelData:
         """Class-Balanced Loss Based on Effective Number of Samples
         https://openaccess.thecvf.com/content_CVPR_2019/papers/Cui_Class-Balanced_Loss_Based_on_Effective_Number_of_Samples_CVPR_2019_paper.pdf
         """
-        beta = 0.9999
         attr = self.dataset_attributes()
-        effective_num = 1.0 - np.power(beta, attr["train_class_samples"])
-        weights_for_samples = (1.0 - beta) / np.array(effective_num)
-        weights_for_samples = weights_for_samples / np.sum(weights_for_samples) * len(attr["classes"])
-        return weights_for_samples
+        # beta = 0.9999
+        # effective_num = 1.0 - np.power(beta, attr["train_class_samples"])
+        # weights_for_samples = (1.0 - beta) / np.array(effective_num)
+        # weights_for_samples = weights_for_samples / np.sum(weights_for_samples) * len(attr["classes"])
+        return np.divide(attr["train_len"], np.multiply(np.sum(self.train_data[1]["class"], axis=0), self.num_classes))
 
     def get_dataset(self, mode=None, repeat=1):
         if mode == "train":
