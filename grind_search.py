@@ -1,7 +1,7 @@
 from datetime import datetime
 from config import directories
-from hyperparameters import hp_dict
 from prep_dataset import check_create_dataset
+from hyperparameters import hp_dict
 from train_model import training
 
 

@@ -1,6 +1,6 @@
+import os
 import multiprocessing as mp
 import math
-import os
 import cv2
 import pandas as pd
 
