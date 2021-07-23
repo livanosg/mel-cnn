@@ -13,14 +13,21 @@ class MelData:
         self.frac = args["dataset_frac"]
         self.input_shape = input_shape
         self.batch = batch
-        self.image_folder = dir_dict["image_folder"]
+        self.dir_dict = dir_dict
+        self.image_folder = self.dir_dict["image_folder"]
         self.image_type = args["image_type"]
         self.class_names = CLASS_NAMES[self.mode]
         self.num_classes = len(self.class_names)
-        self.features = pd.read_csv(dir_dict["data"])
+        self.features = pd.read_csv(self.dir_dict["data"])
         self.features.fillna(-10, inplace=True)
         self.features["age_approx"] -= (self.features["age_approx"] % 10)  # group at decades
-        self.features.replace(to_replace=MAPPER, inplace=True)
+        self.features = self.features.replace(to_replace=MAPPER)
+        if self.mode == "ben_mal":
+            self.features = self.features.replace(to_replace=BEN_MAL_MAPPER)
+        elif self.mode == "nev_mel":
+            self.features = self.features.replace(to_replace=NEV_MEL_OTHER_MAPPER)
+        else:
+            pass
         # --------------------------========== Remove duplicates from ISIC 2020 ===========--------------------------- #
         self.duplicates = pd.read_csv("ISIC_2020_Training_Duplicates.csv")
         self.duplicates["image_name_2"] = self.duplicates["image_name_2"] + ".jpg"
@@ -46,35 +53,25 @@ class MelData:
          Outputs: a pair of (train data, validation data) dicts."""
         train_data = []
         val_data = []
-        # Keep "up" for testing
-        test_data = [self.features[self.features["dataset_id"] == "up"]]
-        self.features = self.features[~self.features.index.isin(self.features[self.features["dataset_id"] == "up"].index)]
-        if self.mode == "ben_mal":
-            MODE_MAPPER = BEN_MAL_MAPPER["class"]
-        elif self.mode == "nev_mel":
-            MODE_MAPPER = NEV_MEL_OTHER_MAPPER["class"]
-        else:
-            MODE_MAPPER = None
+        # Keep "up" + "7pt" for testing
         if self.mode in ["ben_mal", "nev_mel"]:  # drop Suspicious_benign from ben_mal and nev_mel
-            self.features = self.features.replace(to_replace=MODE_MAPPER)
             self.features = self.features[self.features["class"] != 2]
         if self.mode in ["5cls", "nev_mel"]:  # drop unknown_benign from 5cls and nev_mel
             self.features = self.features[self.features["class"] != 5]
+        test_data = self.features[self.features["dataset_id"].isin(["up", "7pt"])]
+        rest_data = self.features[~self.features.index.isin(test_data.index)]
 
-        for _image_type in self.features["image_type"].unique():
-            image_type_data = self.features[self.features.loc[:, "image_type"] == _image_type]
+        for _image_type in rest_data["image_type"].unique():
+            image_type_data = rest_data[rest_data.loc[:, "image_type"] == _image_type]
             for _class in range(self.num_classes):
                 class_data = image_type_data[image_type_data.loc[:, "class"] == _class]  # fraction per class
                 train_data_class_frac = class_data.sample(frac=0.8, random_state=self.random_state)  # 80% for training
                 rest_data_class_frac = class_data[~class_data.index.isin(train_data_class_frac.index)]
-                val_data_class_frac = rest_data_class_frac.sample(frac=0.5, random_state=self.random_state)
-                test_data_class_frac = rest_data_class_frac[~rest_data_class_frac.index.isin(val_data_class_frac.index)]
                 train_data.append(train_data_class_frac)
-                val_data.append(val_data_class_frac)
-                test_data.append(test_data_class_frac)
-        train_data = pd.concat(train_data).sample(frac=self.frac, random_state=self.random_state).drop("dataset_id", axis=1)
-        val_data = pd.concat(val_data).sample(frac=self.frac, random_state=self.random_state).drop("dataset_id", axis=1)
-        test_data = pd.concat(test_data).drop("dataset_id", axis=1)
+                val_data.append(rest_data_class_frac)
+        train_data = pd.concat(train_data, axis=0).sample(frac=self.frac, random_state=self.random_state)
+        val_data = pd.concat(val_data, axis=0).sample(frac=self.frac, random_state=self.random_state)
+        # test_data = pd.concat(test_data)
         return dict(train_data), dict(val_data), dict(test_data)
 
     def ohe_map(self, features):
@@ -82,22 +79,48 @@ class MelData:
         Inputs:
             features: dictionary of features int encoded.
         Outputs:
-            (features, labels) dicts.
+            features: dict, labels: dict
+            or
+            features: dict, labels: dict, sample_weights
         """
-
         features["image_type"] = tf.keras.backend.one_hot(indices=np.asarray(features["image_type"]), num_classes=2)
         features["sex"] = tf.keras.backend.one_hot(indices=np.asarray(features["sex"]), num_classes=2)
         features["age_approx"] = tf.keras.backend.one_hot(indices=np.asarray(features["age_approx"]), num_classes=10)
-        features["anatom_site_general"] = tf.keras.backend.one_hot(indices=np.asarray(features["anatom_site_general"]),
-                                                                   num_classes=6)
-        features["class"] = tf.keras.backend.one_hot(indices=np.asarray(features["class"]),
-                                                     num_classes=self.num_classes)
+        features["anatom_site_general"] = tf.keras.backend.one_hot(indices=np.asarray(features["anatom_site_general"]), num_classes=6)
+        features["class"] = tf.keras.backend.one_hot(indices=np.asarray(features["class"]), num_classes=self.num_classes)
         labels = {"class": features.pop("class")}
+        features.pop("dataset_id")
         if self.image_type == "both":
             sample_weights = features.pop("sample_weights")
             return features, labels, sample_weights
         else:
             return features, labels
+
+    def per_dataset_info(self):
+        dataset_info_dict = {}
+        image_type_inv = {}
+        for (key, value) in MAPPER["image_type"].items():
+            image_type_inv[value] = key
+        for dataset_id in self.features["dataset_id"].unique():
+            dataset_part = self.features[self.features.loc[:, "dataset_id"] == dataset_id]  # fraction per class
+            print(f"{dataset_id}: {len(dataset_part)}")
+            dataset_img_type_dict = {}
+            _image_type = dataset_part["image_type"].unique()
+            for i in _image_type:
+                dataset_image_part = dataset_part[dataset_part.loc[:, "image_type"] == i]
+                class_counts = dataset_image_part["class"].value_counts()
+                print(class_counts)
+                dataset_class_dict = {}
+                for j in class_counts.keys():
+                    dataset_class_dict[CLASS_NAMES[self.mode][j]] = class_counts[j]
+                dataset_img_type_dict[image_type_inv[i]] = dataset_class_dict
+            dataset_info_dict[dataset_id] = dataset_img_type_dict
+        info = pd.DataFrame(dataset_info_dict).stack().apply(pd.Series)
+        info.sort_index(axis=0, level=0, inplace=True)
+        info.fillna(0, inplace=True)
+        info.to_html(os.path.join(self.dir_dict["main"], f"{self.mode}-data_info.html"))
+        info.to_csv(os.path.join(self.dir_dict["main"], f"{self.mode}-data_info.csv"))
+        return dataset_info_dict
 
     def info(self):
         attr = self.dataset_attributes()
@@ -124,13 +147,6 @@ class MelData:
                 }
 
     def get_class_weights(self):
-        """Class-Balanced Loss Based on Effective Number of Samples
-        https://openaccess.thecvf.com/content_CVPR_2019/papers/Cui_Class-Balanced_Loss_Based_on_Effective_Number_of_Samples_CVPR_2019_paper.pdf
-        """
-        # beta = 0.9999
-        # effective_num = 1.0 - np.power(beta, attr["train_class_samples"])
-        # weights_for_samples = (1.0 - beta) / np.array(effective_num)
-        # weights_for_samples = weights_for_samples / np.sum(weights_for_samples) * len(attr["classes"])
         return np.divide(self.attr["train_len"],
                          np.multiply(np.sum(self.train_data[1]["class"], axis=0), self.attr["num_classes"]))
 
@@ -165,7 +181,6 @@ class MelData:
 
 
 if __name__ == '__main__':
-    import cv2
     test_args = {"mode": "5cls",
                  "dataset_frac": 1,
                  "image_type": "both",
@@ -173,20 +188,3 @@ if __name__ == '__main__':
     inpt_shape = (test_args["image_size"], test_args["image_size"], 3)
     test_dir_dict = directories(trial_id=1, run_num=0, img_size=100, colour="rgb", args=test_args)
     a = MelData(batch=1, dir_dict=test_dir_dict, args=test_args, input_shape=inpt_shape)
-    b = a.get_dataset(mode="val", repeat=1)
-    cv2.namedWindow("sample", cv2.WINDOW_FREERATIO)
-    cv2.namedWindow("sample_norm", cv2.WINDOW_FREERATIO)
-    cv2.namedWindow("path_data", cv2.WINDOW_FREERATIO)
-
-    def yield_data():
-        df = pd.DataFrame.from_dict(a.val_data[0])
-        for i in df.iterrows():
-            yield i
-
-    for data, paths in zip(b.as_numpy_iterator(), yield_data()):
-        img = (data[0]["image"][0, ...] - np.min(data[0]["image"][0, ...])) / (np.max(data[0]["image"][0, ...]) - np.min(data[0]["image"][0, ...]))
-        img = cv2.cvtColor(np.array(img * 255, dtype=np.uint8), cv2.COLOR_BGR2RGB)
-        cv2.imshow("sample_norm", img)
-        cv2.imshow("sample", np.array(data[0]["image"][0, ...]).astype(np.uint8))
-        cv2.imshow("path_data", cv2.imread(paths[1]["image"]))
-        cv2.waitKey()
