@@ -8,7 +8,7 @@ from dataset import MelData
 from model import model_fn
 from losses import custom_loss
 from metrics import metrics
-from callbacks import EnrTensorboard, TestCallback, CyclicLR  # , CyclicLR
+from callbacks import EnrTensorboard, TestCallback, CyclicLR
 
 
 def training(args, hparams, dir_dict):
@@ -26,7 +26,8 @@ def training(args, hparams, dir_dict):
     # --------------------------------------------------- Dataset ---------------------------------------------------- #
     hp_key = {key.name: key for key in hparams.keys()}
     global_batch = hparams[hp_key["batch_size"]] * strategy.num_replicas_in_sync
-    datasets = MelData(file="all_data.csv", dir_dict=dir_dict, args=args, batch=global_batch)
+    input_shape = (hparams[hp_key["image_size"]], hparams[hp_key["image_size"]], 3)
+    datasets = MelData(dir_dict=dir_dict, args=args, input_shape=input_shape,  batch=global_batch)
     weights = datasets.get_class_weights()
     with open(dir_dict["hparams_logs"], 'a') as f:
         f.write(datasets.info() + f"Epochs: {args['epochs']}\n"
@@ -41,7 +42,7 @@ def training(args, hparams, dir_dict):
                  "adamax": tf.keras.optimizers.Adamax, "nadam": tf.keras.optimizers.Nadam}
     with strategy.scope():
         custom_model = model_fn(model=hparams[hp_key["model"]],
-                                input_shape=(hparams[hp_key["img_size"]], hparams[hp_key["img_size"]], 3),
+                                input_shape=(hparams[hp_key["image_size"]], hparams[hp_key["image_size"]], 3),
                                 dropout_rate=hparams[hp_key["dropout"]], alpha=hparams[hp_key["relu_grad"]], classes=NUM_CLASSES)
         custom_model.compile(optimizer=optimizer[hparams[hp_key["optimizer"]]](learning_rate=lr),
                              loss=custom_loss(weights=weights),
@@ -53,12 +54,13 @@ def training(args, hparams, dir_dict):
                                 update_freq='epoch', profile_batch=0, mode=args["mode"]),
                  KerasCallback(writer=dir_dict["logs"], hparams=hparams, trial_id=os.path.basename(dir_dict["trial"])),
                  TestCallback(test_data=datasets.get_dataset(mode="test"), val_data=datasets.get_dataset(mode='val'), mode=args["mode"],
-                              trial_path=dir_dict["trial"], class_names=CLASSES, classes=NUM_CLASSES, weights=weights),
+                              class_names=CLASSES, num_classes=NUM_CLASSES, weights=weights, dir_dict=dir_dict),
                  CyclicLR(base_lr=lr, max_lr=lr * 2, step_size=steps_per_epoch * 8, mode='exp_range', gamma=0.99),
                  EarlyStopping(verbose=args["verbose"], patience=args["early_stop"]),
                  tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=dir_dict["backup"])]
     # ------------------------------------------------- Train model -------------------------------------------------- #
-    custom_model.fit(x=datasets.get_dataset(mode="train"), epochs=args["epochs"], shuffle=False,
+    custom_model.fit(x=datasets.get_dataset(mode="train"), epochs=args["epochs"],
                      validation_data=datasets.get_dataset(mode="val"),
                      callbacks=callbacks, verbose=args["verbose"])
     tf.keras.backend.clear_session()
+    del datasets

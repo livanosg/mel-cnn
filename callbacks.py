@@ -211,14 +211,14 @@ class CyclicLR(Callback):
 
 
 class TestCallback(Callback):
-    def __init__(self, test_data, val_data, weights, classes, class_names, mode, trial_path):
+    def __init__(self, test_data, val_data, weights, num_classes, class_names, mode, dir_dict):
         super().__init__()
         self.test_data = test_data
         self.validation_data = val_data
         self.mode = mode
-        self.trial_path = trial_path
-        self.best_model = os.path.join(self.trial_path, "models/best-model")
-        self.classes = classes
+        self.trial_path = dir_dict["trial"]
+        self.best_model = dir_dict["save_path"]
+        self.num_classes = num_classes
         self.class_names = class_names
         self.weights = weights
 
@@ -226,8 +226,8 @@ class TestCallback(Callback):
         model = tf.keras.models.load_model(self.best_model, custom_objects={"total_loss": custom_loss(weights=self.weights),
                                                                             "metrics": metrics})
         for idx, dataset in enumerate([self.test_data, self.validation_data]):
-            y_prob = np.empty(shape=(1, self.classes))
-            one_hot_labels = np.empty(shape=(1, self.classes))
+            y_prob = np.empty(shape=(1, self.num_classes))
+            one_hot_labels = np.empty(shape=(1, self.num_classes))
             if idx == 0:
                 dataset_type = "test"
             else:
@@ -236,8 +236,8 @@ class TestCallback(Callback):
             os.makedirs(save_dir)
             for data in dataset.as_numpy_iterator():
                 output = model.predict(data[0])
-                y_prob = np.concatenate([y_prob, np.squeeze(np.vsplit(output, output.shape[0]))], axis=0)
-                one_hot_labels = np.concatenate([one_hot_labels, np.squeeze(np.vsplit(data[1]["class"], data[1]["class"].shape[0]))], axis=0)
+                y_prob = np.concatenate([y_prob, np.asarray(output)], axis=0)
+                one_hot_labels = np.concatenate([one_hot_labels, data[1]["class"]], axis=0)
 
             one_hot_labels = one_hot_labels[1:, ...]
             y_prob = y_prob[1:, ...]
@@ -256,7 +256,7 @@ class TestCallback(Callback):
                 # with a subset of classes, because it corresponds to accuracy
                 # otherwise and would be the same for all metrics.
 
-            for _class in range(self.classes):
+            for _class in range(self.num_classes):
                 fpr_roc, tpr_roc, thresholds_roc = roc_curve(one_hot_labels[..., _class], y_prob[..., _class])
                 precision, recall, thresholds = precision_recall_curve(one_hot_labels[..., _class], y_prob[..., _class])
                 det_fpr, det_fnr, det_thresholds = det_curve(y_true=one_hot_labels[..., _class], y_score=y_prob[..., _class])

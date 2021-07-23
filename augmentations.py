@@ -1,48 +1,26 @@
 import numpy as np
-from cv2 import GaussianBlur, filter2D, warpAffine, getRotationMatrix2D, flip
+import tensorflow as tf
+import tensorflow_addons as tfa
 
 
-class Augmentations:
-    def __call__(self, input_image):
-        self.input_image = input_image
-        # Random choice of augmentation method
-        all_processes = [self.rotate, self.flips, self.random_translation, self.sharp, self.contrast]
-        augm = np.random.choice(all_processes)
-        self.input_image = augm()
-        if np.random.random() < 0.5:  # Gaussian blurring
-            self.input_image = self.gaussian_blur()
-        if np.random.random() < 0.5:  # 2nd augmentation:
-            all_processes.pop(all_processes.index(augm))
-            augm = np.random.choice(all_processes)
-            self.input_image = augm()
-        return self.input_image
+class TFAugmentations:
+    def __init__(self, seed):
+        self.seed = seed
+        np.random.seed(seed)
 
-    def rotate(self):
-        angle = np.random.randint(-25, 25)
-        rows, cols, channels = self.input_image.shape
-        m = getRotationMatrix2D(center=(cols / 2, rows / 2), angle=angle, scale=1)
-        return warpAffine(self.input_image, m, (cols, rows))
+    def augm(self, input_image):
+        translation = tf.random.uniform(shape=[2], seed=self.seed, minval=-10, maxval=10, dtype=tf.float32)
+        random_degrees = tf.random.uniform(shape=[1], minval=0, seed=self.seed, maxval=360, dtype=tf.float32)
+        rand = tf.random.uniform(shape=[1], minval=0, seed=self.seed, maxval=1., dtype=tf.float32)
+        sharp = tf.random.uniform(shape=[1], minval=0, seed=self.seed, maxval=.1, dtype=tf.float32)
 
-    def flips(self, ):
-        flip_flag = np.random.randint(-1, 2)
-        return flip(self.input_image, flip_flag)
-
-    def sharp(self):
-        kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
-        return filter2D(self.input_image, -1, kernel)
-
-    def gaussian_blur(self):
-        return GaussianBlur(self.input_image, (3, 3), sigmaX=1.5, sigmaY=1.5)
-
-    def contrast(self):
-        contrast_factor = np.random.rand() * 2.
-        image_mean = np.mean(self.input_image)
-        image_contr = (self.input_image - image_mean) * contrast_factor + image_mean
-        return image_contr
-
-    def random_translation(self):
-        x = np.random.random_integers(-80, 80)
-        y = np.random.random_integers(-80, 80)
-        m = np.float32([[1, 0, x], [0, 1, y]])
-        rows, cols, channels = self.input_image.shape
-        return warpAffine(self.input_image, m, (cols, rows))
+        input_image = tf.image.random_flip_left_right(image=input_image, seed=self.seed)
+        input_image = tf.image.random_flip_up_down(image=input_image, seed=self.seed)
+        input_image = tf.image.random_brightness(image=input_image, max_delta=0.3, seed=self.seed)
+        input_image = tf.image.random_contrast(image=input_image, lower=0.5, upper=1.5, seed=self.seed)
+        input_image = tf.image.random_saturation(image=input_image, lower=0.5, upper=1.5, seed=self.seed)
+        input_image = tfa.image.translate(input_image, translations=translation, name="Translation")
+        input_image = tfa.image.rotate(images=input_image, angles=random_degrees, name="Rotation")
+        input_image = tfa.image.sharpness(image=tf.cast(input_image, dtype=tf.float32), factor=sharp, name="Sharpness")
+        input_image = tf.cond(tf.math.greater(0.5, rand), lambda: tfa.image.gaussian_filter2d(image=input_image, sigma=2., name="Gaussian_filter"), lambda: input_image)
+        return input_image

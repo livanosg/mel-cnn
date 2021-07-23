@@ -9,6 +9,7 @@ def parse_module():
     parser.add_argument("--dataset-frac", "-frac", required=True, type=float, help="Dataset fraction.")
     parser.add_argument("--dropout-rate", "-dor", nargs="+", required=True, type=float, help="Select dropout rate.")
     parser.add_argument("--learning-rate", "-lr", nargs="+", required=True, type=float, help="Select learning rate.")
+    parser.add_argument("--image_type", "-it", required=True, type=str, choices=["derm", "clinic", "both"], help="Select image type to use during training.")
     parser.add_argument("--image_size", "-is", nargs="+", required=True, type=int, help="Select image size.")
     parser.add_argument("--colour", "-clr", nargs="+", required=True, type=str, help="Select image size.")
     parser.add_argument("--relu-grad", "-rg", nargs="+", required=True, type=float, help="Select leaky relu gradient.")
@@ -18,7 +19,6 @@ def parse_module():
     parser.add_argument("--early-stop", "-es", required=True, type=int, help="Select early stop epochs.")
     parser.add_argument("--nodes", "-nod", required=True, type=str, choices=["multi", "one"], help="Select training nodes.")
     parser.add_argument("--mode", "-mod", required=True, type=str, choices=["5cls", "ben_mal", "nev_mel"], help="Select the type of outputs.")
-    parser.add_argument("--image_type", "-it", required=True, type=str, choices=["derm", "clinic", "both"], help="Select image type to use during training.")
     parser.add_argument("--verbose", "-v", action="count", default=0, help="Set verbosity.")
     return parser
 

@@ -11,7 +11,7 @@ def grind(args):
     trial_id = datetime.now().strftime('%d%m%y%H%M%S')
     for model in hp["model"].domain.values:
         for optimizer in hp["optimizer"].domain.values:
-            for img_size in hp["img_size"].domain.values:
+            for image_size in hp["image_size"].domain.values:
                 for colour in hp["colour"].domain.values:
                     for batch_size in hp["batch_size"].domain.values:
                         for lr in hp["lr"].domain.values:
@@ -19,16 +19,17 @@ def grind(args):
                                 for relu_grad in hp["relu_grad"].domain.values:
                                     hparams = {hp["model"]: model,
                                                hp["optimizer"]: optimizer,
-                                               hp["img_size"]: img_size,
+                                               hp["image_size"]: image_size,
                                                hp["colour"]: colour,
                                                hp["batch_size"]: batch_size,
                                                hp["lr"]: lr,
                                                hp["dropout"]: dropout,
                                                hp["relu_grad"]: relu_grad}
-                                    dir_dict = directories(trial_id=trial_id, run_num=run_num, img_size=img_size, colour=colour, args=args)
-                                    check_create_dataset(img_size=img_size, colour=colour, dir_dict=dir_dict)
+                                    dir_dict = directories(trial_id=trial_id, run_num=run_num, img_size=image_size, colour=colour, args=args)
+                                    check_create_dataset(img_size=image_size, colour=colour, dir_dict=dir_dict)
+                                    trial_args = dict((key.name, hparams[key]) for key in hparams.keys())
+                                    print(trial_args)
                                     with open(dir_dict["hparams_logs"], "a") as f:
-                                        [print(f"{key}: {args[key]}", file=f) for key in args.keys()]
-                                        # [print(f"{key.name}: {hparams[key]}", file=f) for key in hparams.keys()]
+                                        [print(f"{key.name}: {hparams[key]}", file=f) for key in hparams.keys()]
                                     training(args=args, hparams=hparams, dir_dict=dir_dict)
                                     run_num += 1

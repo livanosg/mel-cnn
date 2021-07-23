@@ -2,7 +2,8 @@ import os
 
 COLUMNS = ["dataset_id", "image", "image_type", "sex", "age_approx", "anatom_site_general", "class"]
 MAPPER = {"image_type": {"clinic": 0,
-                         "derm": 1},
+                         "derm": 1,
+                         },
           "sex": {"m": 0, "male": 0,
                   "f": 1, "female": 1,
                   -10: -1},
@@ -38,15 +39,17 @@ BEN_MAL_MAPPER = {"class": {0: 0, 2: 0, 5: 0,  # Group 0: NV, NNV, unknown | 1: 
 NEV_MEL_OTHER_MAPPER = {"class": {0: 0,  # Group 0: NV, | 1: MEL | 2: NNV, NMC, SUS, unknown
                                   1: 1,
                                   2: 2, 3: 2, 4: 2, 5: 2}}
-IMAGE_FOLDER = "proc_{}_{}"
 CLASS_NAMES = {"ben_mal": ["Benign", "Malignant"],
                "nev_mel": ["Nevus", "Melanoma"],
                "5cls": ["Nevus", "Melanoma", "Non-Nevus benign", "Non-Melanocytic Carcinoma", "Suspicious benign"]}
+
+DATA_CSV = "all_data.csv"
 
 
 def directories(trial_id, run_num, img_size, colour, args):
     trial = f"{trial_id}-run-{str(run_num).zfill(4)}"
     dir_dict = {"main": os.path.dirname(os.path.abspath(__file__))}
+    dir_dict["data"] = os.path.join(dir_dict["main"], DATA_CSV)
     dir_dict["logs"] = os.path.join(dir_dict["main"], "logs", args['mode'], args['image_type'], trial)
     dir_dict["trial"] = os.path.join(dir_dict["main"], "trials", args['mode'], args['image_type'], trial)
     try:
