@@ -25,7 +25,7 @@ def parse_module():
 
 if __name__ == "__main__":
     args = parse_module().parse_args().__dict__
-    os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
     os.environ["TF_GPU_THREAD_MODE"] = "gpu_private"
     # Set verbose for TF CPP LOG
     # 0 = all logs, 1 = filter out INFO, 2 = 1 + WARNING, 3 = 2 + ERROR
