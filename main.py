@@ -14,7 +14,7 @@ def parse_module():
     parser.add_argument("--learning-rate", "-lr", nargs="+", required=True, type=float, help="Select learning rate.")
     parser.add_argument("--dropout-rate", "-dor", nargs="+", required=True, type=float, help="Select dropout rate.")
     parser.add_argument("--relu-grad", "-rg", nargs="+", required=True, type=float, help="Select leaky relu gradient.")
-    parser.add_argument("--dataset-frac", "-frac", required=True, type=float, help="Dataset fraction.")
+    parser.add_argument("--dataset-frac", "-frac", default=1., type=float, help="Dataset fraction.")
     parser.add_argument("--epochs", "-e", required=True, type=int, help="Select epochs.")
     parser.add_argument("--early-stop", "-es", required=True, type=int, help="Select early stop epochs.")
     parser.add_argument("--nodes", "-nod", required=True, type=str, choices=["multi", "one"], help="Select training nodes.")
