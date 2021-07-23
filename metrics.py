@@ -4,7 +4,7 @@ import tensorflow_addons as tfa
 
 def metrics(classes):
     # macro: unweighted mean for each class
-    f1_macro = tfa.metrics.F1Score(num_classes=classes, average='macro', name='f1_macro')
+    f1_macro = tfa.metrics.F1Score(num_classes=classes, average='weighted', name='f1_macro')
     return [f1_macro]
 
 
