@@ -28,6 +28,7 @@ def training(args):
     input_shape = (args["image_size"], args["image_size"], 3)
     datasets = MelData(dir_dict=args["dir_dict"], args=args, input_shape=input_shape,  batch=global_batch)
     weights = datasets.get_class_weights()
+    print(datasets.info())
     with open(args["dir_dict"]["hparams_logs"], 'a') as f:
         f.write(datasets.info() + f"Number of replicas in sync: {strategy.num_replicas_in_sync}\n")
     # ---------------------------------------------------- Model ----------------------------------------------------- #
