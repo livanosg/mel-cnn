@@ -12,7 +12,7 @@ def model_fn(model, input_shape, dropout_rate, alpha, classes):
     init = tf.keras.initializers.GlorotNormal()
     activ = swish# LeakyReLU(alpha=alpha)
     rglzr = None  # l1_l2(l1=0., l2=0.0001)
-    normalization = LayerNormalization
+    normalization = BatchNormalization
     models = {'xept': (xception.Xception, xception.preprocess_input),
               'incept': (inception_v3.InceptionV3, inception_v3.preprocess_input),
               'effnet0': (efficientnet.EfficientNetB0, efficientnet.preprocess_input),
@@ -27,14 +27,14 @@ def model_fn(model, input_shape, dropout_rate, alpha, classes):
     base_model = base_model(preprocessed_input, training=False)
     custom_conv_layers = Conv2D(256, activation=activ, kernel_size=3, padding='same', kernel_initializer=init, activity_regularizer=rglzr)(base_model)
     custom_conv_layers = normalization()(custom_conv_layers)
-    # custom_conv_layers = Dropout(rate=dropout_rate)(custom_conv_layers)
+    custom_conv_layers = Dropout(rate=dropout_rate)(custom_conv_layers)
     custom_conv_layers = Conv2D(256, activation=activ, kernel_size=3, padding='same', kernel_initializer=init, activity_regularizer=rglzr)(custom_conv_layers)
     custom_conv_layers = normalization()(custom_conv_layers)
-    # custom_conv_layers = Dropout(rate=dropout_rate)(custom_conv_layers)
+    custom_conv_layers = Dropout(rate=dropout_rate)(custom_conv_layers)
     custom_fc_layers = Flatten()(custom_conv_layers)
     custom_fc_layers = Dense(128, activation=activ, kernel_initializer=init, activity_regularizer=rglzr)(custom_fc_layers)
     custom_fc_layers = normalization()(custom_fc_layers)
-    # custom_fc_layers = Dropout(rate=dropout_rate)(custom_fc_layers)
+    custom_fc_layers = Dropout(rate=dropout_rate)(custom_fc_layers)
     custom_fc_layers = Dense(128, activation=activ, kernel_initializer=init, activity_regularizer=rglzr)(custom_fc_layers)
     custom_fc_layers = normalization()(custom_fc_layers)
     custom_fc_layers = Dropout(rate=dropout_rate)(custom_fc_layers)
@@ -48,10 +48,10 @@ def model_fn(model, input_shape, dropout_rate, alpha, classes):
     concat_inputs = Dropout(rate=dropout_rate)(concat_inputs)
     custom_fc2_layers = Dense(512, activation=activ, kernel_initializer=init, activity_regularizer=rglzr)(concat_inputs)
     custom_fc2_layers = normalization()(custom_fc2_layers)
-    # custom_fc2_layers = Dropout(rate=dropout_rate)(custom_fc2_layers)
+    custom_fc2_layers = Dropout(rate=dropout_rate)(custom_fc2_layers)
     custom_fc2_layers = Dense(256, activation=activ, kernel_initializer=init, activity_regularizer=rglzr)(custom_fc2_layers)
     custom_fc2_layers = normalization()(custom_fc2_layers)
-    # custom_fc2_layers = Dropout(rate=dropout_rate)(custom_fc2_layers)
+    custom_fc2_layers = Dropout(rate=dropout_rate)(custom_fc2_layers)
     custom_fc2_layers = Dense(128, activation=activ, kernel_initializer=init, activity_regularizer=rglzr)(custom_fc2_layers)
     custom_fc2_layers = normalization()(custom_fc2_layers)
     custom_fc2_layers = Dropout(rate=dropout_rate)(custom_fc2_layers)
