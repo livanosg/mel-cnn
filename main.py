@@ -1,6 +1,6 @@
 import os
 import argparse
-from grind_search import grind
+from grid_search import grind
 
 
 def parse_module():

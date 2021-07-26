@@ -188,3 +188,4 @@ if __name__ == '__main__':
     inpt_shape = (test_args["image_size"], test_args["image_size"], 3)
     test_dir_dict = directories(trial_id=1, run_num=0, img_size=100, colour="rgb", args=test_args)
     a = MelData(batch=1, dir_dict=test_dir_dict, args=test_args, input_shape=inpt_shape)
+    a.per_dataset_info()
