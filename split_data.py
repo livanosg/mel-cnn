@@ -8,7 +8,6 @@ isic20_duplicates["image_name_2"] = isic20_duplicates["image_name_2"] + ".jpg"
 isic20 = isic20[~isic20["image"].isin(isic20_duplicates["image_name_2"])]
 
 mednode = pd.read_csv("/home/livanosg/projects/mel-cnn/data/mednode.csv")
-
 spt = pd.read_csv("/home/livanosg/projects/mel-cnn/data/7pt.csv")
 spt_val_idx = pd.read_csv("/home/livanosg/projects/mel-cnn/data/7pt/meta/valid_indexes.csv")
 spt_test_idx = pd.read_csv("/home/livanosg/projects/mel-cnn/data/7pt/meta/test_indexes.csv")

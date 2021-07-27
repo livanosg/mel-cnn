@@ -1,7 +1,7 @@
 import os
-from augmentations import TFAugmentations
 from config import MAPPER, directories, BEN_MAL_MAPPER, NEV_MEL_OTHER_MAPPER, CLASS_NAMES
 import tensorflow as tf
+import tensorflow_addons as tfa
 import numpy as np
 import pandas as pd
 
@@ -21,6 +21,14 @@ class MelData:
         self.train_data_df = self.prep_data(self.dir_dict["data_csv"]["train"])
         self.val_data_df = self.prep_data(self.dir_dict["data_csv"]["val"])
         self.test_data_df = self.prep_data(self.dir_dict["data_csv"]["test"])
+        # ------------------------================ Calculate Sample weights =================------------------------- #
+        if self.image_type == "both":
+            value_counts = self.train_data_df["image_type"].value_counts(sort=False, ascending=True)
+            self.weight_by_type = np.sum(value_counts) / np.asarray([value_counts[0], value_counts[1]])
+            self.train_data_df["sample_weights"] = np.where(self.train_data_df["image_type"] == "clinic",
+                                                            self.weight_by_type[0],
+                                                            self.weight_by_type[1])
+        # ------------------------===========================================================------------------------- #
         self.train_data = self.ohe_map(dict(self.train_data_df))
         self.val_data = self.ohe_map(dict(self.val_data_df))
         self.test_data = self.ohe_map(dict(self.test_data_df))
@@ -31,6 +39,7 @@ class MelData:
         data = pd.read_csv(data)
         data.fillna(-10, inplace=True)
         data["age_approx"] -= (data["age_approx"] % 10)  # group at decades
+        data["image"] = f"{self.image_folder}{os.sep}data{os.sep}" + data["dataset_id"] + f"{os.sep}data{os.sep}" + data["image"]
         data.replace(to_replace=MAPPER, inplace=True)
         if self.mode == "ben_mal":
             data.replace(to_replace=BEN_MAL_MAPPER, inplace=True)
@@ -38,15 +47,8 @@ class MelData:
             data.replace(to_replace=NEV_MEL_OTHER_MAPPER, inplace=True)
         else:
             pass
-        if self.image_type != "both":
+        if self.image_type != "both":  # Keep derm or clinic, samples.
             data = data[data["image_type"] == MAPPER["image_type"][self.image_type]]
-        else:
-            # ------------------------============== Calculate Sample weights ===============------------------------- #
-            value_counts = data["image_type"].value_counts(sort=False, ascending=True)
-            self.weight_by_type = np.sum(value_counts) / np.asarray([value_counts[0], value_counts[1]])
-            data["sample_weights"] = np.where(data["image_type"] == "clinic", self.weight_by_type[0], self.weight_by_type[1])
-            # ------------------------=======================================================------------------------- #
-        data["image"] = f"{self.image_folder}{os.sep}data{os.sep}" + data["dataset_id"] + f"{os.sep}data{os.sep}" + data["image"]
         if self.mode in ["ben_mal", "nev_mel"]:  # drop Suspicious_benign from ben_mal and nev_mel
             data = data[data["class"] != 2]
         if self.mode in ["5cls", "nev_mel"]:  # drop unknown_benign from 5cls and nev_mel
@@ -136,6 +138,7 @@ class MelData:
                          np.multiply(np.sum(self.train_data[1]["class"], axis=0), self.attr["num_classes"]))
 
     def get_dataset(self, mode=None, repeat=1):
+        np.random.seed(self.random_state)
         random_state = self.random_state
         input_shape = self.input_shape
         if mode == "train":
@@ -150,8 +153,19 @@ class MelData:
         def tf_imread(*ds):
             ds[0]["image"] = tf.reshape(tensor=tf.image.decode_image(tf.io.read_file(ds[0]["image"]), channels=3), shape=input_shape)
             if mode == "train":
-                tf_augms = TFAugmentations(random_state)
-                ds[0]["image"] = tf_augms.augm(ds[0]["image"])
+                translation = tf.random.uniform(shape=[2], seed=random_state, minval=-10, maxval=10, dtype=tf.float32)
+                random_degrees = tf.random.uniform(shape=[1], minval=0, seed=random_state, maxval=360, dtype=tf.float32)
+                rand = tf.random.uniform(shape=[1], minval=0, seed=random_state, maxval=1., dtype=tf.float32)
+                sharp = tf.random.uniform(shape=[1], minval=0, seed=random_state, maxval=.1, dtype=tf.float32)
+                ds[0]["image"] = tf.image.random_flip_left_right(image=ds[0]["image"], seed=random_state)
+                ds[0]["image"] = tf.image.random_flip_up_down(image=ds[0]["image"], seed=random_state)
+                ds[0]["image"] = tf.image.random_brightness(image=ds[0]["image"], max_delta=0.3, seed=random_state)
+                ds[0]["image"] = tf.image.random_contrast(image=ds[0]["image"], lower=0.5, upper=1.5, seed=random_state)
+                ds[0]["image"] = tf.image.random_saturation(image=ds[0]["image"], lower=0.5, upper=1.5, seed=random_state)
+                ds[0]["image"] = tfa.image.translate(ds[0]["image"], translations=translation, name="Translation")
+                ds[0]["image"] = tfa.image.rotate(images=ds[0]["image"], angles=random_degrees, name="Rotation")
+                ds[0]["image"] = tfa.image.sharpness(image=tf.cast(ds[0]["image"], dtype=tf.float32), factor=sharp, name="Sharpness")
+                ds[0]["image"] = tf.cond(tf.math.greater(0.5, rand), lambda: tfa.image.gaussian_filter2d(image=ds[0]["image"], sigma=2., name="Gaussian_filter"), lambda: ds[0]["image"])
             return ds
 
         dataset = tf.data.Dataset.from_tensor_slices(dataset)
