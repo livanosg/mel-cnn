@@ -1,19 +1,24 @@
+import os
+
 import pandas as pd
 
-isic18 = pd.read_csv("/home/livanosg/projects/mel-cnn/data/isic18.csv")
-isic19 = pd.read_csv("/home/livanosg/projects/mel-cnn/data/isic19.csv")
-isic20 = pd.read_csv("/home/livanosg/projects/mel-cnn/data/isic20.csv")
-isic20_duplicates = pd.read_csv("ISIC_2020_Training_Duplicates.csv")
+main_dir = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.join(main_dir, "data")
+
+isic18 = pd.read_csv(os.path.join(data_dir, 'isic18.csv'))
+isic19 = pd.read_csv(os.path.join(data_dir, 'isic19.csv'))
+isic20 = pd.read_csv(os.path.join(data_dir,  'isic20.csv'))
+isic20_duplicates = pd.read_csv(os.path.join(data_dir, 'ISIC_2020_Training_Duplicates.csv'))
 isic20_duplicates["image_name_2"] = isic20_duplicates["image_name_2"] + ".jpg"
 isic20 = isic20[~isic20["image"].isin(isic20_duplicates["image_name_2"])]
 
-mednode = pd.read_csv("/home/livanosg/projects/mel-cnn/data/mednode.csv")
-spt = pd.read_csv("/home/livanosg/projects/mel-cnn/data/7pt.csv")
-spt_val_idx = pd.read_csv("/home/livanosg/projects/mel-cnn/data/7pt/meta/valid_indexes.csv")
-spt_test_idx = pd.read_csv("/home/livanosg/projects/mel-cnn/data/7pt/meta/test_indexes.csv")
-dermofit = pd.read_csv("/home/livanosg/projects/mel-cnn/data/dermofit.csv")
-ph2 = pd.read_csv("/home/livanosg/projects/mel-cnn/data/ph2.csv")
-up = pd.read_csv("/home/livanosg/projects/mel-cnn/data/up.csv")
+mednode = pd.read_csv(os.path.join(data_dir,  'mednode.csv'))
+spt = pd.read_csv(os.path.join(data_dir,  '7pt.csv'))
+spt_val_idx = pd.read_csv(os.path.join(data_dir,  'valid_indexes.csv'))
+spt_test_idx = pd.read_csv(os.path.join(data_dir,  'test_indexes.csv'))
+dermofit = pd.read_csv(os.path.join(data_dir,  'dermofit.csv'))
+ph2 = pd.read_csv(os.path.join(data_dir, 'ph2.csv'))
+up = pd.read_csv(os.path.join(data_dir, 'up.csv'))
 
 isic18_val = isic18
 nans_isic19 = isic19[isic19["lesion_id"].isna()]
@@ -41,8 +46,6 @@ isic20_test = isic20[isic20["patient_id"].isin(isic20_test_ids)]
 spt_val = spt[spt.index.isin(spt_val_idx["indexes"])]
 spt_test = spt[spt.index.isin(spt_test_idx["indexes"])]
 spt_train = spt[~spt.index.isin(spt_val_idx["indexes"].append(spt_test_idx["indexes"]))]
-# spt_test = spt[spt.index.isin(spt_test_idx["indexes"])]
-# spt_val = spt[~spt.index.isin(spt_test.index)]
 
 dermofit_val = dermofit.sample(frac=.5)
 dermofit_test = dermofit[~dermofit.index.isin(dermofit_val.index)]

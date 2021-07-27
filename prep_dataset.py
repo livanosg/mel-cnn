@@ -8,7 +8,7 @@ import pandas as pd
 def resize_cvt_color(sample, args):
     image_path = os.path.join(args['dir_dict']['data'], sample['dataset_id'], 'data', sample['image'])
     new_path = os.path.join(args['dir_dict']['image_folder'], 'data', sample['dataset_id'], 'data', sample['image'])
-    if os.path.exists(new_path):
+    if os.path.isfile(new_path):
         pass
     else:
         image = cv2.imread(image_path)

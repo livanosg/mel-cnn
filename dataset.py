@@ -1,4 +1,7 @@
 import os
+
+import cv2
+
 from config import MAPPER, directories, BEN_MAL_MAPPER, NEV_MEL_OTHER_MAPPER, CLASS_NAMES
 import tensorflow as tf
 import tensorflow_addons as tfa
@@ -18,9 +21,9 @@ class MelData:
         self.image_type = args["image_type"]
         self.class_names = CLASS_NAMES[self.mode]
         self.num_classes = len(self.class_names)
-        self.train_data_df = self.prep_data(self.dir_dict["data_csv"]["train"])
-        self.val_data_df = self.prep_data(self.dir_dict["data_csv"]["val"])
-        self.test_data_df = self.prep_data(self.dir_dict["data_csv"]["test"])
+        self.train_data_df = self.prep_data(self.dir_dict["data_csv"]["train"]).sample(frac=1.)
+        self.val_data_df = self.prep_data(self.dir_dict["data_csv"]["val"]).sample(frac=1.)
+        self.test_data_df = self.prep_data(self.dir_dict["data_csv"]["test"]).sample(frac=1.)
         # ------------------------================ Calculate Sample weights =================------------------------- #
         if self.image_type == "both":
             value_counts = self.train_data_df["image_type"].value_counts(sort=False, ascending=True)
@@ -153,19 +156,21 @@ class MelData:
         def tf_imread(*ds):
             ds[0]["image"] = tf.reshape(tensor=tf.image.decode_image(tf.io.read_file(ds[0]["image"]), channels=3), shape=input_shape)
             if mode == "train":
-                translation = tf.random.uniform(shape=[2], seed=random_state, minval=-10, maxval=10, dtype=tf.float32)
+                translation = tf.random.uniform(shape=[2], seed=random_state, minval=-20, maxval=20, dtype=tf.float32)
                 random_degrees = tf.random.uniform(shape=[1], minval=0, seed=random_state, maxval=360, dtype=tf.float32)
                 rand = tf.random.uniform(shape=[1], minval=0, seed=random_state, maxval=1., dtype=tf.float32)
-                sharp = tf.random.uniform(shape=[1], minval=0, seed=random_state, maxval=.1, dtype=tf.float32)
+                sigma = np.random.uniform(low=0., high=2.)  # tf.random.uniform(shape=[], minval=0, seed=random_state, maxval=2.5, dtype=tf.float32)
+                sharp = tf.random.uniform(shape=[1], minval=0., seed=random_state, maxval=.2, dtype=tf.float32)
+
                 ds[0]["image"] = tf.image.random_flip_left_right(image=ds[0]["image"], seed=random_state)
                 ds[0]["image"] = tf.image.random_flip_up_down(image=ds[0]["image"], seed=random_state)
-                ds[0]["image"] = tf.image.random_brightness(image=ds[0]["image"], max_delta=0.3, seed=random_state)
-                ds[0]["image"] = tf.image.random_contrast(image=ds[0]["image"], lower=0.5, upper=1.5, seed=random_state)
-                ds[0]["image"] = tf.image.random_saturation(image=ds[0]["image"], lower=0.5, upper=1.5, seed=random_state)
+                ds[0]["image"] = tf.image.random_brightness(image=ds[0]["image"], max_delta=0.1, seed=random_state)
+                ds[0]["image"] = tf.image.random_contrast(image=ds[0]["image"], lower=.5, upper=1.5, seed=random_state)
+                ds[0]["image"] = tf.image.random_saturation(image=ds[0]["image"], lower=0.8, upper=1.2, seed=random_state)
                 ds[0]["image"] = tfa.image.translate(ds[0]["image"], translations=translation, name="Translation")
                 ds[0]["image"] = tfa.image.rotate(images=ds[0]["image"], angles=random_degrees, name="Rotation")
                 ds[0]["image"] = tfa.image.sharpness(image=tf.cast(ds[0]["image"], dtype=tf.float32), factor=sharp, name="Sharpness")
-                ds[0]["image"] = tf.cond(tf.math.greater(0.5, rand), lambda: tfa.image.gaussian_filter2d(image=ds[0]["image"], sigma=2., name="Gaussian_filter"), lambda: ds[0]["image"])
+                ds[0]["image"] = tf.cond(tf.math.less_equal(rand, 0.5), lambda: tfa.image.gaussian_filter2d(image=ds[0]["image"], sigma=sigma, filter_shape=5, name="Gaussian_filter"), lambda: ds[0]["image"])
             return ds
 
         dataset = tf.data.Dataset.from_tensor_slices(dataset)
@@ -183,11 +188,18 @@ if __name__ == '__main__':
     test_args = {"mode": "nev_mel",
                  "dataset_frac": 1,
                  "image_type": "both",
-                 "image_size": 100}
+                 "image_size": 224,
+                 "colour": "rgb"}
     inpt_shape = (test_args["image_size"], test_args["image_size"], 3)
     test_dir_dict = directories(trial_id=1, run_num=0, args=test_args)
     a = MelData(batch=1, dir_dict=test_dir_dict, args=test_args, input_shape=inpt_shape)
-    a.data_info("all")
-    a.data_info("train")
-    a.data_info("val")
-    a.data_info("test")
+    cv2.namedWindow("trial", cv2.WINDOW_FREERATIO)
+    for i in a.get_dataset("train").as_numpy_iterator():
+        img = i[0]["image"][0, ...]
+        cv2.imshow("trial", cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_BGR2RGB))
+        cv2.waitKey()
+
+    # a.data_info("all")
+    # a.data_info("train")
+    # a.data_info("val")
+    # a.data_info("test")

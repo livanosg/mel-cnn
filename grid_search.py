@@ -38,11 +38,11 @@ def grind(args):
                                         dir_dict = directories(trial_id=trial_id, run_num=run_num, args=trial_args)
                                         trial_args["dir_dict"] = dir_dict
                                         check_create_dataset(args=trial_args)  #, force=True)
-                                        # [print(f"{key.capitalize()}: {trial_args['dir_dict'][key]}") for key in trial_args["dir_dict"].keys()]
-                                        # [print(f"{key.capitalize()}: {trial_args[key]}") for key in trial_args.keys() if key not in ("dir_dict", "hparams")]
-                                        # with open(trial_args["dir_dict"]["hparams_logs"], "a") as f:
-                                        #     [f.write(f"{key.capitalize()}: {trial_args[key]}\n") for key in trial_args.keys() if key not in ("dir_dict", "hparams")]
-                                        #     f.write("Directories\n")
-                                        #     [f.write(f"{key.capitalize()}: {trial_args['dir_dict'][key]}\n") for key in trial_args["dir_dict"].keys()]
-                                        # training(args=trial_args)
-                                        # run_num += 1
+                                        [print(f"{key.capitalize()}: {trial_args['dir_dict'][key]}") for key in trial_args["dir_dict"].keys()]
+                                        [print(f"{key.capitalize()}: {trial_args[key]}") for key in trial_args.keys() if key not in ("dir_dict", "hparams")]
+                                        with open(trial_args["dir_dict"]["hparams_logs"], "a") as f:
+                                            [f.write(f"{key.capitalize()}: {trial_args[key]}\n") for key in trial_args.keys() if key not in ("dir_dict", "hparams")]
+                                            f.write("Directories\n")
+                                            [f.write(f"{key.capitalize()}: {trial_args['dir_dict'][key]}\n") for key in trial_args["dir_dict"].keys()]
+                                        training(args=trial_args)
+                                        run_num += 1
