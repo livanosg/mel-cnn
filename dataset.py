@@ -1,7 +1,5 @@
 import os
-
 import cv2
-
 from config import MAPPER, directories, BEN_MAL_MAPPER, NEV_MEL_OTHER_MAPPER, CLASS_NAMES
 import tensorflow as tf
 import tensorflow_addons as tfa
@@ -10,7 +8,7 @@ import pandas as pd
 
 
 class MelData:
-    def __init__(self, dir_dict: dict, input_shape: tuple, args: dict, batch: int = 8, ):
+    def __init__(self, dir_dict: dict, input_shape: tuple, args: dict, batch: int = 8):
         self.random_state = 1312
         self.mode = args["mode"]
         self.frac = args["dataset_frac"]
@@ -24,16 +22,22 @@ class MelData:
         self.train_data_df = self.prep_data(self.dir_dict["data_csv"]["train"]).sample(frac=1.)
         self.val_data_df = self.prep_data(self.dir_dict["data_csv"]["val"]).sample(frac=1.)
         self.test_data_df = self.prep_data(self.dir_dict["data_csv"]["test"]).sample(frac=1.)
+        a = pd.read_csv(self.dir_dict["data_csv"]["train"]).append(pd.read_csv(self.dir_dict["data_csv"]["val"])).append(pd.read_csv(self.dir_dict["data_csv"]["test"]))
+        unk = a[a["class"] == "unknown"]
+        print(len(a))
+        print(len(a[a["image_type"] == 0]))
+        print(len(a[a["image_type"] == 1]))
+        print(len(unk[unk["image_type"] == 1]))
         # ------------------------================ Calculate Sample weights =================------------------------- #
         if self.image_type == "both":
             value_counts = self.train_data_df["image_type"].value_counts(sort=False, ascending=True)
-            self.weight_by_type = np.sum(value_counts) / np.asarray([value_counts[0], value_counts[1]])
+            weight_by_type = np.sum(value_counts) / np.asarray([value_counts[0], value_counts[1]])
             self.train_data_df["sample_weights"] = np.where(self.train_data_df["image_type"] == "clinic",
-                                                            self.weight_by_type[0],
-                                                            self.weight_by_type[1])
+                                                            weight_by_type[0],
+                                                            weight_by_type[1])
         # ------------------------===========================================================------------------------- #
-        self.train_data = self.ohe_map(dict(self.train_data_df))
-        self.val_data = self.ohe_map(dict(self.val_data_df))
+        self.train_data = self.ohe_map(dict(self.train_data_df.sample(frac=self.frac)))
+        self.val_data = self.ohe_map(dict(self.val_data_df.sample(frac=self.frac)))
         self.test_data = self.ohe_map(dict(self.test_data_df))
 
         self.attr = self.dataset_attributes()
@@ -54,8 +58,9 @@ class MelData:
             data = data[data["image_type"] == MAPPER["image_type"][self.image_type]]
         if self.mode in ["ben_mal", "nev_mel"]:  # drop Suspicious_benign from ben_mal and nev_mel
             data = data[data["class"] != 2]
-        if self.mode in ["5cls", "nev_mel"]:  # drop unknown_benign from 5cls and nev_mel
+        if self.mode in ["5cls"]:  # drop unknown_benign from 5cls and nev_mel
             data = data[data["class"] != 5]
+
         return data
 
     def ohe_map(self, features):
@@ -75,7 +80,7 @@ class MelData:
         labels = {"class": features.pop("class")}
         features.pop("dataset_id")
         if self.image_type == "both":
-            sample_weights = features.pop("sample_weights")
+            sample_weights = dict(self.train_data_df)["sample_weights"]
             return features, labels, sample_weights
         else:
             return features, labels
@@ -87,6 +92,7 @@ class MelData:
             df = self.train_data_df.append(self.val_data_df).append(self.test_data_df)
         elif mode == "train":
             df = self.train_data_df
+
         elif mode == "val":
             df = self.val_data_df
         else:
@@ -109,7 +115,9 @@ class MelData:
         info.sort_index(axis=0, level=0, inplace=True)
         info = info[sorted(info.columns)]
         info.fillna(0, inplace=True)
-        info.to_html(os.path.join(self.dir_dict["main"], "data_info", f"{mode}_{self.mode}_data_info.html"), bold_rows=False, border=5)
+        save_path = os.path.join(self.dir_dict["main"], "data_info", f"{mode}_{self.image_type}-{self.mode}_data_info.html")
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        info.to_html(save_path, bold_rows=False, border=5)
         return dataset_info_dict
 
     def info(self):
@@ -193,13 +201,13 @@ if __name__ == '__main__':
     inpt_shape = (test_args["image_size"], test_args["image_size"], 3)
     test_dir_dict = directories(trial_id=1, run_num=0, args=test_args)
     a = MelData(batch=1, dir_dict=test_dir_dict, args=test_args, input_shape=inpt_shape)
-    cv2.namedWindow("trial", cv2.WINDOW_FREERATIO)
-    for i in a.get_dataset("train").as_numpy_iterator():
-        img = i[0]["image"][0, ...]
-        cv2.imshow("trial", cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_BGR2RGB))
-        cv2.waitKey()
+    a.data_info("all")
+    a.data_info("train")
+    a.data_info("val")
+    a.data_info("test")
 
-    # a.data_info("all")
-    # a.data_info("train")
-    # a.data_info("val")
-    # a.data_info("test")
+    # cv2.namedWindow("trial", cv2.WINDOW_FREERATIO)
+    # for i in a.get_dataset("train").as_numpy_iterator():
+    #     img = i[0]["image"][0, ...]
+    #     cv2.imshow("trial", cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_BGR2RGB))
+    #     cv2.waitKey()

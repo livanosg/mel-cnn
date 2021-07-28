@@ -19,15 +19,16 @@ MAPPER = {"image_type": {"clinic": 0,
                                   -10: -1},
           #  0: Nevus | 1: Melanoma | 2: Non-Nevus benign | 3: Non-Melanocytic Carcinoma | 4: Suspicious
           "class":
-              {'Common Nevus': 0, 'NV': 0, 'naevus': 0, 'ML': 0, 'blue nevus': 0, 'clark nevus': 0,
+              {'Common Nevus': 0, 'NV': 0, 'nevus': 0, 'naevus': 0, 'ML': 0, 'blue nevus': 0, 'clark nevus': 0,
                'combined nevus': 0, 'congenital nevus': 0, 'dermal nevus': 0, 'recurrent nevus': 0,
                'reed or spitz nevus': 0,
                'MEL': 1, 'melanoma': 1, 'Melanoma': 1, 'melanoma (in situ)': 1, 'melanoma (less than 0.76 mm)': 1,
                'melanoma (0.76 to 1.5 mm)': 1, 'melanoma (more than 1.5 mm)': 1, 'melanoma metastasis': 1,
-               'NNV': 2, 'melanosis': 2, 'miscellaneous': 2, 'vascular lesion': 2, 'seborrheic keratosis': 2, 'DF': 2,
-               'PYO': 2, 'SK': 2, 'VASC': 2, 'BKL': 2, 'dermatofibroma': 2, 'lentigo': 2,
+               'NNV': 2, 'cafe-au-lait macule': 2, 'melanosis': 2, 'miscellaneous': 2, 'vascular lesion': 2, 'seborrheic keratosis': 2,
+               'DF': 2, 'PYO': 2, 'SK': 2, 'VASC': 2, 'BKL': 2, 'dermatofibroma': 2, 'lentigo': 2, 'lentigo NOS': 2,
+               'solar lentigo': 2, 'lichenoid keratosis': 2,
                'basal cell carcinoma': 3, 'BCC': 3, 'AKIEC': 3, 'IEC': 3, 'SCC': 3, 'NMC': 3,
-               'Atypical Nevus': 4, 'ANV': 4, 'AK': 4, 'SUS': 4,
+               'Atypical Nevus': 4, 'ANV': 4, 'AK': 4, 'SUS': 4, 'atypical melanocytic proliferation': 4,
                "unknown": 5
                }
           }

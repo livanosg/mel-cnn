@@ -30,26 +30,19 @@ def weighted_categorical_crossentropy(weights):
 
 
 def custom_loss(weights):
-    with tf.name_scope('Weights'):
-        weights = tf.keras.backend.variable(weights)
-    with tf.name_scope('epsilon'):
-        e = tf.keras.backend.epsilon()
+    e = tf.keras.backend.epsilon()
 
     def total_loss(y_true, y_pred):
         def log_dice_loss(dice_y_true, dice_y_pred):
             """both tensors are [b, h, w, classes] and y_pred is in probs form"""
             with tf.name_scope('Weighted_Generalized_Dice_Log_Loss'):
-                with tf.name_scope('Axis_to_reduce'):
-                    reduce_axis = list(range(len(dice_y_pred.shape)-1))
-                with tf.name_scope('Numerator'):
-                    numerator = tf.multiply(x=weights, y=tf.reduce_sum(dice_y_true * dice_y_pred, axis=reduce_axis))
-                with tf.name_scope('Denominator'):
-                    denominator = tf.multiply(x=weights, y=tf.reduce_sum(dice_y_true + dice_y_pred, axis=reduce_axis))
-                # Dice Score per class
+                reduce_axis = list(range(len(dice_y_pred.shape)-1))
+                numerator = tf.reduce_sum(dice_y_true * dice_y_pred, axis=reduce_axis)
+                denominator = tf.reduce_sum(dice_y_true + dice_y_pred, axis=reduce_axis)
                 with tf.name_scope('Dice_Division'):
                     division = tf.divide(x=tf.add(x=numerator, y=e),
                                          y=tf.add(denominator, y=e))
-                    dice = tf.multiply(x=2., y=division)
+                    dice = tf.multiply(x=weights, y=tf.multiply(x=2., y=division))
                 with tf.name_scope('Batch_loss'):
                     dice = tf.math.reduce_mean(- tf.math.log(dice))
                 return dice

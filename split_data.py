@@ -7,15 +7,15 @@ data_dir = os.path.join(main_dir, "data")
 
 isic18 = pd.read_csv(os.path.join(data_dir, 'isic18.csv'))
 isic19 = pd.read_csv(os.path.join(data_dir, 'isic19.csv'))
-isic20 = pd.read_csv(os.path.join(data_dir,  'isic20.csv'))
+isic20 = pd.read_csv(os.path.join(data_dir, 'isic20.csv'))
 isic20_duplicates = pd.read_csv(os.path.join(data_dir, 'ISIC_2020_Training_Duplicates.csv'))
 isic20_duplicates["image_name_2"] = isic20_duplicates["image_name_2"] + ".jpg"
 isic20 = isic20[~isic20["image"].isin(isic20_duplicates["image_name_2"])]
 
 mednode = pd.read_csv(os.path.join(data_dir,  'mednode.csv'))
 spt = pd.read_csv(os.path.join(data_dir,  '7pt.csv'))
-spt_val_idx = pd.read_csv(os.path.join(data_dir,  'valid_indexes.csv'))
-spt_test_idx = pd.read_csv(os.path.join(data_dir,  'test_indexes.csv'))
+spt_val_idx = pd.read_csv(os.path.join(data_dir, '7pt', 'meta', 'valid_indexes.csv'))
+spt_test_idx = pd.read_csv(os.path.join(data_dir, '7pt', 'meta', 'test_indexes.csv'))
 dermofit = pd.read_csv(os.path.join(data_dir,  'dermofit.csv'))
 ph2 = pd.read_csv(os.path.join(data_dir, 'ph2.csv'))
 up = pd.read_csv(os.path.join(data_dir, 'up.csv'))

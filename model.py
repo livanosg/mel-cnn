@@ -18,11 +18,11 @@ def model_fn(model, input_shape, dropout_rate, alpha, classes):
               'effnet1': (efficientnet.EfficientNetB1, efficientnet.preprocess_input)}
 
     # -------------------------------================= Image data =================----------------------------------- #
-    model_preproc = Sequential([Lambda(function=models[model][1])], name="model_preproc")
+    # model_preproc = Sequential([Lambda(function=models[model][1])], name="model_preproc")
     base_model = models[model][0](include_top=False, input_shape=input_shape)
     base_model.trainable = False
     image_input = Input(shape=input_shape, name='image')
-    preprocessed_input = model_preproc(image_input)
+    preprocessed_input = Lambda(function=models[model][1], name="preproc_input")(image_input)
     base_model = base_model(preprocessed_input, training=False)
     custom_conv_layers = Conv2D(256, activation=activ, kernel_size=3, padding='same', kernel_initializer=init, activity_regularizer=rglzr)(base_model)
     custom_conv_layers = normalization()(custom_conv_layers)

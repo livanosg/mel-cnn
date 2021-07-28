@@ -60,4 +60,3 @@ def training(args):
                      validation_data=datasets.get_dataset(mode="val"),
                      callbacks=callbacks, verbose=args["verbose"])
     tf.keras.backend.clear_session()
-    del datasets
