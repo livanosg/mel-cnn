@@ -1,17 +1,16 @@
 import tensorflow as tf
 from tensorflow.keras import Model, Sequential, Input
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
-from tensorflow.keras.layers import Conv2D, BatchNormalization, Dropout, Flatten, Dense, Concatenate, Lambda, LayerNormalization
+from tensorflow.keras.layers import Conv2D, BatchNormalization, Dropout, Flatten, Dense, Concatenate, Lambda
 from tensorflow.keras.activations import swish
 from tensorflow.keras.regularizers import l1_l2
 from tensorflow import dtypes
-from tensorflow.keras import regularizers
 
 
 def model_fn(model, input_shape, dropout_rate, alpha, classes):
     init = tf.keras.initializers.GlorotNormal()
     activ = swish# LeakyReLU(alpha=alpha)
-    rglzr = None  # l1_l2(l1=0., l2=0.0001)
+    rglzr = l1_l2(l1=0., l2=0.0001)
     normalization = BatchNormalization
     models = {'xept': (xception.Xception, xception.preprocess_input),
               'incept': (inception_v3.InceptionV3, inception_v3.preprocess_input),
