@@ -8,7 +8,7 @@ from dataset import MelData
 from model import model_fn
 from losses import custom_loss
 from metrics import metrics
-from callbacks import EnrTensorboard, TestCallback, CyclicLR
+from callbacks import EnrTensorboard, TestCallback  # , CyclicLR
 
 
 def training(args):
@@ -52,7 +52,7 @@ def training(args):
                  KerasCallback(writer=args["dir_dict"]["logs"], hparams=args["hparams"], trial_id=os.path.basename(args["dir_dict"]["trial"])),
                  TestCallback(test_data=datasets.get_dataset(mode="test"), val_data=datasets.get_dataset(mode='val'), mode=args["mode"],
                               class_names=CLASSES, num_classes=NUM_CLASSES, weights=weights, dir_dict=args["dir_dict"]),
-                 CyclicLR(base_lr=lr, max_lr=lr * 2, step_size=steps_per_epoch * 8, mode='exp_range', gamma=0.99),
+                 # CyclicLR(base_lr=lr, max_lr=lr * 2, step_size=steps_per_epoch * 8, mode='exp_range', gamma=0.99),
                  EarlyStopping(verbose=args["verbose"], patience=args["early_stop"]),
                  tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=args["dir_dict"]["backup"])]
     # ------------------------------------------------- Train model -------------------------------------------------- #
