@@ -58,8 +58,11 @@ def custom_loss(weights):
             """ y_true: One-hot label
                 y_pred: Softmax output."""
             with tf.name_scope('Weighted_Crossentropy_Loss'):
-                w_loss = tf.keras.backend.categorical_crossentropy(tf.multiply(x=weights, y=wce_y_true), wce_y_pred)  # Loss per sample
-                return tf.reduce_mean(w_loss)  # Batch loss
-
-        return tf.math.multiply(.6, log_dice_loss(y_true, y_pred)) + tf.math.multiply(0.4, weighted_crossentropy(y_true, y_pred))
+                # clip to prevent NaN's and Inf's
+                wce_y_pred = tf.clip_by_value(wce_y_pred, tf.keras.backend.epsilon(), 1 - tf.keras.backend.epsilon())
+                # calc
+                w_loss = wce_y_true * tf.math.log(wce_y_pred) * weights
+                w_loss = -tf.reduce_mean(w_loss, -1)
+                return w_loss
+        return tf.math.multiply(.7, log_dice_loss(y_true, y_pred)) + tf.math.multiply(0.3, weighted_crossentropy(y_true, y_pred))
     return total_loss

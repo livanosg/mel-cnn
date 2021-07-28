@@ -9,7 +9,7 @@ from tensorflow import dtypes
 
 def model_fn(model, input_shape, dropout_rate, alpha, classes):
     init = tf.keras.initializers.GlorotNormal()
-    activ = swish# LeakyReLU(alpha=alpha)
+    activ = swish  # LeakyReLU(alpha=alpha)
     rglzr = l1_l2(l1=0., l2=0.0001)
     normalization = BatchNormalization
     models = {'xept': (xception.Xception, xception.preprocess_input),
