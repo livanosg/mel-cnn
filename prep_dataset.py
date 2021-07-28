@@ -11,6 +11,7 @@ def resize_cvt_color(sample, args):
     if os.path.isfile(new_path):
         pass
     else:
+        print(f"{image_path} does not exist")
         image = cv2.imread(image_path)
         if args['colour'] == 'grey':
             image = cv2.cvtColor(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2RGB)
@@ -24,7 +25,6 @@ def resize_cvt_color(sample, args):
                 image = cv2.copyMakeBorder(image, 0, 0, left, right, borderType=cv2.BORDER_CONSTANT)
             image = cv2.resize(src=image, dsize=(int(args['image_size']), int(args['image_size'])),
                                interpolation=cv2.INTER_NEAREST_EXACT)
-            new_path = os.path.join(args['dir_dict']['image_folder'], 'data', sample['dataset_id'], 'data', sample['image'])
             os.makedirs(os.path.dirname(new_path), exist_ok=True)
             cv2.imwrite(new_path, image)
         except AttributeError:
