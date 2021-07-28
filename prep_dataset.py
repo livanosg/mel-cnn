@@ -44,7 +44,7 @@ def check_create_dataset(args, force=False):
         if mp.cpu_count() > 32:
             threads = 32
         else:
-            threads = mp.cpu_count() * 2
+            threads = mp.cpu_count()
         print(f"Number of threads: {threads}.")
         pool = mp.Pool(threads)
         pool.starmap(resize_cvt_color, [(sample, args) for _, sample in samples.iterrows()])
