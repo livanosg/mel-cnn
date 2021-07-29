@@ -37,14 +37,14 @@ def custom_loss(weights):
             """both tensors are [b, h, w, classes] and y_pred is in probs form"""
             with tf.name_scope('Weighted_Generalized_Dice_Log_Loss'):
                 reduce_axis = list(range(len(dice_y_pred.shape)-1))
-                numerator = tf.reduce_sum(dice_y_true * dice_y_pred, axis=reduce_axis)
-                denominator = tf.reduce_sum(dice_y_true + dice_y_pred, axis=reduce_axis)
+                numerator = tf.multiply(x=weights, y=tf.reduce_sum(dice_y_true * dice_y_pred, axis=reduce_axis))
+                denominator = tf.multiply(x=weights, y=tf.reduce_sum(dice_y_true + dice_y_pred, axis=reduce_axis))
                 with tf.name_scope('Dice_Division'):
                     division = tf.divide(x=tf.add(x=numerator, y=e),
                                          y=tf.add(denominator, y=e))
-                    dice = tf.multiply(x=weights, y=tf.multiply(x=2., y=division))
+                    dice = tf.multiply(x=2., y=division)
                 with tf.name_scope('Batch_loss'):
-                    dice = tf.math.reduce_mean(- tf.math.log(dice))
+                    dice = tf.math.reduce_sum(- tf.math.log(dice))
                 return dice
 
         def weighted_crossentropy(wce_y_true, wce_y_pred):
@@ -55,7 +55,7 @@ def custom_loss(weights):
                 wce_y_pred = tf.clip_by_value(wce_y_pred, tf.keras.backend.epsilon(), 1 - tf.keras.backend.epsilon())
                 # calc
                 w_loss = wce_y_true * tf.math.log(wce_y_pred) * weights
-                w_loss = -tf.reduce_mean(w_loss, -1)
+                w_loss = -tf.reduce_sum(w_loss, -1)
                 return w_loss
-        return tf.math.multiply(.7, log_dice_loss(y_true, y_pred)) + tf.math.multiply(0.3, weighted_crossentropy(y_true, y_pred))
+        return tf.math.multiply(.3, log_dice_loss(y_true, y_pred)) + tf.math.multiply(0.7, weighted_crossentropy(y_true, y_pred))
     return total_loss
