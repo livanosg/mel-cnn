@@ -5,7 +5,7 @@ import os
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from tensorflow.python.keras.callbacks import Callback, TensorBoard
+from tensorflow.python.keras.callbacks import Callback, TensorBoard, ModelCheckpoint
 import matplotlib
 from matplotlib import pyplot as plt
 from sklearn.metrics import roc_curve, precision_recall_curve, auc, det_curve, classification_report, confusion_matrix
@@ -292,3 +292,18 @@ class TestCallback(Callback):
             plt.figure(3)
             plt.savefig(os.path.join(save_dir, "det.jpg"))
             plt.close("all")
+
+
+class LaterCheckpoint(ModelCheckpoint):
+    def __init__(self, filepath, start_at, **kwargs):
+        super().__init__(filepath, **kwargs)
+        self.start_at = start_at
+        print(f'Start saving at {self.start_at}')
+
+    def on_epoch_end(self, epoch, logs=None):
+        if self.start_at > epoch:
+            pass
+        else:
+            if self.start_at == epoch:
+                print(f'Epoch {epoch} more than {self.start_at}. Start saving')
+            super().on_epoch_end(epoch=epoch, logs=logs)

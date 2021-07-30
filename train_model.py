@@ -9,7 +9,7 @@ from dataset import MelData
 from model import model_fn
 from losses import custom_loss
 from metrics import metrics
-from callbacks import EnrTensorboard, TestCallback  # , CyclicLR
+from callbacks import EnrTensorboard, TestCallback, LaterCheckpoint  # , CyclicLR
 
 
 def training(args):
@@ -24,19 +24,19 @@ def training(args):
 
     args['class_names'] = CLASS_NAMES[args["mode"]]
     args['num_classes'] = len(args['class_names'])
-    models = {'xept': (xception.Xception, xception.preprocess_input),
-              'incept': (inception_v3.InceptionV3, inception_v3.preprocess_input),
-              'effnet0': (efficientnet.EfficientNetB0, efficientnet.preprocess_input),
-              'effnet1': (efficientnet.EfficientNetB1, efficientnet.preprocess_input)}
+    models = {'xept': xception.Xception, 'incept': inception_v3.InceptionV3,
+              'effnet0': efficientnet.EfficientNetB0, 'effnet1': efficientnet.EfficientNetB1}
 
-    args["preprocess_fn"] = models[args["model"]][1]
-    args['model'] = models[args["model"]][0]
+    preproc_input_fn = {'xept':  xception.preprocess_input, 'incept': inception_v3.preprocess_input,
+                        'effnet0': efficientnet.preprocess_input, 'effnet1':  efficientnet.preprocess_input}
+    args['preprocess_fn'] = preproc_input_fn[args['model']]
+    args['model'] = models[args['model']]
     # --------------------------------------------------- Dataset ---------------------------------------------------- #
-    global_batch = args["batch_size"] * strategy.num_replicas_in_sync
-    args['input_shape'] = (args["image_size"], args["image_size"], 3)
-    datasets = MelData(dir_dict=args["dir_dict"], args=args, batch=global_batch)
-    args['weights'] = datasets.weights_per_class()
-    with open(args["dir_dict"]["hparams_logs"], 'a') as f:
+    global_batch = args['batch_size'] * strategy.num_replicas_in_sync
+    args['input_shape'] = (args['image_size'], args['image_size'], 3)
+    datasets = MelData(dir_dict=args['dir_dict'], args=args, batch=global_batch)
+    args['weights'] = datasets.weights_per_class
+    with open(args['dir_dict']['hparams_logs'], 'a') as f:
         f.write(datasets.info() + f"Number of replicas in sync: {strategy.num_replicas_in_sync}\n")
     # ---------------------------------------------------- Model ----------------------------------------------------- #
     args["lr"] = args["lr"] * strategy.num_replicas_in_sync
@@ -47,11 +47,11 @@ def training(args):
     with strategy.scope():
         custom_model = model_fn(args=args)
         custom_model.compile(optimizer=optimizer[args["optimizer"]](learning_rate=args["lr"]),
-                             loss=custom_loss(weights=args['weights']),
+                             loss=custom_loss(datasets.weights_per_class),  # 'categorical_crossentropy',
                              metrics=metrics(args['num_classes']))
     # --------------------------------------------------- Callbacks --------------------------------------------------- #
     # steps_per_epoch = np.ceil(datasets.dataset_attributes()["train_len"] / args["batch_size"])
-    callbacks = [ModelCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True),
+    callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=20),
                  EnrTensorboard(data=datasets.get_dataset(mode='val'), class_names=args['class_names'], log_dir=args["dir_dict"]["logs"],
                                 update_freq='epoch', profile_batch=0, mode=args["mode"]),
                  KerasCallback(writer=args["dir_dict"]["logs"], hparams=args["hparams"], trial_id=os.path.basename(args["dir_dict"]["trial"])),
