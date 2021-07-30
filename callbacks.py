@@ -211,11 +211,12 @@ class CyclicLR(Callback):
 
 
 class TestCallback(Callback):
-    def __init__(self, test_data, val_data, weights, num_classes, class_names, mode, dir_dict):
+    def __init__(self, test_data, val_data, weights, num_classes, class_names, mode, image_type, dir_dict):
         super().__init__()
         self.test_data = test_data
         self.validation_data = val_data
         self.mode = mode
+        self.image_type = image_type
         self.trial_path = dir_dict["trial"]
         self.best_model = dir_dict["save_path"]
         self.num_classes = num_classes
@@ -266,15 +267,15 @@ class TestCallback(Callback):
                 plt.plot(fpr_roc, tpr_roc, label=f"{self.class_names[_class]} (area = {class_auc:.3f})")
                 plt.xlabel("False positive rate")
                 plt.ylabel("True positive rate")
-                plt.title(f"ROC curve - {self.mode} - {dataset_type}")
+                plt.title(f"ROC curve {self.image_type}-{dataset_type}")
                 plt.legend(loc="best")
 
                 plt.figure(2)
                 plt.plot([0, 1], [0, 1], "k--")
-                plt.plot(precision, recall, label=f"{self.class_names[_class]}")
+                plt.plot(recall, precision, label=f"{self.class_names[_class]}")
                 plt.xlabel("Precision")
                 plt.ylabel("Recall")
-                plt.title(f"PR curve - {self.mode} - {dataset_type}")
+                plt.title(f"PR curve {self.image_type}-{dataset_type}")
                 plt.legend(loc="best")
 
                 plt.figure(3)
@@ -282,7 +283,7 @@ class TestCallback(Callback):
                 plt.plot(det_fpr, det_fnr, label=f'{self.class_names[_class]}')
                 plt.xlabel("False positive rate")
                 plt.ylabel("True positive rate")
-                plt.title(f"DET curve - {self.mode} - {dataset_type}")
+                plt.title(f"DET curve {self.image_type}-{dataset_type}")
                 plt.legend(loc="best")
 
             plt.figure(1)
