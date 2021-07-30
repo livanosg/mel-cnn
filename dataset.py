@@ -1,6 +1,6 @@
 import os
 # import cv2
-from config import MAPPER, directories, BEN_MAL_MAPPER, NEV_MEL_OTHER_MAPPER, CLASS_NAMES, MAIN_DIR
+from config import MAPPER, BEN_MAL_MAPPER, NEV_MEL_OTHER_MAPPER, CLASS_NAMES, MAIN_DIR, directories
 import tensorflow as tf
 import tensorflow_addons as tfa
 import numpy as np
@@ -45,8 +45,7 @@ class MelData:
                                            np.multiply(len(self.class_counts), [self.class_counts[k]for k in sorted(self.class_counts.keys())]))
         self.image_type_counts = dict(self.train_data_df["image_type"].value_counts(sort=False, ascending=True))
         self.weights_per_image_type = np.divide(np.sum(len(self.train_data_df)),
-                                                np.multiply(len(self.image_type_counts), [self.image_type_counts[k] for k in sorted(self.image_type_counts.keys())]))
-
+                                                np.multiply(len(self.image_type_counts), [self.image_type_counts[k] for k in sorted(self.image_type_counts)]))
         self.prep_train_data_df = self.prep_classes(self.train_data_df)
         self.prep_val_data_df = self.prep_classes(self.val_data_df)
         self.prep_test_data_df = self.prep_classes(self.test_data_df)
@@ -60,10 +59,10 @@ class MelData:
         data["image"] = f"{self.image_folder}{os.sep}" + data["image"]
         data['image_type_weights'] = 1.
         data['class_weights'] = 1.
-        for image_type in self.image_type_counts.keys():
-            data['image_type_weights'][data['image_type'] == image_type] = self.weights_per_image_type[image_type]
-        for _class in self.class_counts.keys():
-            data['class_weights'][data['class'] == _class] = self.weights_per_class[_class]
+        for ixd, image_type in enumerate(sorted(self.image_type_counts)):
+            data['image_type_weights'][data['image_type'] == image_type] = self.weights_per_image_type[ixd]
+        for idx, _class in enumerate(sorted(self.class_counts)):
+            data['class_weights'][data['class'] == _class] = self.weights_per_class[idx]
         data['sample_weights'] = data['image_type_weights']  # /2 + data['class_weights']/2  # todo check weighting formula. integrate
         data.pop("dataset_id")
         data.pop("image_type_weights")
@@ -147,25 +146,25 @@ class MelData:
                  f"Sample weight by image type:{attr['weights_per_image_type']}\n"
         return output
 
-    def tf_imread(self, *ds, mode):
-        ds[0]["image"] = tf.reshape(tensor=tf.image.decode_image(tf.io.read_file(ds[0]["image"]), channels=3), shape=self.args['input_shape'])
-        ds[0]["image"] = self.args['preprocess_fn'](ds[0]["image"])
+    def tf_imread(self, sample, mode):
+        sample["image"] = tf.reshape(tensor=tf.image.decode_image(tf.io.read_file(sample["image"]), channels=3), shape=self.args['input_shape'])
+        sample["image"] = self.args['preprocess_fn'](sample["image"])
         if mode == "train":
             translation = tf.random.uniform(shape=[2], seed=self.random_state, minval=-20, maxval=20, dtype=tf.float32)
             random_degrees = tf.random.uniform(shape=[1], minval=0, seed=self.random_state, maxval=360, dtype=tf.float32)
             rand = tf.random.uniform(shape=[1], minval=0, seed=self.random_state, maxval=1., dtype=tf.float32)
             sigma = np.random.uniform(low=0., high=2.)  # tf.random.uniform(shape=[], minval=0, seed=random_state, maxval=2.5, dtype=tf.float32)
             sharp = tf.random.uniform(shape=[1], minval=0., seed=self.random_state, maxval=.2, dtype=tf.float32)
-            ds[0]["image"] = tf.image.random_flip_left_right(image=ds[0]["image"], seed=self.random_state)
-            ds[0]["image"] = tf.image.random_flip_up_down(image=ds[0]["image"], seed=self.random_state)
-            ds[0]["image"] = tf.image.random_brightness(image=ds[0]["image"], max_delta=0.1, seed=self.random_state)
-            ds[0]["image"] = tf.image.random_contrast(image=ds[0]["image"], lower=.5, upper=1.5, seed=self.random_state)
-            ds[0]["image"] = tf.image.random_saturation(image=ds[0]["image"], lower=0.8, upper=1.2, seed=self.random_state)
-            ds[0]["image"] = tfa.image.translate(ds[0]["image"], translations=translation, name="Translation")
-            ds[0]["image"] = tfa.image.rotate(images=ds[0]["image"], angles=random_degrees, name="Rotation")
-            ds[0]["image"] = tfa.image.sharpness(image=tf.cast(ds[0]["image"], dtype=tf.float32), factor=sharp, name="Sharpness")
-            ds[0]["image"] = tf.cond(tf.math.less_equal(rand, 0.5), lambda: tfa.image.gaussian_filter2d(image=ds[0]["image"], sigma=sigma, filter_shape=5, name="Gaussian_filter"), lambda: ds[0]["image"])
-        return ds
+            sample["image"] = tf.image.random_flip_left_right(image=sample["image"], seed=self.random_state)
+            sample["image"] = tf.image.random_flip_up_down(image=sample["image"], seed=self.random_state)
+            sample["image"] = tf.image.random_brightness(image=sample["image"], max_delta=0.1, seed=self.random_state)
+            sample["image"] = tf.image.random_contrast(image=sample["image"], lower=.5, upper=1.5, seed=self.random_state)
+            sample["image"] = tf.image.random_saturation(image=sample["image"], lower=0.8, upper=1.2, seed=self.random_state)
+            sample["image"] = tfa.image.translate(sample["image"], translations=translation, name="Translation")
+            sample["image"] = tfa.image.rotate(images=sample["image"], angles=random_degrees, name="Rotation")
+            sample["image"] = tfa.image.sharpness(image=tf.cast(sample["image"], dtype=tf.float32), factor=sharp, name="Sharpness")
+            sample["image"] = tf.cond(tf.math.less_equal(rand, 0.5), lambda: tfa.image.gaussian_filter2d(image=sample["image"], sigma=sigma, filter_shape=5, name="Gaussian_filter"), lambda: sample["image"])
+        return sample
 
     def get_dataset(self, mode=None, repeat=1):
         np.random.seed(self.random_state)
@@ -179,10 +178,7 @@ class MelData:
             raise ValueError(f"{mode} is not a valid mode.")
 
         dataset = tf.data.Dataset.from_tensor_slices(dataset)
-        if self.args["image_type"] == "both":
-            dataset = dataset.map(lambda train, label, samples: self.tf_imread(train, label, samples, mode=mode), num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        else:
-            dataset = dataset.map(lambda train, label: self.tf_imread(train, label, mode=mode), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        dataset = dataset.map(lambda input, label, samples: (self.tf_imread(input, mode=mode), label, samples), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.batch(self.batch)
         options = tf.data.Options()
         options.experimental_threading.max_intra_op_parallelism = 1
@@ -192,20 +188,9 @@ class MelData:
         return dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
 
-# if __name__ == '__main__':
-#     test_args['input_shape'] = (test_args["image_size"], test_args["image_size"], 3)
-#     test_dir_dict = directories(trial_id=1, run_num=0, args=test_args)
-#     a = MelData(batch=1, dir_dict=test_dir_dict, args=test_args)
-#     # a.data_info("all")
-#     # a.data_info("train")
-#     # a.data_info("val")
-#     # a.data_info("test")
-#     print(a.weights_per_class)
-#     print(a.weights_per_image_type)
-#     cv2.namedWindow("trial", cv2.WINDOW_FREERATIO)
-#     for i in a.get_dataset("train").as_numpy_iterator():
-#         print(i)
-#         # img = i[0]["image"] # [0, ...]
-#         # cv2.imshow("trial", cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_BGR2RGB))
-#         # cv2.waitKey()
-#         break
+if __name__ == '__main__':
+    args = {}
+    args['mode'] = '5cls'
+    args['image_type'] = 'both'
+    args["dataset_frac"] = 0.1
+    dir_dict = directories(trial_id='1', run_num=0, args=args)

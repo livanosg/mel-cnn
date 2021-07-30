@@ -211,17 +211,19 @@ class CyclicLR(Callback):
 
 
 class TestCallback(Callback):
-    def __init__(self, test_data, val_data, weights, num_classes, class_names, mode, image_type, dir_dict):
+    def __init__(self, test_data, val_data, args):
         super().__init__()
+        self.dir_dict = args["dir_dict"]
+        self.args = args
         self.test_data = test_data
         self.validation_data = val_data
-        self.mode = mode
-        self.image_type = image_type
-        self.trial_path = dir_dict["trial"]
-        self.best_model = dir_dict["save_path"]
-        self.num_classes = num_classes
-        self.class_names = class_names
-        self.weights = weights
+        self.mode = args["mode"]
+        self.image_type = args['image_type']
+        self.trial_path = self.dir_dict["trial"]
+        self.best_model = self.dir_dict["save_path"]
+        self.num_classes = args['num_classes']
+        self.class_names = args['class_names']
+        self.weights = args['weights']
 
     def on_train_end(self, logs=None):
         model = tf.keras.models.load_model(self.best_model, custom_objects={"total_loss": custom_loss(weights=self.weights),

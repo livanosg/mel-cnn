@@ -2,8 +2,10 @@ import os
 # import numpy as np
 import tensorflow as tf
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
-from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.callbacks.experimental import BackupAndRestore
 from tensorboard.plugins.hparams.api import KerasCallback
+
 from config import CLASS_NAMES
 from dataset import MelData
 from model import model_fn
@@ -50,16 +52,14 @@ def training(args):
                              loss=custom_loss(datasets.weights_per_class),  # 'categorical_crossentropy',
                              metrics=metrics(args['num_classes']))
     # --------------------------------------------------- Callbacks --------------------------------------------------- #
-    # steps_per_epoch = np.ceil(datasets.dataset_attributes()["train_len"] / args["batch_size"])
     callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=20),
                  EnrTensorboard(data=datasets.get_dataset(mode='val'), class_names=args['class_names'], log_dir=args["dir_dict"]["logs"],
                                 update_freq='epoch', profile_batch=0, mode=args["mode"]),
                  KerasCallback(writer=args["dir_dict"]["logs"], hparams=args["hparams"], trial_id=os.path.basename(args["dir_dict"]["trial"])),
-                 TestCallback(test_data=datasets.get_dataset(mode="test"), val_data=datasets.get_dataset(mode='val'), mode=args["mode"],
-                              class_names=args['class_names'], num_classes=args['num_classes'], weights=args['weights'], dir_dict=args["dir_dict"]),
-                 # CyclicLR(base_lr=lr, max_lr=lr * 2, step_size=steps_per_epoch * 8, mode='exp_range', gamma=0.99),
+                 TestCallback(test_data=datasets.get_dataset(mode="test"), val_data=datasets.get_dataset(mode='val'), args=args),
+                 ReduceLROnPlateau(factor=0.25, patience=10),
                  EarlyStopping(verbose=args["verbose"], patience=args["early_stop"]),
-                 tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=args["dir_dict"]["backup"])]
+                 BackupAndRestore(backup_dir=args["dir_dict"]["backup"])]
     # ------------------------------------------------- Train model -------------------------------------------------- #
     custom_model.fit(x=datasets.get_dataset(mode="train"), epochs=args["epochs"],
                      validation_data=datasets.get_dataset(mode="val"),
