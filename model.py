@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Conv2D, MaxPool2D, BatchNormalization, Dropout, GlobalAvgPool2D, LeakyReLU, Dense, Concatenate, LayerNormalization
@@ -7,6 +8,10 @@ from tensorflow import dtypes
 
 
 def model_fn(args):
+    main_conf = np.asarray([32, 48, 64, 32])
+    layers = {1: main_conf,
+              2: main_conf * 2,
+              3: main_conf * 4}
     init = tf.keras.initializers.lecun_normal()
     activ = swish  # LeakyReLU(alpha=args["relu_grad"])  # swish
     rglzr = None  # l1_l2(l1=0., l2=0.0001)
@@ -17,18 +22,18 @@ def model_fn(args):
     base_model.trainable = False
     image_input = Input(shape=args['input_shape'], name='image')
     base_model = base_model(image_input, training=False)
-    conv_1 = Conv2D(32, activation=activ, kernel_size=1, padding='same', kernel_initializer=init,
+    conv_1 = Conv2D(layers[args['layers']][0], activation=activ, kernel_size=1, padding='same', kernel_initializer=init,
                     bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(base_model)
     # conv_1 = normalization(gamma_initializer=init, beta_initializer=init)(conv_1)  # moving_mean_initializer=init, moving_variance_initializer=init
     conv_1 = Dropout(rate=args['dropout'])(conv_1)
-    conv_1_3 = Conv2D(48, activation=activ, kernel_size=1, padding='same', kernel_initializer=init,
+    conv_1_3 = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=1, padding='same', kernel_initializer=init,
                       bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(base_model)
     # conv_2 = normalization(gamma_initializer=init, beta_initializer=init)(conv_2)  # moving_mean_initializer=init, moving_variance_initializer=init
     conv_1_3 = Dropout(rate=args['dropout'])(conv_1_3)
-    conv_1_3 = Conv2D(64, activation=activ, kernel_size=3, padding='same', kernel_initializer=init,
+    conv_1_3 = Conv2D(layers[args['layers']][2], activation=activ, kernel_size=3, padding='same', kernel_initializer=init,
                       bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(conv_1_3)
     conv_m_1 = MaxPool2D(padding='same', strides=1)(base_model)
-    conv_m_1 = Conv2D(32, activation=activ, kernel_size=3, padding='same', kernel_initializer=init,
+    conv_m_1 = Conv2D(layers[args['layers']][3], activation=activ, kernel_size=3, padding='same', kernel_initializer=init,
                       bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(conv_m_1)
     conv_1 = Concatenate()([conv_1, conv_1_3, conv_m_1])
     custom_avg_pool = GlobalAvgPool2D()(conv_1)

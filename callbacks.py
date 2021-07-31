@@ -260,15 +260,17 @@ class TestCallback(Callback):
                 # otherwise and would be the same for all metrics.
 
             for _class in range(self.num_classes):
-                fpr_roc, tpr_roc, thresholds_roc = roc_curve(one_hot_labels[..., _class], y_prob[..., _class])
-                precision, recall, thresholds = precision_recall_curve(one_hot_labels[..., _class], y_prob[..., _class])
+                fpr_roc, tpr_roc, thresholds_roc = roc_curve(one_hot_labels[..., _class], y_prob[..., _class], pos_label=1)
+                precision, recall, thresholds = precision_recall_curve(one_hot_labels[..., _class], y_prob[..., _class], pos_label=1)
                 det_fpr, det_fnr, det_thresholds = det_curve(y_true=one_hot_labels[..., _class], y_score=y_prob[..., _class])
                 class_auc = auc(fpr_roc, tpr_roc)
                 plt.figure(1)
                 plt.plot([0, 1], [0, 1], "k--")
-                plt.plot(fpr_roc, tpr_roc, label=f"{self.class_names[_class]} (area = {class_auc:.3f})")
-                plt.xlabel("False positive rate")
-                plt.ylabel("True positive rate")
+                plt.plot(fpr_roc * 100, tpr_roc * 100, label=f"{self.class_names[_class]} (area = {class_auc:.3f})")
+                plt.yscale('log')
+                plt.xscale('log')
+                plt.xlabel("False positive rate %")
+                plt.ylabel("True positive rate %")
                 plt.title(f"ROC curve {self.image_type}-{dataset_type}")
                 plt.legend(loc="best")
 

@@ -20,11 +20,13 @@ def parse_module():
     parser.add_argument('--nodes', '-nod', required=True, type=str, choices=['multi', 'one'], help='Select training nodes.')
     parser.add_argument('--mode', '-mod', required=True, type=str, choices=['5cls', 'ben_mal', 'nev_mel'], help='Select the type of outputs.')
     parser.add_argument('--verbose', '-v', action='count', default=0, help='Set verbosity.')
+    parser.add_argument('--layers', '-lrs', default=1, type=int, help='Select set of layers.')
     return parser
 
 
 if __name__ == '__main__':
     args = parse_module().parse_args().__dict__
+    print(args)
     os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
     # Set verbose for TF CPP LOG
