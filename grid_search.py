@@ -32,6 +32,7 @@ def grind(args):
                                         trial_args["epochs"] = args["epochs"]
                                         trial_args["early_stop"] = args["early_stop"]
                                         trial_args["nodes"] = args["nodes"]
+                                        trial_args["layers"] = args["layers"]
                                         trial_args["mode"] = args["mode"]
                                         trial_args["verbose"] = args["verbose"]
                                         trial_args["hparams"] = hparams

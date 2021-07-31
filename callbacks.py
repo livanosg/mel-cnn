@@ -8,7 +8,8 @@ from tensorflow.keras import backend as K
 from tensorflow.python.keras.callbacks import Callback, TensorBoard, ModelCheckpoint
 import matplotlib
 from matplotlib import pyplot as plt
-from sklearn.metrics import roc_curve, precision_recall_curve, auc, det_curve, classification_report, confusion_matrix
+from sklearn.metrics import roc_curve, precision_recall_curve, auc, det_curve, classification_report, confusion_matrix, \
+    plot_det_curve
 
 from losses import custom_loss
 from metrics import metrics
@@ -266,16 +267,14 @@ class TestCallback(Callback):
                 class_auc = auc(fpr_roc, tpr_roc)
                 plt.figure(1)
                 plt.plot([0, 1], [0, 1], "k--")
-                plt.plot(fpr_roc * 100, tpr_roc * 100, label=f"{self.class_names[_class]} (area = {class_auc:.3f})")
-                plt.yscale('log')
-                plt.xscale('log')
-                plt.xlabel("False positive rate %")
-                plt.ylabel("True positive rate %")
+                plt.plot(fpr_roc, tpr_roc, label=f"{self.class_names[_class]} (area = {class_auc:.3f})")
+                plt.xlabel("False positive rate")
+                plt.ylabel("True positive rate")
                 plt.title(f"ROC curve {self.image_type}-{dataset_type}")
                 plt.legend(loc="best")
 
                 plt.figure(2)
-                plt.plot([0, 1], [0, 1], "k--")
+                plt.plot([0, 1], [1, 0], "k--")
                 plt.plot(recall, precision, label=f"{self.class_names[_class]}")
                 plt.xlabel("Precision")
                 plt.ylabel("Recall")
@@ -283,10 +282,9 @@ class TestCallback(Callback):
                 plt.legend(loc="best")
 
                 plt.figure(3)
-                plt.plot([0, 1], [0, 1], "k--")
-                plt.plot(det_fpr, det_fnr, label=f'{self.class_names[_class]}')
-                plt.xlabel("False positive rate")
-                plt.ylabel("True positive rate")
+                plt.plot(det_fpr * 100, det_fnr * 100, label=f'{self.class_names[_class]}')
+                plt.xlabel("False positive rate %")
+                plt.ylabel("True positive rate %")
                 plt.title(f"DET curve {self.image_type}-{dataset_type}")
                 plt.legend(loc="best")
 

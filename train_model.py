@@ -52,7 +52,7 @@ def training(args):
                              loss=custom_loss(datasets.weights_per_class),  # 'categorical_crossentropy',
                              metrics=metrics(args['num_classes']))
     # --------------------------------------------------- Callbacks --------------------------------------------------- #
-    callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=20),
+    callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=0),
                  EnrTensorboard(data=datasets.get_dataset(mode='val'), class_names=args['class_names'], log_dir=args["dir_dict"]["logs"],
                                 update_freq='epoch', profile_batch=0, mode=args["mode"]),
                  KerasCallback(writer=args["dir_dict"]["logs"], hparams=args["hparams"], trial_id=os.path.basename(args["dir_dict"]["trial"])),
