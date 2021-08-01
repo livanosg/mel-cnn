@@ -1,11 +1,44 @@
 import numpy as np
 import tensorflow as tf
+from keras.layers.pooling import GlobalAvgPool1D
 from tensorflow.keras import Model, Input
-from tensorflow.keras.layers import Conv2D, MaxPool2D, BatchNormalization, Dropout, GlobalAvgPool2D, LeakyReLU, Dense, Concatenate, LSTM
-from tensorflow.keras.activations import swish
+from tensorflow.keras.layers import Layer, Conv2D, MaxPool2D, LayerNormalization, Dropout, GlobalAvgPool2D, LeakyReLU,\
+    Dense, Concatenate, LSTM,Reshape, Embedding, MultiHeadAttention, Add
+# from tensorflow.keras.activations import swish
 from tensorflow.keras.regularizers import l1_l2
 from tensorflow import dtypes
-from tensorflow.python.keras.layers import Reshape
+
+
+class Patches(Layer):
+    def __init__(self, patch_size):
+        super(Patches, self).__init__()
+        self.patch_size = patch_size
+
+    def call(self, images):
+        batch_size = tf.shape(images)[0]
+        patches = tf.image.extract_patches(
+            images=images,
+            sizes=[1, self.patch_size, self.patch_size, 1],
+            strides=[1, self.patch_size, self.patch_size, 1],
+            rates=[1, 1, 1, 1],
+            padding="VALID",
+        )
+        patch_dims = patches.shape[-1]
+        patches = tf.reshape(patches, [batch_size, -1, patch_dims])
+        return patches
+
+
+class PatchEncoder(Layer):
+    def __init__(self, num_patches, projection_dim):
+        super(PatchEncoder, self).__init__()
+        self.num_patches = num_patches
+        self.projection = Dense(units=projection_dim)
+        self.position_embedding = Embedding(input_dim=num_patches, output_dim=projection_dim)
+
+    def call(self, patch):
+        positions = tf.range(start=0, limit=self.num_patches, delta=1)
+        encoded = self.projection(patch) + self.position_embedding(positions)
+        return encoded
 
 
 def model_fn(args):
@@ -16,7 +49,7 @@ def model_fn(args):
     init = tf.keras.initializers.glorot_normal()
     activ = LeakyReLU(alpha=args["relu_grad"])  # swish
     rglzr = l1_l2(l1=0., l2=0.0002)
-    normalization = BatchNormalization
+    normalization = LayerNormalization
     # -------------------------------================= Image data =================----------------------------------- #
     # model_preproc = Sequential([Lambda(function=models[model][1])], name="model_preproc")
     base_model = args['model'](include_top=False, input_shape=args['input_shape'])
@@ -37,7 +70,22 @@ def model_fn(args):
     conv_m_1 = Conv2D(layers[args['layers']][3], activation=activ, kernel_size=3, padding='same', kernel_initializer=init,
                       bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(conv_m_1)
     conv_1 = Concatenate()([conv_1, conv_1_3, conv_m_1])
-    custom_avg_pool = GlobalAvgPool2D()(conv_1)
+    patch_size = 2
+    num_patches = (conv_1.shape[1] // patch_size) ** 2
+    projection_dim = 16
+    num_heads = 4
+    transformer_units = [
+        projection_dim * 2,
+        projection_dim,
+    ]  # Size of the transformer layers
+    patches = Patches(2)(conv_1)
+    encoded_patches = PatchEncoder(num_patches, projection_dim)(patches)
+    x1 = LayerNormalization(epsilon=1e-6)(encoded_patches)
+    attention_output = MultiHeadAttention(num_heads=num_heads, key_dim=projection_dim, dropout=args['dropout_ratio'])(x1, x1)
+    x2 = Add()([attention_output, encoded_patches])
+    x3 = LayerNormalization(epsilon=1e-6)(x2)
+    custom_avg_pool = GlobalAvgPool1D()(x3)
+    print(custom_avg_pool.shape)
     custom_fc_layers = Dense(32, activation=activ, kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(custom_avg_pool)
     custom_fc_layers = normalization(gamma_initializer=init, beta_initializer=init)(custom_fc_layers)
     # --------------------------------================ Tabular data =================--------------------------------- #
@@ -50,11 +98,12 @@ def model_fn(args):
     custom_lstm = LSTM(64)(concat_inputs)
     custom_fc2_layers = normalization(gamma_initializer=init, beta_initializer=init)(custom_lstm)
     custom_fc2_layers = Dropout(rate=args['dropout_ratio'])(custom_fc2_layers)
-
-    custom_fc2_layers = Dense(32, activation=activ, kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(custom_fc2_layers)
-    custom_fc2_layers = normalization(gamma_initializer=init, beta_initializer=init)(custom_fc2_layers)
+    concat_inputs2 = Reshape(target_shape=(64, 1))(custom_fc2_layers)
+    custom_lstm2 = LSTM(64)(concat_inputs2)
+    custom_fc2_layers2 = Dense(32, activation=activ, kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(custom_lstm2)
+    custom_fc2_layers2 = normalization(gamma_initializer=init, beta_initializer=init)(custom_fc2_layers2)
     # -------------------------------================== Concat part ==================---------------------------------#
-    common_layers = Concatenate(axis=1)([custom_fc_layers, custom_fc2_layers])
+    common_layers = Concatenate(axis=1)([custom_fc_layers, custom_fc2_layers2])
     common_layers = Dense(16, activation=activ, kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(common_layers)
     common_layers = normalization(gamma_initializer=init, beta_initializer=init)(common_layers)
     common_layers = Dropout(rate=args['dropout_ratio'])(common_layers)
