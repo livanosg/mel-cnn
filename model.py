@@ -1,9 +1,8 @@
 import numpy as np
 import tensorflow as tf
-from keras.layers.pooling import GlobalAvgPool1D
 from tensorflow.keras import Model, Input
-from tensorflow.keras.layers import Layer, Conv2D, MaxPool2D, LayerNormalization, Dropout, GlobalAvgPool2D, LeakyReLU,\
-    Dense, Concatenate, LSTM,Reshape, Embedding, MultiHeadAttention, Add
+from tensorflow.keras.layers import Layer, Conv2D, MaxPool2D, LayerNormalization, Dropout, GlobalAvgPool1D, LeakyReLU,\
+    Dense, Concatenate, LSTM, Reshape, Embedding, MultiHeadAttention, Add
 # from tensorflow.keras.activations import swish
 from tensorflow.keras.regularizers import l1_l2
 from tensorflow import dtypes
