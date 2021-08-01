@@ -10,8 +10,6 @@ from metrics import metrics
 from callbacks import EnrTensorboard, TestCallback, LaterCheckpoint
 
 
-
-
 def training(args):
     tf.random.set_seed(1312)
     assert args["nodes"] in ("multi", "one")

@@ -42,14 +42,13 @@ class MelData:
 
         self.class_counts = dict(self.train_data_df['class'].value_counts(sort=False, ascending=True))
         self.weights_per_class = np.divide(len(self.train_data_df),
-                                           np.multiply(len(self.class_counts), [self.class_counts[k]for k in sorted(self.class_counts.keys())]))
+                                           np.multiply(self.num_classes, [self.class_counts[k]for k in sorted(self.class_counts.keys())]))
         self.image_type_counts = dict(self.train_data_df["image_type"].value_counts(sort=False, ascending=True))
         self.weights_per_image_type = np.divide(np.sum(len(self.train_data_df)),
                                                 np.multiply(len(self.image_type_counts), [self.image_type_counts[k] for k in sorted(self.image_type_counts)]))
         self.prep_train_data_df = self.prep_classes(self.train_data_df)
         self.prep_val_data_df = self.prep_classes(self.val_data_df)
         self.prep_test_data_df = self.prep_classes(self.test_data_df)
-        # ------------------------================ Calculate class weights =================------------------------- #
         self.train_data = self.ohe_map(dict(self.train_data_df.sample(frac=self.args["dataset_frac"])))
         self.val_data = self.ohe_map(dict(self.val_data_df.sample(frac=self.args["dataset_frac"])))
         self.test_data = self.ohe_map(dict(self.test_data_df))

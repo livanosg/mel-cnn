@@ -261,40 +261,43 @@ class TestCallback(Callback):
                 # otherwise and would be the same for all metrics.
 
             for _class in range(self.num_classes):
-                fpr_roc, tpr_roc, thresholds_roc = roc_curve(one_hot_labels[..., _class], y_prob[..., _class], pos_label=1)
-                precision, recall, thresholds = precision_recall_curve(one_hot_labels[..., _class], y_prob[..., _class], pos_label=1)
-                det_fpr, det_fnr, det_thresholds = det_curve(y_true=one_hot_labels[..., _class], y_score=y_prob[..., _class])
-                class_auc = auc(fpr_roc, tpr_roc)
+                if len(self.num_classes) == 2 and _class == 0:
+                    pass
+                else:
+                    fpr_roc, tpr_roc, thresholds_roc = roc_curve(one_hot_labels[..., _class], y_prob[..., _class])
+                    precision, recall, thresholds = precision_recall_curve(one_hot_labels[..., _class], y_prob[..., _class])
+                    det_fpr, det_fnr, det_thresholds = det_curve(y_true=one_hot_labels[..., _class], y_score=y_prob[..., _class])
+                    class_auc = auc(fpr_roc, tpr_roc)
+                    plt.figure(1)
+                    plt.plot([0, 1], [0, 1], "k--")
+                    plt.plot(fpr_roc, tpr_roc, label=f"{self.class_names[_class]} (area = {class_auc:.3f})")
+                    plt.xlabel("False positive rate")
+                    plt.ylabel("True positive rate")
+                    plt.title(f"ROC curve {self.image_type}-{dataset_type}")
+                    plt.legend(loc="best")
+
+                    plt.figure(2)
+                    plt.plot([0, 1], [1, 0], "k--")
+                    plt.plot(recall, precision, label=f"{self.class_names[_class]}")
+                    plt.xlabel("Precision")
+                    plt.ylabel("Recall")
+                    plt.title(f"PR curve {self.image_type}-{dataset_type}")
+                    plt.legend(loc="best")
+
+                    plt.figure(3)
+                    plt.plot(det_fpr * 100, det_fnr * 100, label=f'{self.class_names[_class]}')
+                    plt.xlabel("False positive rate %")
+                    plt.ylabel("True positive rate %")
+                    plt.title(f"DET curve {self.image_type}-{dataset_type}")
+                    plt.legend(loc="best")
+
                 plt.figure(1)
-                plt.plot([0, 1], [0, 1], "k--")
-                plt.plot(fpr_roc, tpr_roc, label=f"{self.class_names[_class]} (area = {class_auc:.3f})")
-                plt.xlabel("False positive rate")
-                plt.ylabel("True positive rate")
-                plt.title(f"ROC curve {self.image_type}-{dataset_type}")
-                plt.legend(loc="best")
-
+                plt.savefig(os.path.join(save_dir, "roc.jpg"))
                 plt.figure(2)
-                plt.plot([0, 1], [1, 0], "k--")
-                plt.plot(recall, precision, label=f"{self.class_names[_class]}")
-                plt.xlabel("Precision")
-                plt.ylabel("Recall")
-                plt.title(f"PR curve {self.image_type}-{dataset_type}")
-                plt.legend(loc="best")
-
+                plt.savefig(os.path.join(save_dir, "pr.jpg"))
                 plt.figure(3)
-                plt.plot(det_fpr * 100, det_fnr * 100, label=f'{self.class_names[_class]}')
-                plt.xlabel("False positive rate %")
-                plt.ylabel("True positive rate %")
-                plt.title(f"DET curve {self.image_type}-{dataset_type}")
-                plt.legend(loc="best")
-
-            plt.figure(1)
-            plt.savefig(os.path.join(save_dir, "roc.jpg"))
-            plt.figure(2)
-            plt.savefig(os.path.join(save_dir, "pr.jpg"))
-            plt.figure(3)
-            plt.savefig(os.path.join(save_dir, "det.jpg"))
-            plt.close("all")
+                plt.savefig(os.path.join(save_dir, "det.jpg"))
+                plt.close("all")
 
 
 class LaterCheckpoint(ModelCheckpoint):
