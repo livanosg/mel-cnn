@@ -85,7 +85,6 @@ def model_fn(args):
     x2 = Add()([attention_output, encoded_patches])
     x3 = LayerNormalization(epsilon=1e-6)(x2)
     custom_avg_pool = GlobalAvgPool1D()(x3)
-    print(custom_avg_pool.shape)
     custom_fc_layers = Dense(32, activation=activ, kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(custom_avg_pool)
     custom_fc_layers = normalization(gamma_initializer=init, beta_initializer=init)(custom_fc_layers)
     # --------------------------------================ Tabular data =================--------------------------------- #
