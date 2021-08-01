@@ -10,6 +10,8 @@ from metrics import metrics
 from callbacks import EnrTensorboard, TestCallback, LaterCheckpoint
 
 
+
+
 def training(args):
     tf.random.set_seed(1312)
     assert args["nodes"] in ("multi", "one")
@@ -51,7 +53,7 @@ def training(args):
                              loss=custom_loss(datasets.weights_per_class),  # 'categorical_crossentropy',
                              metrics=metrics(args['num_classes']))
     # --------------------------------------------------- Callbacks --------------------------------------------------- #
-    callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=0),
+    callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=20),
                  EnrTensorboard(data=val_data, class_names=args['class_names'], log_dir=args["dir_dict"]["logs"],
                                 update_freq='epoch', profile_batch=0, mode=args["mode"]),
                  TestCallback(test_data=test_data, val_data=val_data, args=args),

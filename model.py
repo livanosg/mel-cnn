@@ -1,10 +1,11 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model, Input
-from tensorflow.keras.layers import Conv2D, MaxPool2D, BatchNormalization, Dropout, GlobalAvgPool2D, LeakyReLU, Dense, Concatenate
+from tensorflow.keras.layers import Conv2D, MaxPool2D, BatchNormalization, Dropout, GlobalAvgPool2D, LeakyReLU, Dense, Concatenate, LSTM
 from tensorflow.keras.activations import swish
 from tensorflow.keras.regularizers import l1_l2
 from tensorflow import dtypes
+from tensorflow.python.keras.layers import Reshape
 
 
 def model_fn(args):
@@ -37,52 +38,26 @@ def model_fn(args):
                       bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(conv_m_1)
     conv_1 = Concatenate()([conv_1, conv_1_3, conv_m_1])
     custom_avg_pool = GlobalAvgPool2D()(conv_1)
-    custom_fc_layers = Dense(32, activation=activ, kernel_initializer=init, bias_initializer=init,
-                             kernel_regularizer=rglzr, bias_regularizer=rglzr)(custom_avg_pool)
-    custom_fc_layers = normalization(gamma_initializer=init, beta_initializer=init  # moving_mean_initializer=init, moving_variance_initializer=init
-                                     )(custom_fc_layers)
-    # custom_fc_layers = Dropout(rate=args['dropout_ratio'])(custom_fc_layers)
-    custom_fc_layers = Dense(16, activation=activ, kernel_initializer=init, bias_initializer=init,
-                             kernel_regularizer=rglzr, bias_regularizer=rglzr)(custom_fc_layers)
-    custom_fc_layers = normalization(gamma_initializer=init, beta_initializer=init  # moving_mean_initializer=init,moving_variance_initializer=init
-                                     )(custom_fc_layers)
-    # custom_fc_layers = Dropout(rate=args['dropout_ratio'])(custom_fc_layers)
-
+    custom_fc_layers = Dense(32, activation=activ, kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(custom_avg_pool)
+    custom_fc_layers = normalization(gamma_initializer=init, beta_initializer=init)(custom_fc_layers)
     # --------------------------------================ Tabular data =================--------------------------------- #
     image_type_input = Input(shape=(2,), name='image_type', dtype=dtypes.float32)
     sex_input = Input(shape=(2,), name='sex', dtype=dtypes.float32)
     anatom_site_input = Input(shape=(6,), name='anatom_site_general', dtype=dtypes.float32)
     age_input = Input(shape=(10,), name='age_approx', dtype=dtypes.float32)
     concat_inputs = Concatenate()([image_type_input, sex_input, anatom_site_input, age_input])
-    concat_inputs = Dropout(rate=args['dropout_ratio'])(concat_inputs)
-    custom_fc2_layers = Dense(64, activation=activ, kernel_initializer=init,
-                              bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(concat_inputs)
-    custom_fc2_layers = normalization(gamma_initializer=init, beta_initializer=init # moving_mean_initializer=init, moving_variance_initializer=init
-                                      )(custom_fc2_layers)
+    concat_inputs = Reshape(target_shape=(20, 1))(concat_inputs)
+    custom_lstm = LSTM(64)(concat_inputs)
+    custom_fc2_layers = normalization(gamma_initializer=init, beta_initializer=init)(custom_lstm)
     custom_fc2_layers = Dropout(rate=args['dropout_ratio'])(custom_fc2_layers)
-    custom_fc2_layers = Dense(32, activation=activ, kernel_initializer=init,
-                              bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(
-        custom_fc2_layers)
-    custom_fc2_layers = normalization(gamma_initializer=init, beta_initializer=init # moving_mean_initializer=init, moving_variance_initializer=init
-                                      )(custom_fc2_layers)
-    # custom_fc2_layers = Dropout(rate=args['dropout_ratio'])(custom_fc2_layers)
-    custom_fc2_layers = Dense(16, activation=activ, kernel_initializer=init,
-                              bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(
-        custom_fc2_layers)
-    custom_fc2_layers = normalization(gamma_initializer=init, beta_initializer=init # moving_mean_initializer=init, moving_variance_initializer=init
-                                      )(custom_fc2_layers)
-    # custom_fc2_layers = Dropout(rate=args['dropout_ratio'])(custom_fc2_layers)
 
+    custom_fc2_layers = Dense(32, activation=activ, kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(custom_fc2_layers)
+    custom_fc2_layers = normalization(gamma_initializer=init, beta_initializer=init)(custom_fc2_layers)
     # -------------------------------================== Concat part ==================---------------------------------#
     common_layers = Concatenate(axis=1)([custom_fc_layers, custom_fc2_layers])
-    common_layers = Dense(16, activation=activ, kernel_initializer=init,
-                          bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(common_layers)
-    common_layers = normalization(gamma_initializer=init, beta_initializer=init # moving_mean_initializer=init, moving_variance_initializer=init
-                                  )(common_layers)
+    common_layers = Dense(16, activation=activ, kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(common_layers)
+    common_layers = normalization(gamma_initializer=init, beta_initializer=init)(common_layers)
     common_layers = Dropout(rate=args['dropout_ratio'])(common_layers)
-    common_layers = Dense(16, activation=activ, kernel_initializer=init,
-                          bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(common_layers)
-    output_layer = Dense(args['num_classes'], activation='softmax', kernel_initializer=init,
-                         bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr,
-                         name='class')(common_layers)
+    common_layers = Dense(16, activation=activ, kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(common_layers)
+    output_layer = Dense(args['num_classes'], activation='softmax', kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr, name='class')(common_layers)
     return Model([image_input, image_type_input, sex_input, anatom_site_input, age_input], [output_layer])
