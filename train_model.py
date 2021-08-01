@@ -1,17 +1,13 @@
-import os
-# import numpy as np
 import tensorflow as tf
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.callbacks.experimental import BackupAndRestore
-from tensorboard.plugins.hparams.api import KerasCallback
-
 from config import CLASS_NAMES
 from dataset import MelData
 from model import model_fn
 from losses import custom_loss
 from metrics import metrics
-from callbacks import EnrTensorboard, TestCallback, LaterCheckpoint  # , CyclicLR
+from callbacks import EnrTensorboard, TestCallback, LaterCheckpoint
 
 
 def training(args):
@@ -37,31 +33,33 @@ def training(args):
     global_batch = args['batch_size'] * strategy.num_replicas_in_sync
     args['input_shape'] = (args['image_size'], args['image_size'], 3)
     datasets = MelData(dir_dict=args['dir_dict'], args=args, batch=global_batch)
+    train_data = datasets.get_dataset(mode='train')
+    val_data = datasets.get_dataset(mode='val')
+    test_data = datasets.get_dataset(mode='test')
     args['weights'] = datasets.weights_per_class
     with open(args['dir_dict']['hparams_logs'], 'a') as f:
         f.write(datasets.info() + f"Number of replicas in sync: {strategy.num_replicas_in_sync}\n")
     # ---------------------------------------------------- Model ----------------------------------------------------- #
-    args["lr"] = args["lr"] * strategy.num_replicas_in_sync
+    args["learning_rate"] = args["learning_rate"] * strategy.num_replicas_in_sync
     optimizer = {"adam": tf.keras.optimizers.Adam, "ftrl": tf.keras.optimizers.Ftrl,
                  "sgd": tf.keras.optimizers.SGD, "rmsprop": tf.keras.optimizers.RMSprop,
                  "adadelta": tf.keras.optimizers.Adadelta, "adagrad": tf.keras.optimizers.Adagrad,
                  "adamax": tf.keras.optimizers.Adamax, "nadam": tf.keras.optimizers.Nadam}
     with strategy.scope():
         custom_model = model_fn(args=args)
-        custom_model.compile(optimizer=optimizer[args["optimizer"]](learning_rate=args["lr"]),
+        custom_model.compile(optimizer=optimizer[args["optimizer"]](learning_rate=args["learning_rate"]),
                              loss=custom_loss(datasets.weights_per_class),  # 'categorical_crossentropy',
                              metrics=metrics(args['num_classes']))
     # --------------------------------------------------- Callbacks --------------------------------------------------- #
     callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=0),
-                 EnrTensorboard(data=datasets.get_dataset(mode='val'), class_names=args['class_names'], log_dir=args["dir_dict"]["logs"],
+                 EnrTensorboard(data=val_data, class_names=args['class_names'], log_dir=args["dir_dict"]["logs"],
                                 update_freq='epoch', profile_batch=0, mode=args["mode"]),
-                 KerasCallback(writer=args["dir_dict"]["logs"], hparams=args["hparams"], trial_id=os.path.basename(args["dir_dict"]["trial"])),
-                 TestCallback(test_data=datasets.get_dataset(mode="test"), val_data=datasets.get_dataset(mode='val'), args=args),
-                 ReduceLROnPlateau(factor=0.25, patience=10),
+                 TestCallback(test_data=test_data, val_data=val_data, args=args),
+                 ReduceLROnPlateau(factor=0.75, patience=10),
                  EarlyStopping(verbose=args["verbose"], patience=args["early_stop"]),
                  BackupAndRestore(backup_dir=args["dir_dict"]["backup"])]
     # ------------------------------------------------- Train model -------------------------------------------------- #
-    custom_model.fit(x=datasets.get_dataset(mode="train"), epochs=args["epochs"],
-                     validation_data=datasets.get_dataset(mode="val"),
+    custom_model.fit(x=train_data, epochs=args["epochs"],
+                     validation_data=val_data,
                      callbacks=callbacks, verbose=args["verbose"])
     tf.keras.backend.clear_session()

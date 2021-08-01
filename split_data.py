@@ -1,5 +1,5 @@
 import os
-
+from string import ascii_lowercase
 import numpy as np
 import pandas as pd
 
@@ -39,43 +39,42 @@ up = pd.read_csv(os.path.join(DATA_DIR, 'up.csv'))
 up = up[COLUMNS]
 
 isic18_val = isic18
+
 nans_isic19 = isic19[isic19["lesion_id"].isna()]
 isic19_not_nans = isic19[~isic19.index.isin(nans_isic19.index)]
 isic19_ids = isic19_not_nans["lesion_id"].unique()
 np.random.shuffle(isic19_ids)
-isic19_train_ratio = int(len(isic19_ids) * 0.80)
-isic19_val_ratio = int(len(isic19_ids) * 0.90)
-isic19_train_ids = isic19_ids[:isic19_train_ratio]
-isic19_val_ids = isic19_ids[isic19_train_ratio:isic19_val_ratio]
-isic19_test_ids = isic19_ids[isic19_val_ratio:]
-isic19_train = nans_isic19.append(isic19[isic19["lesion_id"].isin(isic19_train_ids)])
-isic19_val = isic19[isic19["lesion_id"].isin(isic19_val_ids)]
-isic19_test = isic19[isic19["lesion_id"].isin(isic19_test_ids)]
+isic19_train = isic19.loc[isic19["lesion_id"].isin(isic19_ids[:int(len(isic19_ids) * 0.8)])].append(nans_isic19)
+isic19_val = isic19.loc[isic19["lesion_id"].isin(isic19_ids[int(len(isic19_ids) * 0.8):int(len(isic19_ids) * 0.9)])]
+isic19_test = isic19.loc[isic19["lesion_id"].isin(isic19_ids[int(len(isic19_ids) * 0.9):])]
 
 isic20_ids = isic20["patient_id"].unique()
 np.random.shuffle(isic20_ids)
-isic20_train_len = int(len(isic20_ids) * 0.8)
-isic20_val_len = int(len(isic20_ids) * 0.9)
-isic20_train_ids = isic20_ids[:isic20_train_len]
-isic20_val_ids = isic20_ids[isic20_train_len:isic20_val_len]
-isic20_test_ids = isic20_ids[isic20_val_len:]
-isic20_train = isic20[isic20["patient_id"].isin(isic20_train_ids)]
-isic20_val = isic20[isic20["patient_id"].isin(isic20_val_ids)]
-isic20_test = isic20[isic20["patient_id"].isin(isic20_test_ids)]
+isic20_train = isic20.loc[isic20["patient_id"].isin(isic20_ids[:int(len(isic20_ids) * 0.8)])]
+isic20_val = isic20.loc[isic20["patient_id"].isin(isic20_ids[int(len(isic20_ids) * 0.8):int(len(isic20_ids) * 0.9)])]
+isic20_test = isic20.loc[isic20["patient_id"].isin(isic20_ids[int(len(isic20_ids) * 0.9):])]
 
 spt_val = spt[spt.index.isin(spt_val_idx.index)]
 spt_test = spt[spt.index.isin(spt_test_idx.index)]
 spt_train = spt[~spt.index.isin(spt_val.append(spt_test).index)]
 
-dermofit_val = dermofit.sample(frac=.5)
-dermofit_test = dermofit[~dermofit.index.isin(dermofit_val.index)]
+
+dermofit['ids'] = dermofit['image'].apply(lambda x: x.split(os.sep)[1])
+for idx, id in enumerate(dermofit['ids']):
+    if id.endswith(tuple(ascii_lowercase)):
+        dermofit.loc[idx, 'ids'] = id[:-1]
+dermofit_ids = dermofit['ids'].unique()
+np.random.shuffle(dermofit_ids)
+dermofit_val = dermofit.loc[dermofit['ids'].isin(dermofit_ids[:int(len(dermofit_ids) * 0.5)])]
+dermofit_test = dermofit.loc[dermofit['ids'].isin(dermofit_ids[int(len(dermofit_ids) * 0.5):])]
+
 
 mednode_train = mednode.sample(frac=0.8)
 mednode_val = mednode[~mednode.index.isin(mednode_train.index)].sample(frac=0.5)
 mednode_test = mednode[~mednode.index.isin(mednode_train.append(mednode_val).index)]
 
-ph2_train = ph2.sample(frac=.8)
-ph2_val = ph2[~ph2.index.isin(ph2_train.index)].sample(frac=.5)
+ph2_train = ph2.sample(frac=0.8)
+ph2_val = ph2[~ph2.index.isin(ph2_train.index)].sample(frac=0.5)
 ph2_test = ph2[~ph2.index.isin(ph2_train.append(ph2_val).index)]
 
 up_train = up

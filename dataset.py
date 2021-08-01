@@ -54,19 +54,20 @@ class MelData:
         self.val_data = self.ohe_map(dict(self.val_data_df.sample(frac=self.args["dataset_frac"])))
         self.test_data = self.ohe_map(dict(self.test_data_df))
         self.attr = self.dataset_attributes()
+        self.data_info('all')
+        self.data_info('train')
+        self.data_info('val')
+        self.data_info('test')
 
     def prep_classes(self, data):
         data["image"] = f"{self.image_folder}{os.sep}" + data["image"]
         data['image_type_weights'] = 1.
         data['class_weights'] = 1.
         for ixd, image_type in enumerate(sorted(self.image_type_counts)):
-            data['image_type_weights'][data['image_type'] == image_type] = self.weights_per_image_type[ixd]
+            data.loc[data['image_type'] == image_type, 'image_type_weights'] = self.weights_per_image_type[ixd]
         for idx, _class in enumerate(sorted(self.class_counts)):
-            data['class_weights'][data['class'] == _class] = self.weights_per_class[idx]
+            data.loc[data['class'] == _class, 'class_weights'] = self.weights_per_class[idx]
         data['sample_weights'] = data['image_type_weights']  # /2 + data['class_weights']/2  # todo check weighting formula. integrate
-        data.pop("dataset_id")
-        data.pop("image_type_weights")
-        data.pop("class_weights")
         return data
 
     def ohe_map(self, features):
@@ -91,36 +92,34 @@ class MelData:
     def data_info(self, mode):
         dataset_info_dict = {}
         image_type_inv = {}
-        if mode == "all":
+        if mode == 'all':
             df = self.train_data_df.append(self.val_data_df).append(self.test_data_df)
-        elif mode == "train":
+        elif mode == 'train':
             df = self.train_data_df
-
-        elif mode == "val":
+        elif mode == 'val':
             df = self.val_data_df
         else:
             df = self.test_data_df
-        for (key, value) in MAPPER["image_type"].items():
+        for (key, value) in MAPPER['image_type'].items():
             image_type_inv[value] = key
-        for dataset_id in df["dataset_id"].unique():
-            dataset_part = df[df.loc[:, "dataset_id"] == dataset_id]  # fraction per class
+        for dataset_id in df['dataset_id'].unique():
+            dataset_part = df[df.loc[:, 'dataset_id'] == dataset_id]  # fraction per class
             dataset_img_type_dict = {}
-            image_types = dataset_part["image_type"].unique()
-            for image_type in image_types:
-                dataset_image_part = dataset_part[dataset_part.loc[:, "image_type"] == image_type]
-                class_counts = dataset_image_part["class"].value_counts()
+            for image_type in dataset_part['image_type'].unique():
+                dataset_image_part = dataset_part[dataset_part.loc[:, 'image_type'] == image_type]
+                class_counts = dataset_image_part['class'].value_counts()
                 dataset_class_dict = {}
-                for j in class_counts.keys():
-                    dataset_class_dict[CLASS_NAMES[self.args['mode']][j]] = class_counts[j]
+                for k, v in class_counts.items():
+                    dataset_class_dict[CLASS_NAMES[self.args['mode']][k]] = v
                 dataset_img_type_dict[image_type_inv[image_type]] = dataset_class_dict
             dataset_info_dict[dataset_id] = dataset_img_type_dict
         info = pd.DataFrame(dataset_info_dict).stack().apply(pd.Series)
-        info.sort_index(axis=0, level=0, inplace=True)
         info = info[sorted(info.columns)]
         info.fillna(0, inplace=True)
-        save_path = os.path.join(MAIN_DIR, "data_info", f"{mode}_{self.args['image_type']}-{self.args['mode']}_data_info.html")
+        save_path = os.path.join(MAIN_DIR, 'data_info', f'{self.args["mode"]}', f'{self.args["image_type"]}', f"{mode}_data_info")
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        info.to_html(save_path, bold_rows=False, border=5)
+        info.to_html(save_path + '.html', bold_rows=False, border=4)
+        info.to_csv(save_path + '.csv')
         return dataset_info_dict
 
     def dataset_attributes(self):
@@ -146,7 +145,7 @@ class MelData:
                  f"Sample weight by image type:{attr['weights_per_image_type']}\n"
         return output
 
-    def tf_imread(self, sample, mode):
+    def tf_imread(self, sample, label, sample_weight, mode):
         sample["image"] = tf.reshape(tensor=tf.image.decode_image(tf.io.read_file(sample["image"]), channels=3), shape=self.args['input_shape'])
         sample["image"] = self.args['preprocess_fn'](sample["image"])
         if mode == "train":
@@ -164,10 +163,11 @@ class MelData:
             sample["image"] = tfa.image.rotate(images=sample["image"], angles=random_degrees, name="Rotation")
             sample["image"] = tfa.image.sharpness(image=tf.cast(sample["image"], dtype=tf.float32), factor=sharp, name="Sharpness")
             sample["image"] = tf.cond(tf.math.less_equal(rand, 0.5), lambda: tfa.image.gaussian_filter2d(image=sample["image"], sigma=sigma, filter_shape=5, name="Gaussian_filter"), lambda: sample["image"])
-        return sample
+        return sample, label, sample_weight
 
     def get_dataset(self, mode=None, repeat=1):
         np.random.seed(self.random_state)
+
         if mode == "train":
             dataset = self.train_data
         elif mode == "val":
@@ -176,9 +176,11 @@ class MelData:
             dataset = self.test_data
         else:
             raise ValueError(f"{mode} is not a valid mode.")
-
+        dataset[0].pop("dataset_id")
+        dataset[0].pop("image_type_weights")
+        dataset[0].pop("class_weights")
         dataset = tf.data.Dataset.from_tensor_slices(dataset)
-        dataset = dataset.map(lambda input, label, samples: (self.tf_imread(input, mode=mode), label, samples), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        dataset = dataset.map(lambda sample, label, sample_weight: self.tf_imread(sample, label, sample_weight, mode=mode), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.batch(self.batch)
         options = tf.data.Options()
         options.experimental_threading.max_intra_op_parallelism = 1
@@ -189,8 +191,5 @@ class MelData:
 
 
 if __name__ == '__main__':
-    args = {}
-    args['mode'] = '5cls'
-    args['image_type'] = 'both'
-    args["dataset_frac"] = 0.1
+    args = {'mode': '5cls', 'image_type': 'both', "dataset_frac": 0.1}
     dir_dict = directories(trial_id='1', run_num=0, args=args)

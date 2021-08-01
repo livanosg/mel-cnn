@@ -1,19 +1,19 @@
 import os
 import argparse
-from grid_search import grind
+from grid_search import grid
 
 
 def parse_module():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', '-m', nargs='+', choices=['incept', 'xept', 'effnet0', 'effnet1'], default='effnet0', help='Select pretrained model.')
-    parser.add_argument('--optimizer', '-opt', nargs='+', required=True, choices=['adam', 'ftrl', 'sgd', 'rmsprop', 'adadelta', 'adagrad', 'adamax', 'nadam'], type=str, help='Select optimizer.')
-    parser.add_argument('--image_size', '-is', nargs='+', required=True, type=int, help='Select image size.')
-    parser.add_argument('--image_type', '-it', nargs='+', required=True, type=str, choices=['derm', 'clinic', 'both'], help='Select image type to use during training.')
-    parser.add_argument('--colour', '-clr', nargs='+', default=['rgb'], type=str, help='Select image size.')
-    parser.add_argument('--batch-size', '-btch', nargs='+', default=[4], type=int, help='Select batch size.')
-    parser.add_argument('--learning-rate', '-lr', nargs='+', default=[1e-5], type=float, help='Select learning rate.')
-    parser.add_argument('--dropout-rate', '-dor', nargs='+', required=True, type=float, help='Select dropout rate.')
-    parser.add_argument('--relu-grad', '-rg', nargs='+', required=True, type=float, help='Select leaky relu gradient.')
+    parser.add_argument('--model', '-m', choices=['incept', 'xept', 'effnet0', 'effnet1'], default='effnet0', help='Select pretrained model.')
+    parser.add_argument('--optimizer', '-opt', required=True, choices=['adam', 'ftrl', 'sgd', 'rmsprop', 'adadelta', 'adagrad', 'adamax', 'nadam'], type=str, help='Select optimizer.')
+    parser.add_argument('--image_size', '-is', required=True, type=int, help='Select image size.')
+    parser.add_argument('--image_type', '-it', required=True, type=str, choices=['derm', 'clinic', 'both'], help='Select image type to use during training.')
+    parser.add_argument('--colour', '-clr', default='rgb', type=str, help='Select image size.')
+    parser.add_argument('--batch-size', '-btch', default=4, type=int, help='Select batch size.')
+    parser.add_argument('--learning-rate', '-lr', default=1e-5, type=float, help='Select learning rate.')
+    parser.add_argument('--dropout-ratio', '-dor', required=True, type=float, help='Select dropout ratio.')
+    parser.add_argument('--relu-grad', '-rg', required=True, type=float, help='Select leaky relu gradient.')
     parser.add_argument('--dataset-frac', '-frac', default=1., type=float, help='Dataset fraction.')
     parser.add_argument('--epochs', '-e', required=True, type=int, help='Select epochs.')
     parser.add_argument('--early-stop', '-es', required=True, type=int, help='Select early stop epochs.')
@@ -43,4 +43,4 @@ if __name__ == '__main__':
         args['verbose'] = 1
     else:
         args['verbose'] = 0
-    grind(args=args)
+    grid(args=args)
