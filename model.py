@@ -74,10 +74,6 @@ def model_fn(args):
     num_patches = (conv_1.shape[1] // patch_size) ** 2
     projection_dim = 16
     num_heads = 4
-    transformer_units = [
-        projection_dim * 2,
-        projection_dim,
-    ]  # Size of the transformer layers
     patches = Patches(2)(conv_1)
     encoded_patches = PatchEncoder(num_patches, projection_dim)(patches)
     x1 = LayerNormalization(epsilon=1e-6)(encoded_patches)
