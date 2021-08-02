@@ -33,13 +33,6 @@ def training(args):
     # --------------------------------------------------- Dataset ---------------------------------------------------- #
     global_batch = args['batch_size'] * strategy.num_replicas_in_sync
     args['input_shape'] = (args['image_size'], args['image_size'], 3)
-    datasets = MelData(dir_dict=args['dir_dict'], args=args, batch=global_batch)
-    train_data = datasets.get_dataset(mode='train')
-    val_data = datasets.get_dataset(mode='val')
-    test_data = datasets.get_dataset(mode='test')
-    args['weights'] = datasets.weights_per_class
-    with open(args['dir_dict']['hparams_logs'], 'a') as f:
-        f.write(datasets.info() + f"Number of replicas in sync: {strategy.num_replicas_in_sync}\n")
     # ---------------------------------------------------- Model ----------------------------------------------------- #
     args["learning_rate"] = args["learning_rate"] * strategy.num_replicas_in_sync
     optimizer = {"adam": tf.keras.optimizers.Adam, "ftrl": tf.keras.optimizers.Ftrl,
@@ -47,6 +40,14 @@ def training(args):
                  "adadelta": tf.keras.optimizers.Adadelta, "adagrad": tf.keras.optimizers.Adagrad,
                  "adamax": tf.keras.optimizers.Adamax, "nadam": tf.keras.optimizers.Nadam}
     with strategy.scope():
+        datasets = MelData(dir_dict=args['dir_dict'], args=args, batch=global_batch)
+        train_data = datasets.get_dataset(mode='train')
+        val_data = datasets.get_dataset(mode='val')
+        test_data = datasets.get_dataset(mode='test')
+        args['weights'] = datasets.weights_per_class
+        with open(args['dir_dict']['hparams_logs'], 'a') as f:
+            f.write(datasets.info() + f"Number of replicas in sync: {strategy.num_replicas_in_sync}\n")
+
         custom_model = model_fn(args=args)
         custom_model.compile(optimizer=optimizer[args["optimizer"]](learning_rate=args["learning_rate"]),
                              loss=SigmoidFocalCrossEntropy(gamma=2.5, alpha=0.2, reduction=tf.keras.losses.Reduction.AUTO),  #'categorical_crossentropy',  # custom_loss(datasets.weights_per_class)
