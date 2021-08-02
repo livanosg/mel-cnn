@@ -43,4 +43,10 @@ if __name__ == '__main__':
         args['verbose'] = 1
     else:
         args['verbose'] = 0
+
+    if args['nodes'] == 'multi':
+        os.environ['http_proxy'] = ''
+        os.environ['https_proxy'] = ''
+        os.environ['http'] = ''
+        os.environ['https'] = ''
     grid(args=args)
