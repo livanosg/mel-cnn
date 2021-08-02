@@ -45,8 +45,10 @@ if __name__ == '__main__':
         args['verbose'] = 0
 
     if args['nodes'] == 'multi':
-        del os.environ['http_proxy']
-        del os.environ['https_proxy']
-        del os.environ['http']
-        del os.environ['https']
+        for i in ['http_proxy','https_proxy','http','https']:
+            try:
+                del os.environ[i]
+                print(f'{i} unstet')
+            except KeyError:
+                pass
     grid(args=args)
