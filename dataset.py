@@ -65,7 +65,7 @@ class MelData:
             data.loc[data['image_type'] == image_type, 'image_type_weights'] = self.weights_per_image_type[ixd]
         for idx, _class in enumerate(sorted(self.class_counts)):
             data.loc[data['class'] == _class, 'class_weights'] = self.weights_per_class[idx]
-        data['sample_weights'] = data['class_weights']  # , data['image_type_weights']  # /2 + data['class_weights']/2  # todo check weighting formula. integrate
+        data['sample_weights'] = data['image_type_weights']  # , data['image_type_weights']  # /2 + data['class_weights']/2  # todo check weighting formula. integrate
         return data
 
     def ohe_map(self, features):
