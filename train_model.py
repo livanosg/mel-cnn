@@ -5,7 +5,6 @@ from tensorflow.keras.callbacks.experimental import BackupAndRestore
 from config import CLASS_NAMES
 from dataset import MelData
 from model import model_fn
-import tensorflow_addons as tfa
 from tensorflow_addons.losses import SigmoidFocalCrossEntropy
 from metrics import metrics
 from callbacks import EnrTensorboard, TestCallback, LaterCheckpoint
