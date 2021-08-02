@@ -8,8 +8,7 @@ from tensorflow.keras import backend as K
 from tensorflow.python.keras.callbacks import Callback, TensorBoard, ModelCheckpoint
 import matplotlib
 from matplotlib import pyplot as plt
-from sklearn.metrics import roc_curve, precision_recall_curve, auc, det_curve, classification_report, confusion_matrix, \
-    plot_det_curve
+from sklearn.metrics import roc_curve, precision_recall_curve, auc, det_curve, classification_report, confusion_matrix
 
 from losses import custom_loss
 from metrics import metrics
@@ -261,7 +260,7 @@ class TestCallback(Callback):
                 # otherwise and would be the same for all metrics.
 
             for _class in range(self.num_classes):
-                if len(self.num_classes) == 2 and _class == 0:
+                if self.num_classes == 2 and _class == 0:
                     pass
                 else:
                     fpr_roc, tpr_roc, thresholds_roc = roc_curve(one_hot_labels[..., _class], y_prob[..., _class])

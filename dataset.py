@@ -1,6 +1,5 @@
 import os
-# import cv2
-from config import MAPPER, BEN_MAL_MAPPER, NEV_MEL_OTHER_MAPPER, CLASS_NAMES, MAIN_DIR, directories
+from config import MAPPER, BEN_MAL_MAPPER, NEV_MEL_OTHER_MAPPER, CLASS_NAMES, MAIN_DIR
 import tensorflow as tf
 import tensorflow_addons as tfa
 import numpy as np
@@ -66,7 +65,7 @@ class MelData:
             data.loc[data['image_type'] == image_type, 'image_type_weights'] = self.weights_per_image_type[ixd]
         for idx, _class in enumerate(sorted(self.class_counts)):
             data.loc[data['class'] == _class, 'class_weights'] = self.weights_per_class[idx]
-        data['sample_weights'] = data['image_type_weights']  # /2 + data['class_weights']/2  # todo check weighting formula. integrate
+        data['sample_weights'] = data['class_weights']  # , data['image_type_weights']  # /2 + data['class_weights']/2  # todo check weighting formula. integrate
         return data
 
     def ohe_map(self, features):
@@ -187,8 +186,3 @@ class MelData:
         dataset = dataset.with_options(options)
         dataset = dataset.repeat(repeat)
         return dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
-
-
-if __name__ == '__main__':
-    args = {'mode': '5cls', 'image_type': 'both', "dataset_frac": 0.1}
-    dir_dict = directories(trial_id='1', run_num=0, args=args)

@@ -3,7 +3,7 @@ import tensorflow as tf
 from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Layer, Conv2D, MaxPool2D, LayerNormalization, Dropout, GlobalAvgPool1D, LeakyReLU,\
     Dense, Concatenate, LSTM, Reshape, Embedding, MultiHeadAttention, Add
-# from tensorflow.keras.activations import swish
+from tensorflow.keras.activations import swish
 from tensorflow.keras.regularizers import l1_l2
 from tensorflow import dtypes
 
@@ -45,29 +45,32 @@ def model_fn(args):
     layers = {1: main_conf,
               2: main_conf * 2,
               3: main_conf * 4}
-    init = tf.keras.initializers.glorot_normal()
-    activ = LeakyReLU(alpha=args["relu_grad"])  # swish
+    init = tf.keras.initializers.he_uniform()
+    activ = swish
     rglzr = l1_l2(l1=0., l2=0.0002)
     normalization = LayerNormalization
     # -------------------------------================= Image data =================----------------------------------- #
-    # model_preproc = Sequential([Lambda(function=models[model][1])], name="model_preproc")
     base_model = args['model'](include_top=False, input_shape=args['input_shape'])
     base_model.trainable = False
     image_input = Input(shape=args['input_shape'], name='image')
     base_model = base_model(image_input, training=False)
     conv_1 = Conv2D(layers[args['layers']][0], activation=activ, kernel_size=1, padding='same', kernel_initializer=init,
                     bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(base_model)
-    # conv_1 = normalization(gamma_initializer=init, beta_initializer=init)(conv_1)  # moving_mean_initializer=init, moving_variance_initializer=init
+    conv_1 = normalization(epsilon=1e-6, gamma_initializer=init, beta_initializer=init)(conv_1)  # moving_mean_initializer=init, moving_variance_initializer=init
     conv_1 = Dropout(rate=args['dropout_ratio'])(conv_1)
     conv_1_3 = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=1, padding='same', kernel_initializer=init,
                       bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(base_model)
-    # conv_2 = normalization(gamma_initializer=init, beta_initializer=init)(conv_2)  # moving_mean_initializer=init, moving_variance_initializer=init
+    conv_1_3 = normalization(epsilon=1e-6, gamma_initializer=init, beta_initializer=init)(conv_1_3)  # moving_mean_initializer=init, moving_variance_initializer=init
     conv_1_3 = Dropout(rate=args['dropout_ratio'])(conv_1_3)
     conv_1_3 = Conv2D(layers[args['layers']][2], activation=activ, kernel_size=3, padding='same', kernel_initializer=init,
                       bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(conv_1_3)
+    conv_1_3 = normalization(epsilon=1e-6, gamma_initializer=init, beta_initializer=init)(conv_1_3)  # moving_mean_initializer=init, moving_variance_initializer=init
+
     conv_m_1 = MaxPool2D(padding='same', strides=1)(base_model)
     conv_m_1 = Conv2D(layers[args['layers']][3], activation=activ, kernel_size=3, padding='same', kernel_initializer=init,
                       bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(conv_m_1)
+    conv_m_1 = normalization(epsilon=1e-6, gamma_initializer=init, beta_initializer=init)(conv_m_1)  # moving_mean_initializer=init, moving_variance_initializer=init
+
     conv_1 = Concatenate()([conv_1, conv_1_3, conv_m_1])
     patch_size = 2
     num_patches = (conv_1.shape[1] // patch_size) ** 2
@@ -75,13 +78,13 @@ def model_fn(args):
     num_heads = 4
     patches = Patches(2)(conv_1)
     encoded_patches = PatchEncoder(num_patches, projection_dim)(patches)
-    x1 = LayerNormalization(epsilon=1e-6)(encoded_patches)
+    x1 = normalization(epsilon=1e-6)(encoded_patches)
     attention_output = MultiHeadAttention(num_heads=num_heads, key_dim=projection_dim, dropout=args['dropout_ratio'])(x1, x1)
     x2 = Add()([attention_output, encoded_patches])
-    x3 = LayerNormalization(epsilon=1e-6)(x2)
+    x3 = normalization(epsilon=1e-6)(x2)
     custom_avg_pool = GlobalAvgPool1D()(x3)
-    custom_fc_layers = Dense(32, activation=activ, kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(custom_avg_pool)
-    custom_fc_layers = normalization(gamma_initializer=init, beta_initializer=init)(custom_fc_layers)
+    custom_fc_layers = Dense(16, activation=activ, kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(custom_avg_pool)
+    custom_fc_layers = normalization(epsilon=1e-6, gamma_initializer=init, beta_initializer=init)(custom_fc_layers)
     # --------------------------------================ Tabular data =================--------------------------------- #
     image_type_input = Input(shape=(2,), name='image_type', dtype=dtypes.float32)
     sex_input = Input(shape=(2,), name='sex', dtype=dtypes.float32)
@@ -89,18 +92,17 @@ def model_fn(args):
     age_input = Input(shape=(10,), name='age_approx', dtype=dtypes.float32)
     concat_inputs = Concatenate()([image_type_input, sex_input, anatom_site_input, age_input])
     concat_inputs = Reshape(target_shape=(20, 1))(concat_inputs)
-    custom_lstm = LSTM(64)(concat_inputs)
-    custom_fc2_layers = normalization(gamma_initializer=init, beta_initializer=init)(custom_lstm)
+    custom_lstm = LSTM(32)(concat_inputs)
+    custom_fc2_layers = normalization(epsilon=1e-6, gamma_initializer=init, beta_initializer=init)(custom_lstm)
     custom_fc2_layers = Dropout(rate=args['dropout_ratio'])(custom_fc2_layers)
-    concat_inputs2 = Reshape(target_shape=(64, 1))(custom_fc2_layers)
-    custom_lstm2 = LSTM(64)(concat_inputs2)
-    custom_fc2_layers2 = Dense(32, activation=activ, kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(custom_lstm2)
-    custom_fc2_layers2 = normalization(gamma_initializer=init, beta_initializer=init)(custom_fc2_layers2)
+    custom_fc2_layers2 = Dense(16, activation=activ, kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(custom_fc2_layers)
+    custom_fc2_layers2 = normalization(epsilon=1e-6, gamma_initializer=init, beta_initializer=init)(custom_fc2_layers2)
+    custom_fc2_layers2 = Dropout(rate=args['dropout_ratio'])(custom_fc2_layers2)
+
     # -------------------------------================== Concat part ==================---------------------------------#
     common_layers = Concatenate(axis=1)([custom_fc_layers, custom_fc2_layers2])
     common_layers = Dense(16, activation=activ, kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(common_layers)
-    common_layers = normalization(gamma_initializer=init, beta_initializer=init)(common_layers)
-    common_layers = Dropout(rate=args['dropout_ratio'])(common_layers)
+    common_layers = normalization(epsilon=1e-6, gamma_initializer=init, beta_initializer=init)(common_layers)
     common_layers = Dense(16, activation=activ, kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr)(common_layers)
     output_layer = Dense(args['num_classes'], activation='softmax', kernel_initializer=init, bias_initializer=init, kernel_regularizer=rglzr, bias_regularizer=rglzr, name='class')(common_layers)
     return Model([image_input, image_type_input, sex_input, anatom_site_input, age_input], [output_layer])
