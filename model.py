@@ -13,7 +13,7 @@ class Patches(Layer):
         super(Patches, self).__init__()
         self.patch_size = patch_size
 
-    def call(self, images):
+    def call(self, images, **kwargs):
         batch_size = tf.shape(images)[0]
         patches = tf.image.extract_patches(
             images=images,
@@ -34,7 +34,7 @@ class PatchEncoder(Layer):
         self.projection = Dense(units=projection_dim)
         self.position_embedding = Embedding(input_dim=num_patches, output_dim=projection_dim)
 
-    def call(self, patch):
+    def call(self, patch, **kwargs):
         positions = tf.range(start=0, limit=self.num_patches, delta=1)
         encoded = self.projection(patch) + self.position_embedding(positions)
         return encoded

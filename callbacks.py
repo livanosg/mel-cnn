@@ -1,17 +1,15 @@
 import io
 import itertools
 import os
-
 import numpy as np
+import matplotlib
 import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.python.keras.callbacks import Callback, TensorBoard, ModelCheckpoint
-import matplotlib
 from matplotlib import pyplot as plt
 from sklearn.metrics import roc_curve, precision_recall_curve, auc, det_curve, classification_report, confusion_matrix
-
-from losses import custom_loss
 from metrics import metrics
+from model import PatchEncoder, Patches
 
 matplotlib.use('cairo')
 
@@ -226,8 +224,10 @@ class TestCallback(Callback):
         self.weights = args['weights']
 
     def on_train_end(self, logs=None):
-        model = tf.keras.models.load_model(self.best_model, custom_objects={"total_loss": custom_loss(weights=self.weights),
-                                                                            "metrics": metrics})
+        model = tf.keras.models.load_model(self.best_model, custom_objects={'metrics': metrics,
+                                                                            'Patches': Patches,
+                                                                            'PatchEncoder': PatchEncoder
+                                                               })
         for idx, dataset in enumerate([self.test_data, self.validation_data]):
             y_prob = np.empty(shape=(1, self.num_classes))
             one_hot_labels = np.empty(shape=(1, self.num_classes))
