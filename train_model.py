@@ -52,7 +52,7 @@ def training(args):
                              loss=SigmoidFocalCrossEntropy(gamma=2.5, alpha=0.2, reduction=tf.keras.losses.Reduction.AUTO),  #'categorical_crossentropy',  # custom_loss(datasets.weights_per_class)
                              metrics=metrics(args['num_classes']))
     # --------------------------------------------------- Callbacks --------------------------------------------------- #
-    callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=20),
+    callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=50),
                  EnrTensorboard(data=val_data, class_names=args['class_names'], log_dir=args["dir_dict"]["logs"],
                                 update_freq='epoch', profile_batch=0, mode=args["mode"]),
                  TestCallback(test_data=test_data, val_data=val_data, args=args),

@@ -8,6 +8,8 @@ from tensorflow.keras import backend as K
 from tensorflow.python.keras.callbacks import Callback, TensorBoard, ModelCheckpoint
 from matplotlib import pyplot as plt
 from sklearn.metrics import roc_curve, precision_recall_curve, auc, det_curve, classification_report, confusion_matrix
+
+from config import CLASS_NAMES
 from metrics import metrics
 from model import PatchEncoder, Patches
 
@@ -224,10 +226,7 @@ class TestCallback(Callback):
         self.weights = args['weights']
 
     def on_train_end(self, logs=None):
-        model = tf.keras.models.load_model(self.best_model, custom_objects={'metrics': metrics,
-                                                                            'Patches': Patches,
-                                                                            'PatchEncoder': PatchEncoder
-                                                               })
+        model = tf.keras.models.load_model(self.best_model, custom_objects={'metrics': metrics})
         for idx, dataset in enumerate([self.test_data, self.validation_data]):
             y_prob = np.empty(shape=(1, self.num_classes))
             one_hot_labels = np.empty(shape=(1, self.num_classes))
@@ -267,6 +266,10 @@ class TestCallback(Callback):
                     precision, recall, thresholds = precision_recall_curve(one_hot_labels[..., _class], y_prob[..., _class])
                     det_fpr, det_fnr, det_thresholds = det_curve(y_true=one_hot_labels[..., _class], y_score=y_prob[..., _class])
                     class_auc = auc(fpr_roc, tpr_roc)
+                    with open(os.path.join(save_dir, "report.txt"), "a") as f:
+                        if _class == 1 or (self.num_classes > 2 and _class == 0):
+                            f.write(f"{''.rjust(13, ' ')}{'AUC'.rjust(10)}\n")
+                        f.write(f"{CLASS_NAMES[self.mode][_class].rjust(12)} {str(np.round(class_auc, 3)).rjust(10)}")
                     plt.figure(1)
                     plt.plot([0, 1], [0, 1], "k--")
                     plt.plot(fpr_roc, tpr_roc, label=f"{self.class_names[_class]} (area = {class_auc:.3f})")
