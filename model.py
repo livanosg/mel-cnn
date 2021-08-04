@@ -50,7 +50,7 @@ def model_fn(args):
     projection_dim = 16
     num_heads = 16
 
-    activ = ReLU
+    activ = LeakyReLU
     rglzr = l1_l2(l1=0., l2=0.0002)
     normalization = LayerNormalization
     # -------------------------------================= Image data =================----------------------------------- #
@@ -60,26 +60,26 @@ def model_fn(args):
     base_model = base_model(image_input, training=False)
     # -----------------================= Inception module C used in Inception v4 =================-------------------- #
     conv1x1ap = AveragePooling2D(padding='same', strides=1)(base_model)
-    conv1x1ap = Conv2D(layers[args['layers']][1], kernel_size=1, padding='same')(conv1x1ap)
+    conv1x1ap = Conv2D(layers[args['layers']][1],activation=activ(args['relu_grad']), kernel_size=1, padding='same')(conv1x1ap)
     conv1x1ap = normalization()(conv1x1ap)
     conv1x1ap = Dropout(rate=args['dropout_ratio'])(conv1x1ap)
-    conv1x1 = Conv2D(layers[args['layers']][1], kernel_size=1, padding='same')(base_model)
+    conv1x1 = Conv2D(layers[args['layers']][1],activation=activ(args['relu_grad']), kernel_size=1, padding='same')(base_model)
     conv1x1 = normalization()(conv1x1)
     conv1x1 = Dropout(rate=args['dropout_ratio'])(conv1x1)
-    conv1x1_1x3_3x1 = Conv2D(layers[args['layers']][0], kernel_size=1, padding='same')(base_model)
-    conv1x1_1x3 = Conv2D(layers[args['layers']][1], kernel_size=(1, 3), padding='same')(conv1x1_1x3_3x1)
+    conv1x1_1x3_3x1 = Conv2D(layers[args['layers']][0],activation=activ(args['relu_grad']), kernel_size=1, padding='same')(base_model)
+    conv1x1_1x3 = Conv2D(layers[args['layers']][1],activation=activ(args['relu_grad']), kernel_size=(1, 3), padding='same')(conv1x1_1x3_3x1)
     conv1x1_1x3 = normalization()(conv1x1_1x3)
     conv1x1_1x3 = Dropout(rate=args['dropout_ratio'])(conv1x1_1x3)
-    conv1x1_3x1 = Conv2D(layers[args['layers']][1], kernel_size=(3, 1), padding='same')(conv1x1_1x3_3x1)
+    conv1x1_3x1 = Conv2D(layers[args['layers']][1],activation=activ(args['relu_grad']), kernel_size=(3, 1), padding='same')(conv1x1_1x3_3x1)
     conv1x1_3x1 = normalization()(conv1x1_3x1)
     conv1x1_3x1 = Dropout(rate=args['dropout_ratio'])(conv1x1_3x1)
-    conv1x1_2 = Conv2D(layers[args['layers']][0], kernel_size=1, padding='same')(base_model)
-    conv1x3_3x1 = Conv2D(layers[args['layers']][1], kernel_size=(1, 3), padding='same')(conv1x1_2)
-    conv3x1_3x1_1x3 = Conv2D(layers[args['layers']][1], kernel_size=(3, 1), padding='same')(conv1x3_3x1)
-    conv1x1_2_1x3 = Conv2D(layers[args['layers']][1], kernel_size=(1, 3), padding='same')(conv3x1_3x1_1x3)
+    conv1x1_2 = Conv2D(layers[args['layers']][0],activation=activ(args['relu_grad']), kernel_size=1, padding='same')(base_model)
+    conv1x3_3x1 = Conv2D(layers[args['layers']][1],activation=activ(args['relu_grad']), kernel_size=(1, 3), padding='same')(conv1x1_2)
+    conv3x1_3x1_1x3 = Conv2D(layers[args['layers']][1],activation=activ(args['relu_grad']), kernel_size=(3, 1), padding='same')(conv1x3_3x1)
+    conv1x1_2_1x3 = Conv2D(layers[args['layers']][1],activation=activ(args['relu_grad']), kernel_size=(1, 3), padding='same')(conv3x1_3x1_1x3)
     conv1x1_2_1x3 = normalization()(conv1x1_2_1x3)
     conv1x1_2_1x3 = Dropout(rate=args['dropout_ratio'])(conv1x1_2_1x3)
-    conv1x1_2_3x1 = Conv2D(layers[args['layers']][1], kernel_size=(3, 1), padding='same')(conv3x1_3x1_1x3)
+    conv1x1_2_3x1 = Conv2D(layers[args['layers']][1],activation=activ(args['relu_grad']), kernel_size=(3, 1), padding='same')(conv3x1_3x1_1x3)
     conv1x1_2_3x1 = normalization()(conv1x1_2_3x1)
     conv1x1_2_3x1 = Dropout(rate=args['dropout_ratio'])(conv1x1_2_3x1)
     inc_mod = Concatenate()([conv1x1ap, conv1x1, conv1x1_1x3, conv1x1_3x1, conv1x1_2_1x3, conv1x1_2_3x1])
