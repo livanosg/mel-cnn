@@ -58,6 +58,7 @@ def model_fn(args):
     base_model.trainable = False
     image_input = Input(shape=args['input_shape'], name='image')
     base_model = base_model(image_input, training=False)
+    # -----------------================= Inception module C used in Inception v4 =================-------------------- #
     conv1x1ap = AveragePooling2D(padding='same', strides=1)(base_model)
     conv1x1ap = Conv2D(layers[args['layers']][1], kernel_size=1, padding='same')(conv1x1ap)
     conv1x1ap = normalization()(conv1x1ap)
@@ -82,10 +83,9 @@ def model_fn(args):
     conv1x1_2_3x1 = normalization()(conv1x1_2_3x1)
     conv1x1_2_3x1 = Dropout(rate=args['dropout_ratio'])(conv1x1_2_3x1)
     inc_mod = Concatenate()([conv1x1ap, conv1x1, conv1x1_1x3, conv1x1_3x1, conv1x1_2_1x3, conv1x1_2_3x1])
-
+    # ------------------------------====================== ViT module =====================--------------------------- #
     patches = Patches(patch_size=patch_size)(inc_mod)
     num_patches = (inc_mod.shape[1] // patch_size) ** 2
-
     encoded_patches = PatchEncoder(num_patches=num_patches, projection_dim=projection_dim)(patch=patches)
     x1 = normalization(epsilon=1e-6)(encoded_patches)
     attention_output = MultiHeadAttention(num_heads=num_heads, key_dim=projection_dim, dropout=args['dropout_ratio'])(x1, x1)
