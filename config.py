@@ -46,9 +46,8 @@ MAPPER = {'image_type': {'clinic': 0,
           }
 
 #
-BEN_MAL_MAPPER = {'class': {0: 0, 2: 0, 5: 0,  # Group 0: NV, NNV, unknown | 1: MEL, NMC | 2: SUS
-                            1: 1, 3: 1,
-                            4: 2}
+BEN_MAL_MAPPER = {'class': {0: 0, 2: 0, 4: 0, 5: 0,  # Group 0: NV, NNV, SUS, unknown | 1: MEL, NMC
+                            1: 1, 3: 1}
                   }
 NEV_MEL_OTHER_MAPPER = {'class': {0: 0,  # Group 0: NV, | 1: MEL | 2: NNV, NMC, SUS, unknown
                                   1: 1,

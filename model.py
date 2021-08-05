@@ -1,8 +1,8 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model, Input
-from tensorflow.keras.layers import Layer, Conv2D, LayerNormalization, Dropout, GlobalAvgPool1D, LeakyReLU,\
-    Dense, Concatenate, LSTM, Reshape, Embedding, MultiHeadAttention, Add, AveragePooling2D, ReLU
+from tensorflow.keras.layers import Layer, Conv2D, LayerNormalization, Dropout,GlobalAvgPool1D, GlobalAvgPool2D, Dense, Concatenate, \
+    LSTM, Reshape, Embedding, MultiHeadAttention, Add, AveragePooling2D, ReLU
 from tensorflow.keras.activations import swish
 from tensorflow.keras.regularizers import l1_l2
 from tensorflow import dtypes
@@ -13,15 +13,20 @@ class Patches(Layer):
         super(Patches, self).__init__()
         self.patch_size = patch_size
 
+    def get_config(self):
+        config = {
+            'patch_size': self.patch_size,
+        }
+        base_config = super(Layer, self).get_config()
+        return {**base_config, **config}
+
     def call(self, images):
         batch_size = tf.shape(images)[0]
-        patches = tf.image.extract_patches(
-            images=images,
-            sizes=[1, self.patch_size, self.patch_size, 1],
-            strides=[1, self.patch_size, self.patch_size, 1],
-            rates=[1, 1, 1, 1],
-            padding="VALID",
-        )
+        patches = tf.image.extract_patches(images=images,
+                                           sizes=[1, self.patch_size, self.patch_size, 1],
+                                           strides=[1, self.patch_size, self.patch_size, 1],
+                                           rates=[1, 1, 1, 1],
+                                           padding="VALID")
         patch_dims = patches.shape[-1]
         patches = tf.reshape(patches, [batch_size, -1, patch_dims])
         return patches
@@ -33,6 +38,15 @@ class PatchEncoder(Layer):
         self.num_patches = num_patches
         self.projection = Dense(units=projection_dim)
         self.position_embedding = Embedding(input_dim=num_patches, output_dim=projection_dim)
+
+    def get_config(self):
+        config = {
+            'num_patches': self.num_patches,
+            'projection': self.projection,
+            'position_embedding': self.num_patches,
+        }
+        base_config = super(Layer, self).get_config()
+        return {**base_config, **config}
 
     def call(self, patch):
         positions = tf.range(start=0, limit=self.num_patches, delta=1)
@@ -50,7 +64,7 @@ def model_fn(args):
     projection_dim = 16
     num_heads = 16
 
-    activ = LeakyReLU
+    activ = ReLU(negative_slope=args["relu_grad"])
     rglzr = l1_l2(l1=0., l2=0.0002)
     normalization = LayerNormalization
     # -------------------------------================= Image data =================----------------------------------- #
@@ -60,26 +74,29 @@ def model_fn(args):
     base_model = base_model(image_input, training=False)
     # -----------------================= Inception module C used in Inception v4 =================-------------------- #
     conv1x1ap = AveragePooling2D(padding='same', strides=1)(base_model)
-    conv1x1ap = Conv2D(layers[args['layers']][1],activation=activ(args['relu_grad']), kernel_size=1, padding='same')(conv1x1ap)
+    conv1x1ap = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=1, padding='same')(
+        conv1x1ap)
     conv1x1ap = normalization()(conv1x1ap)
     conv1x1ap = Dropout(rate=args['dropout_ratio'])(conv1x1ap)
-    conv1x1 = Conv2D(layers[args['layers']][1],activation=activ(args['relu_grad']), kernel_size=1, padding='same')(base_model)
+    conv1x1 = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=1, padding='same')(base_model)
     conv1x1 = normalization()(conv1x1)
     conv1x1 = Dropout(rate=args['dropout_ratio'])(conv1x1)
-    conv1x1_1x3_3x1 = Conv2D(layers[args['layers']][0],activation=activ(args['relu_grad']), kernel_size=1, padding='same')(base_model)
-    conv1x1_1x3 = Conv2D(layers[args['layers']][1],activation=activ(args['relu_grad']), kernel_size=(1, 3), padding='same')(conv1x1_1x3_3x1)
+    conv1x1_1x3_3x1 = Conv2D(layers[args['layers']][0], activation=activ, kernel_size=1, padding='same')(base_model)
+    conv1x1_1x3 = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=(1, 3), padding='same')(conv1x1_1x3_3x1)
     conv1x1_1x3 = normalization()(conv1x1_1x3)
     conv1x1_1x3 = Dropout(rate=args['dropout_ratio'])(conv1x1_1x3)
-    conv1x1_3x1 = Conv2D(layers[args['layers']][1],activation=activ(args['relu_grad']), kernel_size=(3, 1), padding='same')(conv1x1_1x3_3x1)
+    conv1x1_3x1 = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=(3, 1), padding='same')(conv1x1_1x3_3x1)
     conv1x1_3x1 = normalization()(conv1x1_3x1)
     conv1x1_3x1 = Dropout(rate=args['dropout_ratio'])(conv1x1_3x1)
-    conv1x1_2 = Conv2D(layers[args['layers']][0],activation=activ(args['relu_grad']), kernel_size=1, padding='same')(base_model)
-    conv1x3_3x1 = Conv2D(layers[args['layers']][1],activation=activ(args['relu_grad']), kernel_size=(1, 3), padding='same')(conv1x1_2)
-    conv3x1_3x1_1x3 = Conv2D(layers[args['layers']][1],activation=activ(args['relu_grad']), kernel_size=(3, 1), padding='same')(conv1x3_3x1)
-    conv1x1_2_1x3 = Conv2D(layers[args['layers']][1],activation=activ(args['relu_grad']), kernel_size=(1, 3), padding='same')(conv3x1_3x1_1x3)
+    conv1x1_2 = Conv2D(layers[args['layers']][0], activation=activ, kernel_size=1, padding='same')(
+        base_model)
+    conv1x3_3x1 = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=(1, 3), padding='same')(conv1x1_2)
+    conv3x1_3x1_1x3 = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=(3, 1), padding='same')(conv1x3_3x1)
+    conv1x1_2_1x3 = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=(1, 3),
+                           padding='same')(conv3x1_3x1_1x3)
     conv1x1_2_1x3 = normalization()(conv1x1_2_1x3)
     conv1x1_2_1x3 = Dropout(rate=args['dropout_ratio'])(conv1x1_2_1x3)
-    conv1x1_2_3x1 = Conv2D(layers[args['layers']][1],activation=activ(args['relu_grad']), kernel_size=(3, 1), padding='same')(conv3x1_3x1_1x3)
+    conv1x1_2_3x1 = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=(3, 1), padding='same')(conv3x1_3x1_1x3)
     conv1x1_2_3x1 = normalization()(conv1x1_2_3x1)
     conv1x1_2_3x1 = Dropout(rate=args['dropout_ratio'])(conv1x1_2_3x1)
     inc_mod = Concatenate()([conv1x1ap, conv1x1, conv1x1_1x3, conv1x1_3x1, conv1x1_2_1x3, conv1x1_2_3x1])
@@ -92,7 +109,7 @@ def model_fn(args):
     x2 = Add()([attention_output, encoded_patches])
     x3 = normalization(epsilon=1e-6)(x2)
     custom_avg_pool = GlobalAvgPool1D()(x3)
-    custom_fc_layers = normalization(epsilon=1e-6)(custom_avg_pool)
+    custom_fc_layers = normalization()(custom_avg_pool)
     # --------------------------------================ Tabular data =================--------------------------------- #
     image_type_input = Input(shape=(2,), name='image_type', dtype=dtypes.float32)
     sex_input = Input(shape=(2,), name='sex', dtype=dtypes.float32)
