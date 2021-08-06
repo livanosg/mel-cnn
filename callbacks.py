@@ -11,8 +11,6 @@ from sklearn.metrics import roc_curve, precision_recall_curve, auc, det_curve, c
 
 from config import CLASS_NAMES
 from metrics import metrics
-from model import PatchEncoder, Patches
-
 matplotlib.use('cairo')
 
 
@@ -228,21 +226,15 @@ class TestCallback(Callback):
     def on_train_end(self, logs=None):
         model = tf.keras.models.load_model(self.best_model, custom_objects={'metrics': metrics})
         for idx, dataset in enumerate([self.test_data, self.validation_data]):
-            y_prob = np.empty(shape=(1, self.num_classes))
-            one_hot_labels = np.empty(shape=(1, self.num_classes))
             if idx == 0:
                 dataset_type = "test"
             else:
                 dataset_type = "validation"
             save_dir = os.path.join(self.trial_path, dataset_type)
             os.makedirs(save_dir)
-            for data in dataset.as_numpy_iterator():
-                output = model.predict(data[0])
-                y_prob = np.concatenate([y_prob, np.asarray(output)], axis=0)
-                one_hot_labels = np.concatenate([one_hot_labels, data[1]["class"]], axis=0)
-
-            one_hot_labels = one_hot_labels[1:, ...]
-            y_prob = y_prob[1:, ...]
+            y_prob = model.predict(dataset)
+            dataset_to_nump = np.asarray(list(map(lambda x: x[1]['class'], dataset.as_numpy_iterator())), dtype=object)
+            one_hot_labels = np.concatenate(dataset_to_nump)
             y_true = np.argmax(one_hot_labels, axis=-1)
             y_pred = np.argmax(y_prob, axis=-1)
 
@@ -250,7 +242,8 @@ class TestCallback(Callback):
             with open(os.path.join(save_dir, "cm.png"), "wb") as f:
                 f.write(confmat_image)
             with open(os.path.join(save_dir, "report.txt"), "w") as f:
-                f.write(classification_report(y_true=y_true, y_pred=y_pred, target_names=self.class_names, digits=3))
+                labels = list(range(len(self.class_names)))
+                f.write(classification_report(y_true=y_true, y_pred=y_pred, target_names=list([self.class_names[i] for i in labels]), labels=labels, digits=3, zero_division=0))
                 # Note that in binary classification, recall of the positive class
                 # is also known as "sensitivity"; recall of the negative class is "specificity".
                 # Micro average (averaging the total true positives, false negatives and
@@ -267,9 +260,10 @@ class TestCallback(Callback):
                     det_fpr, det_fnr, det_thresholds = det_curve(y_true=one_hot_labels[..., _class], y_score=y_prob[..., _class])
                     class_auc = auc(fpr_roc, tpr_roc)
                     with open(os.path.join(save_dir, "report.txt"), "a") as f:
-                        if _class == 1 or (self.num_classes > 2 and _class == 0):
-                            f.write(f"{''.rjust(13, ' ')}{'AUC'.rjust(10)}\n")
-                        f.write(f"{CLASS_NAMES[self.mode][_class].rjust(12)} {str(np.round(class_auc, 3)).rjust(10)}")
+                        if (self.num_classes == 2 and _class == 1) or (self.num_classes != 2 and _class == 0):
+                            col_1 = len(max(CLASS_NAMES[self.mode], key=len))
+                            f.write(f"{''.rjust(col_1, ' ')} {'AUC'.rjust(10)}\n")
+                        f.write(f"{CLASS_NAMES[self.mode][_class].rjust(col_1)} {str(np.round(class_auc, 3)).rjust(10)}\n")
                     plt.figure(1)
                     plt.plot([0, 1], [0, 1], "k--")
                     plt.plot(fpr_roc, tpr_roc, label=f"{self.class_names[_class]} (area = {class_auc:.3f})")
@@ -293,13 +287,13 @@ class TestCallback(Callback):
                     plt.title(f"DET curve {self.image_type}-{dataset_type}")
                     plt.legend(loc="best")
 
-                plt.figure(1)
-                plt.savefig(os.path.join(save_dir, "roc.jpg"))
-                plt.figure(2)
-                plt.savefig(os.path.join(save_dir, "pr.jpg"))
-                plt.figure(3)
-                plt.savefig(os.path.join(save_dir, "det.jpg"))
-                plt.close("all")
+            plt.figure(1)
+            plt.savefig(os.path.join(save_dir, "roc.jpg"))
+            plt.figure(2)
+            plt.savefig(os.path.join(save_dir, "pr.jpg"))
+            plt.figure(3)
+            plt.savefig(os.path.join(save_dir, "det.jpg"))
+            plt.close("all")
 
 
 class LaterCheckpoint(ModelCheckpoint):

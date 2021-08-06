@@ -167,17 +167,17 @@ class MelData:
     def get_dataset(self, mode=None, repeat=1):
         np.random.seed(self.random_state)
 
-        if mode == "train":
+        if mode == 'train':
             dataset = self.train_data
-        elif mode == "val":
+        elif mode == 'val':
             dataset = self.val_data
-        elif mode == "test":
+        elif mode == 'test':
             dataset = self.test_data
         else:
             raise ValueError(f"{mode} is not a valid mode.")
-        dataset[0].pop("dataset_id")
-        dataset[0].pop("image_type_weights")
-        dataset[0].pop("class_weights")
+        dataset[0].pop('dataset_id')
+        dataset[0].pop('image_type_weights')
+        dataset[0].pop('class_weights')
         dataset = tf.data.Dataset.from_tensor_slices(dataset)
         dataset = dataset.map(lambda sample, label, sample_weight: self.tf_imread(sample, label, sample_weight, mode=mode), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.batch(self.batch)
