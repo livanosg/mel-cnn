@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 
+tf.argmax
 class MelData:
     def __init__(self, dir_dict: dict, args: dict, batch: int = 8):
         self.random_state = 0

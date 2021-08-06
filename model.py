@@ -10,14 +10,14 @@ from tensorflow import dtypes
 
 class Patches(Layer):
     def __init__(self, patch_size):
-        super(Patches, self).__init__()
+        super().__init__()
         self.patch_size = patch_size
 
     def get_config(self):
         config = {
             'patch_size': self.patch_size,
         }
-        base_config = super(Layer, self).get_config()
+        base_config = super().get_config()
         return {**base_config, **config}
 
     def call(self, images):
@@ -34,7 +34,7 @@ class Patches(Layer):
 
 class PatchEncoder(Layer):
     def __init__(self, num_patches, projection_dim):
-        super(PatchEncoder, self).__init__()
+        super().__init__()
         self.num_patches = num_patches
         self.projection = Dense(units=projection_dim)
         self.position_embedding = Embedding(input_dim=num_patches, output_dim=projection_dim)
@@ -45,7 +45,7 @@ class PatchEncoder(Layer):
             'projection': self.projection,
             'position_embedding': self.num_patches,
         }
-        base_config = super(Layer, self).get_config()
+        base_config = super().get_config()
         return {**base_config, **config}
 
     def call(self, patch):
