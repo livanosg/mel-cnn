@@ -117,7 +117,7 @@ def model_fn(args):
     age_input = Input(shape=(10,), name='age_approx', dtype=dtypes.float32)
     concat_inputs = Concatenate()([image_type_input, sex_input, anatom_site_input, age_input])
     concat_inputs = Reshape(target_shape=(20, 1))(concat_inputs)
-    custom_lstm = LSTM(32)(concat_inputs)
+    custom_lstm = LSTM(32, activation=activ)(concat_inputs)
     custom_fc2_layers = normalization(epsilon=1e-6)(custom_lstm)
     custom_fc2_layers = Dropout(rate=args['dropout_ratio'])(custom_fc2_layers)
     custom_fc2_layers2 = Dense(16, activation=activ, kernel_regularizer=rglzr)(custom_fc2_layers)
