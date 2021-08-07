@@ -24,8 +24,7 @@ def model_fn(args):
     base_model = base_model(image_input, training=False)
     # -----------------================= Inception module C used in Inception v4 =================-------------------- #
     conv1x1ap = AveragePooling2D(padding='same', strides=1)(base_model)
-    conv1x1ap = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=1, padding='same')(
-        conv1x1ap)
+    conv1x1ap = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=1, padding='same')(conv1x1ap)
     conv1x1ap = normalization()(conv1x1ap)
     conv1x1ap = Dropout(rate=args['dropout_ratio'])(conv1x1ap)
     conv1x1 = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=1, padding='same')(base_model)
@@ -38,12 +37,10 @@ def model_fn(args):
     conv1x1_3x1 = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=(3, 1), padding='same')(conv1x1_1x3_3x1)
     conv1x1_3x1 = normalization()(conv1x1_3x1)
     conv1x1_3x1 = Dropout(rate=args['dropout_ratio'])(conv1x1_3x1)
-    conv1x1_2 = Conv2D(layers[args['layers']][0], activation=activ, kernel_size=1, padding='same')(
-        base_model)
+    conv1x1_2 = Conv2D(layers[args['layers']][0], activation=activ, kernel_size=1, padding='same')(base_model)
     conv1x3_3x1 = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=(1, 3), padding='same')(conv1x1_2)
     conv3x1_3x1_1x3 = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=(3, 1), padding='same')(conv1x3_3x1)
-    conv1x1_2_1x3 = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=(1, 3),
-                           padding='same')(conv3x1_3x1_1x3)
+    conv1x1_2_1x3 = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=(1, 3), padding='same')(conv3x1_3x1_1x3)
     conv1x1_2_1x3 = normalization()(conv1x1_2_1x3)
     conv1x1_2_1x3 = Dropout(rate=args['dropout_ratio'])(conv1x1_2_1x3)
     conv1x1_2_3x1 = Conv2D(layers[args['layers']][1], activation=activ, kernel_size=(3, 1), padding='same')(conv3x1_3x1_1x3)
