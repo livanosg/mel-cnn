@@ -53,7 +53,7 @@ def training(args):
     # --------------------------------------------------- Callbacks --------------------------------------------------- #
     callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=20),
                  EnrTensorboard(data=val_data, class_names=args['class_names'], log_dir=args["dir_dict"]["logs"],
-                                profile_batch=0, mode=args["mode"], write_steps_per_second=True),
+                                profile_batch=0, mode=args["mode"]),
                  TestCallback(test_data=test_data, val_data=val_data, args=args),
                  ReduceLROnPlateau(factor=0.75, patience=10),
                  EarlyStopping(verbose=args["verbose"], patience=args["early_stop"])]
