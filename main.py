@@ -12,7 +12,7 @@ def parse_module():
     parser.add_argument('--colour', '-clr', default='rgb', type=str, help='Select image size.')
     parser.add_argument('--batch-size', '-btch', default=4, type=int, help='Select batch size.')
     parser.add_argument('--learning-rate', '-lr', default=1e-5, type=float, help='Select learning rate.')
-    parser.add_argument('--dropout-ratio', '-dor', required=True, type=float, help='Select dropout ratio.')
+    parser.add_argument('--dropout', '-dor', required=True, type=float, help='Select dropout ratio.')
     parser.add_argument('--relu-grad', '-rg', required=True, type=float, help='Select leaky relu gradient.')
     parser.add_argument('--dataset-frac', '-frac', default=1., type=float, help='Dataset fraction.')
     parser.add_argument('--epochs', '-e', required=True, type=int, help='Select epochs.')
@@ -45,7 +45,7 @@ if __name__ == '__main__':
         args['verbose'] = 0
 
     if args['nodes'] == 'multi':
-        for i in ['http_proxy','https_proxy','http','https']:
+        for i in ['http_proxy', 'https_proxy', 'http', 'https']:
             try:
                 del os.environ[i]
                 print(f'{i} unstet')

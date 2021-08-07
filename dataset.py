@@ -44,9 +44,9 @@ class MelData:
                                            np.multiply(self.num_classes, [self.class_counts[k]for k in sorted(self.class_counts.keys())]))
         self.image_type_counts = dict(self.train_data_df["image_type"].value_counts(sort=False, ascending=True))
         self.weights_per_image_type = np.divide(np.sum(len(self.train_data_df)), np.multiply(len(self.image_type_counts), [self.image_type_counts[k] for k in sorted(self.image_type_counts)]))
-        self.prep_train_data_df = self.prep_classes(self.train_data_df)
-        self.prep_val_data_df = self.prep_classes(self.val_data_df)
-        self.prep_test_data_df = self.prep_classes(self.test_data_df)
+        self.prep_train_data_df = self.set_sample_weight(self.train_data_df)
+        self.prep_val_data_df = self.set_sample_weight(self.val_data_df)
+        self.prep_test_data_df = self.set_sample_weight(self.test_data_df)
         self.train_data = self.ohe_map(dict(self.train_data_df.sample(frac=self.args["dataset_frac"])))
         self.val_data = self.ohe_map(dict(self.val_data_df.sample(frac=self.args["dataset_frac"])))
         self.test_data = self.ohe_map(dict(self.test_data_df))
@@ -56,7 +56,7 @@ class MelData:
         self.data_info('val')
         self.data_info('test')
 
-    def prep_classes(self, data):
+    def set_sample_weight(self, data):
         data["image"] = f"{self.image_folder}{os.sep}" + data["image"]
         data['image_type_weights'] = 1.
         data['class_weights'] = 1.
@@ -120,31 +120,30 @@ class MelData:
         return dataset_info_dict
 
     def dataset_attributes(self):
-        atr_dict = {'mode': self.args['mode'],
-                    'classes': self.class_names, 'num_classes': self.num_classes,
-                    'train_class_samples': np.sum(self.train_data[1]['class'], axis=0), 'train_len': len(self.train_data[1]['class']),
-                    'val_class_samples': np.sum(self.val_data[1]['class'], axis=0), 'val_len': len(self.val_data[1]['class']),
-                    'test_class_samples': np.sum(self.test_data[1]['class'], axis=0), 'test_len': len(self.test_data[1]['class']),
-                    'weights_per_image_type': self.weights_per_image_type,
-                    'weights_per_class': self.weights_per_class,
-                    'sample_weights': self.prep_train_data_df['sample_weights'].value_counts(),
-                    }
-        return atr_dict
+        return {
+            'mode': self.args['mode'],
+            'classes': self.class_names, 'num_classes': self.num_classes,
+            'train_class_samples': np.sum(self.train_data[1]['class'], axis=0), 'train_len': len(self.train_data[1]['class']),
+            'val_class_samples': np.sum(self.val_data[1]['class'], axis=0), 'val_len': len(self.val_data[1]['class']),
+            'test_class_samples': np.sum(self.test_data[1]['class'], axis=0), 'test_len': len(self.test_data[1]['class']),
+            'weights_per_image_type': self.weights_per_image_type,
+            'weights_per_class': self.weights_per_class,
+            'sample_weights': self.prep_train_data_df['sample_weights'].value_counts(sort=True, ascending=True)
+        }
 
     def info(self):
         attr = self.dataset_attributes()
-        output = f"Mode: {attr['mode']}\n" \
-                 f"Classes: {attr['classes']}\n" \
-                 f"Train Class Samples: {attr['train_class_samples']}\n" \
-                 f"Train Length: {attr['train_len']}\n" \
-                 f"Validation Class Samples: {attr['val_class_samples']}\n" \
-                 f"Validation Length: {attr['val_len']}\n" \
-                 f"Test Class Samples: {attr['test_class_samples']}\n" \
-                 f"Test Length: {attr['test_len']}\n" \
-                 f"Weights per class:{self.weights_per_class}\n"\
-                 f"Sample weight by image type:{attr['weights_per_image_type']}\n" \
-                 f"Total sample weights: \n{attr['sample_weights']}\n"
-        return output
+        return f"Mode: {attr['mode']}\n" \
+               f"Classes: {attr['classes']}\n" \
+               f"Train Class Samples: {attr['train_class_samples']}\n" \
+               f"Train Length: {attr['train_len']}\n" \
+               f"Validation Class Samples: {attr['val_class_samples']}\n" \
+               f"Validation Length: {attr['val_len']}\n" \
+               f"Test Class Samples: {attr['test_class_samples']}\n" \
+               f"Test Length: {attr['test_len']}\n" \
+               f"Weights per class:{attr['weights_per_class']}\n"\
+               f"Sample weight by image type:{attr['weights_per_image_type']}\n" \
+               f"Total sample weights: \n{attr['sample_weights']}\n"
 
     def tf_imread(self, sample, label, sample_weight, mode):
         sample["image"] = tf.reshape(tensor=tf.image.decode_image(tf.io.read_file(sample["image"]), channels=3), shape=self.args['input_shape'])

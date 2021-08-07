@@ -1,13 +1,11 @@
 import tensorflow.keras.backend as K
 from tensorflow.keras.metrics import AUC
-import tensorflow_addons as tfa
 
 
-def metrics(classes):
+def metrics():
     # macro: unweighted mean for each class
     auc = AUC(multi_label=True)
-    f1_weighted = tfa.metrics.F1Score(num_classes=classes, average='weighted', name='f1_weighted')
-    return [auc, f1_weighted]
+    return [auc]
 
 
 def sensitivity(y_true, y_pred):

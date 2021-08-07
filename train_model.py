@@ -1,11 +1,10 @@
 import tensorflow as tf
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
-from tensorflow.keras.callbacks.experimental import BackupAndRestore
 from config import CLASS_NAMES
 from dataset import MelData
 from model import model_fn
-from tensorflow_addons.losses import SigmoidFocalCrossEntropy
+# from tensorflow_addons.losses import SigmoidFocalCrossEntropy
 from metrics import metrics
 from callbacks import EnrTensorboard, TestCallback, LaterCheckpoint
 
@@ -49,16 +48,15 @@ def training(args):
 
         custom_model = model_fn(args=args)
         custom_model.compile(optimizer=optimizer[args["optimizer"]](learning_rate=args["learning_rate"]),
-                             loss=SigmoidFocalCrossEntropy(gamma=2.5, alpha=0.2, reduction=tf.keras.losses.Reduction.AUTO),  #'categorical_crossentropy',  # custom_loss(datasets.weights_per_class)
-                             metrics=metrics(args['num_classes']))
+                             loss='categorical_crossentropy',  # SigmoidFocalCrossEntropy(gamma=2.5, alpha=0.2, reduction=tf.keras.losses.Reduction.AUTO), # custom_loss(datasets.weights_per_class)
+                             metrics=metrics())
     # --------------------------------------------------- Callbacks --------------------------------------------------- #
-    callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=0),
+    callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=20),
                  EnrTensorboard(data=val_data, class_names=args['class_names'], log_dir=args["dir_dict"]["logs"],
-                                update_freq='epoch', profile_batch=2, mode=args["mode"]),
+                                profile_batch=0, mode=args["mode"], write_steps_per_second=True),
                  TestCallback(test_data=test_data, val_data=val_data, args=args),
                  ReduceLROnPlateau(factor=0.75, patience=10),
-                 EarlyStopping(verbose=args["verbose"], patience=args["early_stop"]),
-                 BackupAndRestore(backup_dir=args["dir_dict"]["backup"])]
+                 EarlyStopping(verbose=args["verbose"], patience=args["early_stop"])]
     # ------------------------------------------------- Train model -------------------------------------------------- #
     custom_model.fit(x=train_data, epochs=args["epochs"],
                      validation_data=val_data,
