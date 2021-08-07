@@ -7,7 +7,7 @@ import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.python.keras.callbacks import Callback, TensorBoard, ModelCheckpoint
 from matplotlib import pyplot as plt
-from sklearn.metrics import roc_curve, precision_recall_curve, auc, det_curve, classification_report, confusion_matrix
+from sklearn.metrics import roc_curve, precision_recall_curve, auc, classification_report, confusion_matrix
 
 from config import CLASS_NAMES
 from metrics import metrics
@@ -233,8 +233,8 @@ class TestCallback(Callback):
             save_dir = os.path.join(self.trial_path, dataset_type)
             os.makedirs(save_dir)
             y_prob = model.predict(dataset)
-            dataset_to_nump = np.asarray(list(map(lambda x: x[1]['class'], dataset.as_numpy_iterator())), dtype=object)
-            one_hot_labels = np.concatenate(dataset_to_nump)
+            dataset_to_numpy = np.asarray(list(map(lambda x: x[1]['class'], dataset.as_numpy_iterator())), dtype=object)
+            one_hot_labels = np.concatenate(dataset_to_numpy)
             y_true = np.argmax(one_hot_labels, axis=-1)
             y_pred = np.argmax(y_prob, axis=-1)
 
@@ -244,20 +244,19 @@ class TestCallback(Callback):
             with open(os.path.join(save_dir, "report.txt"), "w") as f:
                 labels = list(range(len(self.class_names)))
                 f.write(classification_report(y_true=y_true, y_pred=y_pred, target_names=list([self.class_names[i] for i in labels]), labels=labels, digits=3, zero_division=0))
-                # Note that in binary classification, recall of the positive class
-                # is also known as "sensitivity"; recall of the negative class is "specificity".
-                # Micro average (averaging the total true positives, false negatives and
-                # false positives) is only shown for multi-label or multi-class
-                # with a subset of classes, because it corresponds to accuracy
-                # otherwise and would be the same for all metrics.
+                # In binary classification,
+                # recall of the positive class is also known as "sensitivity";
+                # recall of the negative class is also known as "specificity".
+                # Micro average (averaging the total true positives, false negatives and false positives)
+                # is only shown for multi-label or multi-class with a subset of classes,
+                # because it corresponds to accuracy otherwise and would be the same for all metrics.
 
             for _class in range(self.num_classes):
                 if self.num_classes == 2 and _class == 0:
                     pass
                 else:
-                    fpr_roc, tpr_roc, thresholds_roc = roc_curve(one_hot_labels[..., _class], y_prob[..., _class])
-                    precision, recall, thresholds = precision_recall_curve(one_hot_labels[..., _class], y_prob[..., _class])
-                    det_fpr, det_fnr, det_thresholds = det_curve(y_true=one_hot_labels[..., _class], y_score=y_prob[..., _class])
+                    fpr_roc, tpr_roc, thresholds_roc = roc_curve(y_true=y_true, y_score=y_prob[..., _class], pos_label=_class)
+                    precision, recall, thresholds = precision_recall_curve(y_true=y_true, probas_pred=y_prob[..., _class], pos_label=_class)
                     class_auc = auc(fpr_roc, tpr_roc)
                     with open(os.path.join(save_dir, "report.txt"), "a") as f:
                         if (self.num_classes == 2 and _class == 1) or (self.num_classes != 2 and _class == 0):
@@ -280,19 +279,10 @@ class TestCallback(Callback):
                     plt.title(f"PR curve {self.image_type}-{dataset_type}")
                     plt.legend(loc="best")
 
-                    plt.figure(3)
-                    plt.plot(det_fpr * 100, det_fnr * 100, label=f'{self.class_names[_class]}')
-                    plt.xlabel("False positive rate %")
-                    plt.ylabel("True positive rate %")
-                    plt.title(f"DET curve {self.image_type}-{dataset_type}")
-                    plt.legend(loc="best")
-
             plt.figure(1)
             plt.savefig(os.path.join(save_dir, "roc.jpg"))
             plt.figure(2)
             plt.savefig(os.path.join(save_dir, "pr.jpg"))
-            plt.figure(3)
-            plt.savefig(os.path.join(save_dir, "det.jpg"))
             plt.close("all")
 
 

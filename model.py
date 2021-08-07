@@ -1,7 +1,7 @@
 import numpy as np
 from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Reshape, Concatenate, AveragePooling2D, GlobalAvgPool2D
-from tensorflow.keras.layers import Dense, Conv2D, LSTM, LayerNormalization, Dropout, ReLU
+from tensorflow.keras.layers import Dense, Conv2D, LSTM, LayerNormalization
 from tensorflow.keras.activations import swish
 from tensorflow.keras.regularizers import l1_l2
 from tensorflow import dtypes

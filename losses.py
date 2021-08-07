@@ -3,7 +3,7 @@ import tensorflow.keras.backend as K
 
 
 def custom_loss(weights):
-    e = tf.keras.backend.epsilon()
+    # e = tf.keras.backend.epsilon()
     weights = K.constant(weights)
 
     def total_loss(y_true, y_pred):

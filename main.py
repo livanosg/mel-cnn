@@ -48,7 +48,7 @@ if __name__ == '__main__':
         for i in ['http_proxy', 'https_proxy', 'http', 'https']:
             try:
                 del os.environ[i]
-                print(f'{i} unstet')
+                print(f'{i} unset')
             except KeyError:
                 pass
     grid(args=args)
