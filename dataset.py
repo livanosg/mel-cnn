@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 
 
-tf.argmax
 class MelData:
     def __init__(self, dir_dict: dict, args: dict, batch: int = 8):
         self.random_state = 0
@@ -44,8 +43,7 @@ class MelData:
         self.weights_per_class = np.divide(len(self.train_data_df),
                                            np.multiply(self.num_classes, [self.class_counts[k]for k in sorted(self.class_counts.keys())]))
         self.image_type_counts = dict(self.train_data_df["image_type"].value_counts(sort=False, ascending=True))
-        self.weights_per_image_type = np.divide(np.sum(len(self.train_data_df)),
-                                                np.multiply(len(self.image_type_counts), [self.image_type_counts[k] for k in sorted(self.image_type_counts)]))
+        self.weights_per_image_type = np.divide(np.sum(len(self.train_data_df)), np.multiply(len(self.image_type_counts), [self.image_type_counts[k] for k in sorted(self.image_type_counts)]))
         self.prep_train_data_df = self.prep_classes(self.train_data_df)
         self.prep_val_data_df = self.prep_classes(self.val_data_df)
         self.prep_test_data_df = self.prep_classes(self.test_data_df)
@@ -66,7 +64,7 @@ class MelData:
             data.loc[data['image_type'] == image_type, 'image_type_weights'] = self.weights_per_image_type[ixd]
         for idx, _class in enumerate(sorted(self.class_counts)):
             data.loc[data['class'] == _class, 'class_weights'] = self.weights_per_class[idx]
-        data['sample_weights'] = data['image_type_weights']
+        data['sample_weights'] = (data['image_type_weights'] + data['class_weights']) / 2
         return data
 
     def ohe_map(self, features):
@@ -122,12 +120,15 @@ class MelData:
         return dataset_info_dict
 
     def dataset_attributes(self):
-        atr_dict = {"mode": self.args['mode'],
-                    "classes": self.class_names, "num_classes": self.num_classes,
-                    "train_class_samples": np.sum(self.train_data[1]['class'], axis=0), "train_len": len(self.train_data[1]['class']),
-                    "val_class_samples": np.sum(self.val_data[1]['class'], axis=0), "val_len": len(self.val_data[1]['class']),
-                    "test_class_samples": np.sum(self.test_data[1]['class'], axis=0), "test_len": len(self.test_data[1]['class']),
-                    'weights_per_image_type': self.weights_per_image_type}
+        atr_dict = {'mode': self.args['mode'],
+                    'classes': self.class_names, 'num_classes': self.num_classes,
+                    'train_class_samples': np.sum(self.train_data[1]['class'], axis=0), 'train_len': len(self.train_data[1]['class']),
+                    'val_class_samples': np.sum(self.val_data[1]['class'], axis=0), 'val_len': len(self.val_data[1]['class']),
+                    'test_class_samples': np.sum(self.test_data[1]['class'], axis=0), 'test_len': len(self.test_data[1]['class']),
+                    'weights_per_image_type': self.weights_per_image_type,
+                    'weights_per_class': self.weights_per_class,
+                    'sample_weights': self.prep_train_data_df['sample_weights'].value_counts(),
+                    }
         return atr_dict
 
     def info(self):
@@ -141,7 +142,8 @@ class MelData:
                  f"Test Class Samples: {attr['test_class_samples']}\n" \
                  f"Test Length: {attr['test_len']}\n" \
                  f"Weights per class:{self.weights_per_class}\n"\
-                 f"Sample weight by image type:{attr['weights_per_image_type']}\n"
+                 f"Sample weight by image type:{attr['weights_per_image_type']}\n" \
+                 f"Total sample weights: \n{attr['sample_weights']}\n"
         return output
 
     def tf_imread(self, sample, label, sample_weight, mode):
@@ -153,15 +155,15 @@ class MelData:
             rand = tf.random.uniform(shape=[1], minval=0, seed=self.random_state, maxval=1., dtype=tf.float32)
             sigma = np.random.uniform(low=0., high=2.)  # tf.random.uniform(shape=[], minval=0, seed=random_state, maxval=2.5, dtype=tf.float32)
             sharp = tf.random.uniform(shape=[1], minval=0., seed=self.random_state, maxval=.2, dtype=tf.float32)
-            sample["image"] = tf.image.random_flip_left_right(image=sample["image"], seed=self.random_state)
-            sample["image"] = tf.image.random_flip_up_down(image=sample["image"], seed=self.random_state)
-            sample["image"] = tf.image.random_brightness(image=sample["image"], max_delta=0.1, seed=self.random_state)
-            sample["image"] = tf.image.random_contrast(image=sample["image"], lower=.5, upper=1.5, seed=self.random_state)
-            sample["image"] = tf.image.random_saturation(image=sample["image"], lower=0.8, upper=1.2, seed=self.random_state)
-            sample["image"] = tfa.image.translate(sample["image"], translations=translation, name="Translation")
-            sample["image"] = tfa.image.rotate(images=sample["image"], angles=random_degrees, name="Rotation")
-            sample["image"] = tfa.image.sharpness(image=tf.cast(sample["image"], dtype=tf.float32), factor=sharp, name="Sharpness")
-            sample["image"] = tf.cond(tf.math.less_equal(rand, 0.5), lambda: tfa.image.gaussian_filter2d(image=sample["image"], sigma=sigma, filter_shape=5, name="Gaussian_filter"), lambda: sample["image"])
+            sample['image'] = tf.image.random_flip_left_right(image=sample['image'], seed=self.random_state)
+            sample['image'] = tf.image.random_flip_up_down(image=sample['image'], seed=self.random_state)
+            sample['image'] = tf.image.random_brightness(image=sample['image'], max_delta=0.1, seed=self.random_state)
+            sample['image'] = tf.image.random_contrast(image=sample['image'], lower=.5, upper=1.5, seed=self.random_state)
+            sample['image'] = tf.image.random_saturation(image=sample['image'], lower=0.8, upper=1.2, seed=self.random_state)
+            sample['image'] = tfa.image.translate(sample['image'], translations=translation, name='Translation')
+            sample['image'] = tfa.image.rotate(images=sample['image'], angles=random_degrees, name='Rotation')
+            sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=sharp, name='Sharpness')
+            sample['image'] = tf.cond(tf.math.less_equal(rand, 0.5), lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=sigma, filter_shape=5, name='Gaussian_filter'), lambda: sample['image'])
         return sample, label, sample_weight
 
     def get_dataset(self, mode=None, repeat=1):
