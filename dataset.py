@@ -1,5 +1,7 @@
 import os
-from config import MAPPER, BEN_MAL_MAPPER, NEV_MEL_OTHER_MAPPER, CLASS_NAMES, MAIN_DIR
+import sys
+
+from config import MAPPER, BEN_MAL_MAPPER, NEV_MEL_OTHER_MAPPER, CLASS_NAMES, MAIN_DIR, NP_RNG, TF_RNG
 import tensorflow as tf
 import tensorflow_addons as tfa
 import numpy as np
@@ -8,7 +10,6 @@ import pandas as pd
 
 class MelData:
     def __init__(self, dir_dict: dict, args: dict, batch: int = 8):
-        self.random_state = 0
         self.args = args
         self.batch = batch
         self.dir_dict = dir_dict
@@ -47,8 +48,8 @@ class MelData:
         self.prep_train_data_df = self.set_sample_weight(self.train_data_df)
         self.prep_val_data_df = self.set_sample_weight(self.val_data_df)
         self.prep_test_data_df = self.set_sample_weight(self.test_data_df)
-        self.train_data = self.ohe_map(dict(self.train_data_df.sample(frac=self.args["dataset_frac"])))
-        self.val_data = self.ohe_map(dict(self.val_data_df.sample(frac=self.args["dataset_frac"])))
+        self.train_data = self.ohe_map(dict(self.train_data_df.sample(frac=self.args["dataset_frac"], random_state=NP_RNG.bit_generator)))
+        self.val_data = self.ohe_map(dict(self.val_data_df.sample(frac=self.args["dataset_frac"], random_state=NP_RNG.bit_generator)))
         self.test_data = self.ohe_map(dict(self.test_data_df))
         self.attr = self.dataset_attributes()
         self.data_info('all')
@@ -145,29 +146,7 @@ class MelData:
                f"Sample weight by image type:{attr['weights_per_image_type']}\n" \
                f"Total sample weights: \n{attr['sample_weights']}\n"
 
-    def tf_imread(self, sample, label, sample_weight, mode):
-        sample["image"] = tf.reshape(tensor=tf.image.decode_image(tf.io.read_file(sample["image"]), channels=3), shape=self.args['input_shape'])
-        sample["image"] = self.args['preprocess_fn'](sample["image"])
-        if mode == "train":
-            translation = tf.random.uniform(shape=[2], seed=self.random_state, minval=-20, maxval=20, dtype=tf.float32)
-            random_degrees = tf.random.uniform(shape=[1], minval=0, seed=self.random_state, maxval=360, dtype=tf.float32)
-            rand = tf.random.uniform(shape=[1], minval=0, seed=self.random_state, maxval=1., dtype=tf.float32)
-            sigma = np.random.uniform(low=0., high=2.)  # tf.random.uniform(shape=[], minval=0, seed=random_state, maxval=2.5, dtype=tf.float32)
-            sharp = tf.random.uniform(shape=[1], minval=0., seed=self.random_state, maxval=.2, dtype=tf.float32)
-            sample['image'] = tf.image.random_flip_left_right(image=sample['image'], seed=self.random_state)
-            sample['image'] = tf.image.random_flip_up_down(image=sample['image'], seed=self.random_state)
-            sample['image'] = tf.image.random_brightness(image=sample['image'], max_delta=0.1, seed=self.random_state)
-            sample['image'] = tf.image.random_contrast(image=sample['image'], lower=.5, upper=1.5, seed=self.random_state)
-            sample['image'] = tf.image.random_saturation(image=sample['image'], lower=0.8, upper=1.2, seed=self.random_state)
-            sample['image'] = tfa.image.translate(sample['image'], translations=translation, name='Translation')
-            sample['image'] = tfa.image.rotate(images=sample['image'], angles=random_degrees, name='Rotation')
-            sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=sharp, name='Sharpness')
-            sample['image'] = tf.cond(tf.math.less_equal(rand, 0.5), lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=sigma, filter_shape=5, name='Gaussian_filter'), lambda: sample['image'])
-        return sample, label, sample_weight
-
     def get_dataset(self, mode=None, repeat=1):
-        np.random.seed(self.random_state)
-
         if mode == 'train':
             dataset = self.train_data
         elif mode == 'val':
@@ -176,11 +155,37 @@ class MelData:
             dataset = self.test_data
         else:
             raise ValueError(f"{mode} is not a valid mode.")
+
+        def tf_imread(sample, label, sample_weight):
+            sample["image"] = tf.reshape(tensor=tf.image.decode_image(tf.io.read_file(sample["image"]), channels=3),
+                                         shape=self.args['input_shape'])
+            sample["image"] = self.args['preprocess_fn'](sample["image"])
+            if mode == "train":
+                translation = TF_RNG.uniform(shape=[2], minval=-20, maxval=20, dtype=tf.float32)
+                random_degrees = tf.cast(TF_RNG.uniform(shape=[1], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32)
+                rand = TF_RNG.uniform(shape=[1], maxval=1., dtype=tf.float32)
+                sharp = TF_RNG.uniform(shape=[1], maxval=2., dtype=tf.float32)
+                sigma = float(NP_RNG.random(size=1)) * 2
+                seeds = TF_RNG.make_seeds(5)
+                sample['image'] = tf.image.stateless_random_flip_left_right(image=sample['image'], seed=seeds[:, 0])
+                sample['image'] = tf.image.stateless_random_flip_up_down(image=sample['image'], seed=seeds[:, 1])
+                sample['image'] = tf.image.stateless_random_brightness(image=sample['image'], max_delta=0.1, seed=seeds[:, 2])
+                sample['image'] = tf.image.stateless_random_contrast(image=sample['image'], lower=.5, upper=1.5, seed=seeds[:, 3])
+                sample['image'] = tf.image.stateless_random_saturation(image=sample['image'], lower=0.8, upper=1.2, seed=seeds[:, 4])
+                sample['image'] = tfa.image.rotate(images=sample['image'], angles=random_degrees, name='Rotation')
+                sample['image'] = tfa.image.translate(sample['image'], translations=translation, name='Translation')
+                sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=sharp, name='Sharpness')
+                sample['image'] = tf.cond(tf.math.less_equal(rand, 0.5),
+                                          lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=sigma,
+                                                                              filter_shape=5, name='Gaussian_filter'),
+                                          lambda: sample['image'])
+            return sample, label, sample_weight
+
         dataset[0].pop('dataset_id')
         dataset[0].pop('image_type_weights')
         dataset[0].pop('class_weights')
         dataset = tf.data.Dataset.from_tensor_slices(dataset)
-        dataset = dataset.map(lambda sample, label, sample_weight: self.tf_imread(sample, label, sample_weight, mode=mode), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.batch(self.batch)
         options = tf.data.Options()
         options.experimental_threading.max_intra_op_parallelism = 1

@@ -55,13 +55,13 @@ def model_fn(args):
     anatom_site = Reshape(target_shape=(6, 1))(anatom_site_input)
     age = Reshape(target_shape=(10, 1))(age_input)
 
-    image_type = LSTM(4, activation=activ, return_sequences=True)(image_type)
-    sex = LSTM(4, activation=activ, return_sequences=True)(sex)
-    anatom_site = LSTM(4, activation=activ, return_sequences=True)(anatom_site)
-    age = LSTM(4, activation=activ, return_sequences=True)(age)
+    image_type = LSTM(4, return_sequences=True)(image_type)
+    sex = LSTM(4, return_sequences=True)(sex)
+    anatom_site = LSTM(4, return_sequences=True)(anatom_site)
+    age = LSTM(4, return_sequences=True)(age)
 
     concat_inputs = Concatenate(-2)([image_type, sex, anatom_site, age])
-    lstm = LSTM(16, activation=activ, dropout=args['dropout'])(concat_inputs)
+    lstm = LSTM(16, dropout=args['dropout'])(concat_inputs)
     lstm = normalization()(lstm)
     # -------------------------------================== Concat part ==================---------------------------------#
     common_layers = Concatenate(axis=1)([avg_pool, lstm])

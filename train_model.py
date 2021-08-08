@@ -10,7 +10,6 @@ from callbacks import EnrTensorboard, TestCallback, LaterCheckpoint
 
 
 def training(args):
-    tf.random.set_seed(5)
     assert args["nodes"] in ("multi", "one")
     if args["nodes"] == 'multi':
         slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver()
@@ -51,7 +50,7 @@ def training(args):
                              loss='categorical_crossentropy',  # SigmoidFocalCrossEntropy(gamma=2.5, alpha=0.2, reduction=tf.keras.losses.Reduction.AUTO), # custom_loss(datasets.weights_per_class)
                              metrics=metrics())
     # --------------------------------------------------- Callbacks --------------------------------------------------- #
-    callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=20),
+    callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=0),
                  EnrTensorboard(data=val_data, class_names=args['class_names'], log_dir=args["dir_dict"]["logs"],
                                 profile_batch=0, mode=args["mode"]),
                  TestCallback(test_data=test_data, val_data=val_data, args=args),

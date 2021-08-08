@@ -3,7 +3,7 @@ from string import ascii_lowercase
 import numpy as np
 import pandas as pd
 
-from config import DATA_DIR, COLUMNS
+from config import NP_RNG, DATA_DIR, COLUMNS
 from prep_dataset import preproc_datasets
 
 isic18 = pd.read_csv(os.path.join(DATA_DIR, 'isic18.csv'))
@@ -49,7 +49,7 @@ isic19_val = isic19.loc[isic19["lesion_id"].isin(isic19_ids[int(len(isic19_ids) 
 isic19_test = isic19.loc[isic19["lesion_id"].isin(isic19_ids[int(len(isic19_ids) * 0.9):])]
 
 isic20_ids = isic20["patient_id"].unique()
-np.random.shuffle(isic20_ids)
+NP_RNG.shuffle(isic20_ids)
 isic20_train = isic20.loc[isic20["patient_id"].isin(isic20_ids[:int(len(isic20_ids) * 0.8)])]
 isic20_val = isic20.loc[isic20["patient_id"].isin(isic20_ids[int(len(isic20_ids) * 0.8):int(len(isic20_ids) * 0.9)])]
 isic20_test = isic20.loc[isic20["patient_id"].isin(isic20_ids[int(len(isic20_ids) * 0.9):])]
@@ -69,12 +69,12 @@ dermofit_val = dermofit.loc[dermofit['ids'].isin(dermofit_ids[:int(len(dermofit_
 dermofit_test = dermofit.loc[dermofit['ids'].isin(dermofit_ids[int(len(dermofit_ids) * 0.5):])]
 
 
-mednode_train = mednode.sample(frac=0.8)
-mednode_val = mednode[~mednode.index.isin(mednode_train.index)].sample(frac=0.5)
+mednode_train = mednode.sample(frac=0.8, random_state=NP_RNG)
+mednode_val = mednode[~mednode.index.isin(mednode_train.index)].sample(frac=0.5, random_state=NP_RNG)
 mednode_test = mednode[~mednode.index.isin(mednode_train.append(mednode_val).index)]
 
-ph2_train = ph2.sample(frac=0.8)
-ph2_val = ph2[~ph2.index.isin(ph2_train.index)].sample(frac=0.5)
+ph2_train = ph2.sample(frac=0.8, random_state=NP_RNG)
+ph2_val = ph2[~ph2.index.isin(ph2_train.index)].sample(frac=0.5, random_state=NP_RNG)
 ph2_test = ph2[~ph2.index.isin(ph2_train.append(ph2_val).index)]
 
 up_train = up

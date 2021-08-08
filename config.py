@@ -1,4 +1,9 @@
 import os
+import tensorflow as tf
+import numpy as np
+
+NP_RNG = np.random.default_rng(1312)
+TF_RNG = tf.random.Generator.from_seed(1312)
 
 MAIN_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(MAIN_DIR, "data")
@@ -39,13 +44,12 @@ MAPPER = {'image_type': {'clinic': 0,
                'VASC': 2, 'DF': 2, 'vascular lesion': 2, 'SK': 2, 'PYO': 2,
 
                'NMC': 3, 'BCC': 3, 'AKIEC': 3, 'SCC': 3, 'basal cell carcinoma': 3, 'IEC': 3,
-               'SUS': 4, 'ANV': 4, 'atypical melanocytic proliferation': 4, 'AK': 4, 'Atypical Nevus': 4,
+               'SUS': 4, 'ANV': 4, 'atypical melanocytic proliferation': 4, 'AK': 3, 'Atypical Nevus': 4,
 
                'unknown': 5
                }
           }
 
-#
 BEN_MAL_MAPPER = {'class': {0: 0, 2: 0, 4: 0, 5: 0,  # Group 0: NV, NNV, SUS, unknown | 1: MEL, NMC
                             1: 1, 3: 1}
                   }
