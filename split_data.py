@@ -43,7 +43,7 @@ isic18_val = isic18
 nans_isic19 = isic19[isic19["lesion_id"].isna()]
 isic19_not_nans = isic19[~isic19.index.isin(nans_isic19.index)]
 isic19_ids = isic19_not_nans["lesion_id"].unique()
-np.random.shuffle(isic19_ids)
+NP_RNG.shuffle(isic19_ids)
 isic19_train = isic19.loc[isic19["lesion_id"].isin(isic19_ids[:int(len(isic19_ids) * 0.8)])].append(nans_isic19)
 isic19_val = isic19.loc[isic19["lesion_id"].isin(isic19_ids[int(len(isic19_ids) * 0.8):int(len(isic19_ids) * 0.9)])]
 isic19_test = isic19.loc[isic19["lesion_id"].isin(isic19_ids[int(len(isic19_ids) * 0.9):])]
