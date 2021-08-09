@@ -4,7 +4,6 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from config import CLASS_NAMES
 from data_pipe import MelData
 from model import model_fn
-# from tensorflow_addons.losses import SigmoidFocalCrossEntropy
 from metrics import metrics
 from callbacks import EnrTensorboard, TestCallback, LaterCheckpoint
 
@@ -23,9 +22,6 @@ def training(args):
     models = {'xept': xception.Xception, 'incept': inception_v3.InceptionV3,
               'effnet0': efficientnet.EfficientNetB0, 'effnet1': efficientnet.EfficientNetB1}
 
-    preproc_input_fn = {'xept':  xception.preprocess_input, 'incept': inception_v3.preprocess_input,
-                        'effnet0': efficientnet.preprocess_input, 'effnet1':  efficientnet.preprocess_input}
-    args['preprocess_fn'] = preproc_input_fn[args['model']]
     args['model'] = models[args['model']]
     # --------------------------------------------------- Dataset ---------------------------------------------------- #
     global_batch = args['batch_size'] * strategy.num_replicas_in_sync
@@ -36,6 +32,10 @@ def training(args):
                  "sgd": tf.keras.optimizers.SGD, "rmsprop": tf.keras.optimizers.RMSprop,
                  "adadelta": tf.keras.optimizers.Adadelta, "adagrad": tf.keras.optimizers.Adagrad,
                  "adamax": tf.keras.optimizers.Adamax, "nadam": tf.keras.optimizers.Nadam}
+
+    preproc_input_fn = {'xept':  xception.preprocess_input, 'incept': inception_v3.preprocess_input,
+                        'effnet0': efficientnet.preprocess_input, 'effnet1':  efficientnet.preprocess_input}
+    args['preprocess_fn'] = preproc_input_fn[args['model']]
     with strategy.scope():
         datasets = MelData(dir_dict=args['dir_dict'], args=args, batch=global_batch)
         train_data = datasets.get_dataset(mode='train')

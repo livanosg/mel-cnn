@@ -3,7 +3,6 @@ from tensorflow.keras.metrics import AUC
 
 
 def metrics():
-    # macro: unweighted mean for each class
     auc = AUC(multi_label=True)
     return [auc]
 

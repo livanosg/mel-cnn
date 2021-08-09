@@ -1,6 +1,5 @@
 import os
 from string import ascii_lowercase
-import numpy as np
 import pandas as pd
 
 from config import NP_RNG, DATA_DIR, COLUMNS, TRAIN_CSV, VAL_CSV, TEST_CSV

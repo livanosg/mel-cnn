@@ -54,11 +54,11 @@ if __name__ == '__main__':
             except KeyError:
                 pass
 
-    args["dir_dict"] = directories(args=args)
+    args['dir_dict'] = directories(args=args)
     check_create_dataset(args=args)
-    with open(args["dir_dict"]["hparams_logs"], "a") as f:
-        [f.write(f"{key.capitalize()}: {args[key]}\n") for key in args.keys() if key not in ("dir_dict", "hparams")]
-        f.write("Directories\n")
-        [f.write(f"{key.capitalize()}: {args['dir_dict'][key]}\n") for key in args["dir_dict"].keys()]
+    with open(args['dir_dict']['hparams_logs'], 'a') as f:
+        [f.write(f"{key.capitalize()}: {args[key]}\n") for key in args.keys() if key not in ('dir_dict', 'hparams')]
+        f.write('Directories\n')
+        [f.write(f"{key.capitalize()}: {args['dir_dict'][key]}\n") for key in args['dir_dict'].keys()]
     training(args=args)
     exit()
