@@ -3,6 +3,7 @@ import argparse
 from config import directories
 from data_prep import check_create_dataset
 from train_script import training
+import tensorflow as tf
 
 
 def parse_module():
@@ -30,6 +31,11 @@ if __name__ == '__main__':
     args = parse_module().parse_args().__dict__
     print(args)
     os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
+    try:
+        if int(os.environ['SLURM_STEP_TASKS_PER_NODE']) > 1:
+            os.environ['CUDA_VISIBLE_DEVICES'] = f"{os.environ['SLURM_PROCID']}"
+    except KeyError:
+        pass
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
     # Set verbose for TF CPP LOG
     # 0 = all logs, 1 = filter out INFO, 2 = 1 + WARNING, 3 = 2 + ERROR
@@ -45,6 +51,14 @@ if __name__ == '__main__':
         args['verbose'] = 1
     else:
         args['verbose'] = 0
+
+    assert args["nodes"] in ("multi", "one")
+    if args["nodes"] == 'multi':
+        slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver()
+        args["dir_dict"]["save_path"] += f"-{slurm_resolver.task_id}-{slurm_resolver.task_type}"
+        args['strategy'] = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver)
+    else:
+        args['strategy'] = tf.distribute.MirroredStrategy()
 
     if args['nodes'] == 'multi':
         for i in ['http_proxy', 'https_proxy', 'http', 'https']:
