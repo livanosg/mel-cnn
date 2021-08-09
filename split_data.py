@@ -69,12 +69,12 @@ dermofit_val = dermofit.loc[dermofit['ids'].isin(dermofit_ids[:int(len(dermofit_
 dermofit_test = dermofit.loc[dermofit['ids'].isin(dermofit_ids[int(len(dermofit_ids) * 0.5):])]
 
 
-mednode_train = mednode.sample(frac=0.8, random_state=NP_RNG)
-mednode_val = mednode[~mednode.index.isin(mednode_train.index)].sample(frac=0.5, random_state=NP_RNG)
+mednode_train = mednode.sample(frac=0.8, random_state=NP_RNG.bit_generator)
+mednode_val = mednode[~mednode.index.isin(mednode_train.index)].sample(frac=0.5, random_state=NP_RNG.bit_generator)
 mednode_test = mednode[~mednode.index.isin(mednode_train.append(mednode_val).index)]
 
-ph2_train = ph2.sample(frac=0.8, random_state=NP_RNG)
-ph2_val = ph2[~ph2.index.isin(ph2_train.index)].sample(frac=0.5, random_state=NP_RNG)
+ph2_train = ph2.sample(frac=0.8, random_state=NP_RNG.bit_generator)
+ph2_val = ph2[~ph2.index.isin(ph2_train.index)].sample(frac=0.5, random_state=NP_RNG.bit_generator)
 ph2_test = ph2[~ph2.index.isin(ph2_train.append(ph2_val).index)]
 
 up_train = up

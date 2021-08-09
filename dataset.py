@@ -1,6 +1,4 @@
 import os
-import sys
-
 from config import MAPPER, BEN_MAL_MAPPER, NEV_MEL_OTHER_MAPPER, CLASS_NAMES, MAIN_DIR, NP_RNG, TF_RNG
 import tensorflow as tf
 import tensorflow_addons as tfa
@@ -157,35 +155,39 @@ class MelData:
             raise ValueError(f"{mode} is not a valid mode.")
 
         def tf_imread(sample, label, sample_weight):
-            sample["image"] = tf.reshape(tensor=tf.image.decode_image(tf.io.read_file(sample["image"]), channels=3),
+            sample['image'] = tf.reshape(tensor=tf.image.decode_image(tf.io.read_file(sample['image']), channels=3),
                                          shape=self.args['input_shape'])
-            sample["image"] = self.args['preprocess_fn'](sample["image"])
-            if mode == "train":
-                translation = TF_RNG.uniform(shape=[2], minval=-20, maxval=20, dtype=tf.float32)
-                random_degrees = tf.cast(TF_RNG.uniform(shape=[1], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32)
-                rand = TF_RNG.uniform(shape=[1], maxval=1., dtype=tf.float32)
-                sharp = TF_RNG.uniform(shape=[1], maxval=2., dtype=tf.float32)
-                sigma = float(NP_RNG.random(size=1)) * 2
-                seeds = TF_RNG.make_seeds(5)
-                sample['image'] = tf.image.stateless_random_flip_left_right(image=sample['image'], seed=seeds[:, 0])
-                sample['image'] = tf.image.stateless_random_flip_up_down(image=sample['image'], seed=seeds[:, 1])
-                sample['image'] = tf.image.stateless_random_brightness(image=sample['image'], max_delta=0.1, seed=seeds[:, 2])
-                sample['image'] = tf.image.stateless_random_contrast(image=sample['image'], lower=.5, upper=1.5, seed=seeds[:, 3])
-                sample['image'] = tf.image.stateless_random_saturation(image=sample['image'], lower=0.8, upper=1.2, seed=seeds[:, 4])
-                sample['image'] = tfa.image.rotate(images=sample['image'], angles=random_degrees, name='Rotation')
-                sample['image'] = tfa.image.translate(sample['image'], translations=translation, name='Translation')
-                sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=sharp, name='Sharpness')
-                sample['image'] = tf.cond(tf.math.less_equal(rand, 0.5),
-                                          lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=sigma,
-                                                                              filter_shape=5, name='Gaussian_filter'),
-                                          lambda: sample['image'])
+            sample['image'] = self.args['preprocess_fn'](sample["image"])
+            return sample, label, sample_weight
+
+        def image_augm(sample, label, sample_weight):
+            translation = TF_RNG.uniform(shape=[2], minval=-20, maxval=20, dtype=tf.float32)
+            random_degrees = tf.cast(TF_RNG.uniform(shape=[1], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32)
+            rand = TF_RNG.uniform(shape=[1], maxval=1., dtype=tf.float32)
+            sharp = TF_RNG.uniform(shape=[1], maxval=2., dtype=tf.float32)
+            sigma = float(NP_RNG.random(size=1)) * 2
+            seeds = TF_RNG.make_seeds(5)
+            sample['image'] = tf.image.stateless_random_flip_left_right(image=sample['image'], seed=seeds[:, 0])
+            sample['image'] = tf.image.stateless_random_flip_up_down(image=sample['image'], seed=seeds[:, 1])
+            sample['image'] = tf.image.stateless_random_brightness(image=sample['image'], max_delta=0.1, seed=seeds[:, 2])
+            sample['image'] = tf.image.stateless_random_contrast(image=sample['image'], lower=.5, upper=1.5, seed=seeds[:, 3])
+            sample['image'] = tf.image.stateless_random_saturation(image=sample['image'], lower=0.8, upper=1.2, seed=seeds[:, 4])
+            sample['image'] = tfa.image.rotate(images=sample['image'], angles=random_degrees, name='Rotation')
+            sample['image'] = tfa.image.translate(sample['image'], translations=translation, name='Translation')
+            sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=sharp, name='Sharpness')
+            sample['image'] = tf.cond(tf.math.less_equal(rand, 0.5),
+                                      lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=sigma,
+                                                                          filter_shape=5, name='Gaussian_filter'),
+                                      lambda: sample['image'])
             return sample, label, sample_weight
 
         dataset[0].pop('dataset_id')
         dataset[0].pop('image_type_weights')
         dataset[0].pop('class_weights')
         dataset = tf.data.Dataset.from_tensor_slices(dataset)
-        dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE).prefetch(buffer_size=tf.data.experimental.AUTOTUNE).cache()
+        if mode == 'train':
+            dataset = dataset.map(image_augm, num_parallel_calls=tf.data.experimental.AUTOTUNE).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
         dataset = dataset.batch(self.batch)
         options = tf.data.Options()
         options.experimental_threading.max_intra_op_parallelism = 1
