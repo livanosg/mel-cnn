@@ -64,7 +64,7 @@ for idx, pat_id in enumerate(dermofit['ids']):
     if pat_id.endswith(tuple(ascii_lowercase)):
         dermofit.loc[idx, 'ids'] = pat_id[:-1]
 dermofit_ids = dermofit['ids'].unique()
-np.random.shuffle(dermofit_ids)
+NP_RNG.shuffle(dermofit_ids)
 dermofit_val = dermofit.loc[dermofit['ids'].isin(dermofit_ids[:int(len(dermofit_ids) * 0.5)])]
 dermofit_test = dermofit.loc[dermofit['ids'].isin(dermofit_ids[int(len(dermofit_ids) * 0.5):])]
 
