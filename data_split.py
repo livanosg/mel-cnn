@@ -2,7 +2,7 @@ import os
 from string import ascii_lowercase
 import pandas as pd
 
-from config import NP_RNG, DATA_DIR, COLUMNS, TRAIN_CSV, VAL_CSV, TEST_CSV
+from config import NP_RNG, DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH
 from data_prep import preproc_datasets
 
 isic18 = pd.read_csv(os.path.join(DATA_DIR, 'isic18.csv'))
@@ -83,6 +83,6 @@ total_val = isic18_val.append(isic19_val).append(isic20_val).append(mednode_val)
 total_test = isic19_test.append(isic20_test).append(mednode_test).append(ph2_test).append(spt_test).append(dermofit_test)
 total_data_len = len(total_train) + len(total_val) + len(total_test)
 
-preproc_datasets(total_train, TRAIN_CSV, total_data_len=total_data_len)
-preproc_datasets(total_val, VAL_CSV, total_data_len=total_data_len)
-preproc_datasets(total_test, TEST_CSV, total_data_len=total_data_len)
+preproc_datasets(total_train, TRAIN_CSV_PATH, total_data_len=total_data_len)
+preproc_datasets(total_val, VAL_CSV_PATH, total_data_len=total_data_len)
+preproc_datasets(total_test, TEST_CSV_PATH, total_data_len=total_data_len)

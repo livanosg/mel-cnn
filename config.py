@@ -12,9 +12,9 @@ DATA_DIR = os.path.join(MAIN_DIR, 'data')
 LOGS_DIR = os.path.join(MAIN_DIR, 'logs')
 TRIALS_DIR = os.path.join(MAIN_DIR, 'trials')
 
-TRAIN_CSV = os.path.join(MAIN_DIR, 'data_train.csv')
-VAL_CSV = os.path.join(MAIN_DIR, 'data_val.csv')
-TEST_CSV = os.path.join(MAIN_DIR, 'data_test.csv')
+TRAIN_CSV_PATH = os.path.join(MAIN_DIR, 'data_train.csv')
+VAL_CSV_PATH = os.path.join(MAIN_DIR, 'data_val.csv')
+TEST_CSV_PATH = os.path.join(MAIN_DIR, 'data_test.csv')
 
 COLUMNS = ['dataset_id', 'patient_id', 'lesion_id', 'image', 'image_type', 'sex', 'age_approx', 'anatom_site_general', 'class']
 MAPPER = {'image_type': {'clinic': 0,
@@ -66,9 +66,9 @@ CLASS_NAMES = {'ben_mal': ['Benign', 'Malignant'],
 def directories(args):
     trial_id = datetime.now().strftime('%d%m%y%H%M%S')
     dir_dict = {'data': DATA_DIR,
-                'data_csv': {'train': os.path.join(MAIN_DIR, TRAIN_CSV),
-                             'val': os.path.join(MAIN_DIR, VAL_CSV),
-                             'test': os.path.join(MAIN_DIR, TEST_CSV)},
+                'data_csv': {'train': TRAIN_CSV_PATH,
+                             'val': VAL_CSV_PATH,
+                             'test': TEST_CSV_PATH},
                 'logs': os.path.join(LOGS_DIR, args['mode'], args['image_type'], trial_id),
                 'trial': os.path.join(TRIALS_DIR, args['mode'], args['image_type'], trial_id)}
     try:
@@ -81,7 +81,7 @@ def directories(args):
     dir_dict['hparams_logs'] = os.path.join(dir_dict['trial'], 'hparams_log.txt')
     dir_dict['save_path'] = os.path.join(dir_dict['trial'], 'models', 'best-model')  # + "{epoch:03d}"
     dir_dict['backup'] = os.path.join(dir_dict['trial'], 'backup')
-    dir_dict['image_folder'] = os.path.join(MAIN_DIR, f"proc_{args['image_size']}_{args['colour']}")
+    dir_dict['image_folder'] = os.path.join(MAIN_DIR, f"proc_{args['image_size']}_{args['colour']}", 'data/')
     return dir_dict
 
 

@@ -56,7 +56,7 @@ class MelData:
         self.data_info('test')
 
     def set_sample_weight(self, data):
-        data["image"] = f"{self.image_folder}{os.sep}" + data["image"]
+        data["image"] = self.image_folder + data["image"]
         data['image_type_weights'] = 1.
         data['class_weights'] = 1.
         for ixd, image_type in enumerate(sorted(self.image_type_counts)):
