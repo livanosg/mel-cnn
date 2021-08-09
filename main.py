@@ -1,6 +1,8 @@
 import os
 import argparse
-from grid_search import grid
+from config import directories
+from data_prep import check_create_dataset
+from train_script import training
 
 
 def parse_module():
@@ -51,4 +53,12 @@ if __name__ == '__main__':
                 print(f'{i} unset')
             except KeyError:
                 pass
-    grid(args=args)
+
+    args["dir_dict"] = directories(args=args)
+    check_create_dataset(args=args)
+    with open(args["dir_dict"]["hparams_logs"], "a") as f:
+        [f.write(f"{key.capitalize()}: {args[key]}\n") for key in args.keys() if key not in ("dir_dict", "hparams")]
+        f.write("Directories\n")
+        [f.write(f"{key.capitalize()}: {args['dir_dict'][key]}\n") for key in args["dir_dict"].keys()]
+    training(args=args)
+    exit()

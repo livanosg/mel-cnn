@@ -1,4 +1,6 @@
 import os
+from datetime import datetime
+
 import tensorflow as tf
 import numpy as np
 
@@ -6,13 +8,13 @@ NP_RNG = np.random.default_rng(1312)
 TF_RNG = tf.random.Generator.from_seed(1312)
 
 MAIN_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(MAIN_DIR, "data")
-LOGS_DIR = os.path.join(MAIN_DIR, "logs")
-TRIALS_DIR = os.path.join(MAIN_DIR, "trials")
+DATA_DIR = os.path.join(MAIN_DIR, 'data')
+LOGS_DIR = os.path.join(MAIN_DIR, 'logs')
+TRIALS_DIR = os.path.join(MAIN_DIR, 'trials')
 
-TRAIN_CSV = "train.csv"
-VAL_CSV = "val.csv"
-TEST_CSV = "test.csv"
+TRAIN_CSV = os.path.join(MAIN_DIR, 'data_train.csv')
+VAL_CSV = os.path.join(MAIN_DIR, 'data_val.csv')
+TEST_CSV = os.path.join(MAIN_DIR, 'data_test.csv')
 
 COLUMNS = ['dataset_id', 'patient_id', 'lesion_id', 'image', 'image_type', 'sex', 'age_approx', 'anatom_site_general', 'class']
 MAPPER = {'image_type': {'clinic': 0,
@@ -61,14 +63,14 @@ CLASS_NAMES = {'ben_mal': ['Benign', 'Malignant'],
                '5cls': ['Nevus', 'Melanoma', 'Non-Nevus benign', 'Non-Melanocytic Carcinoma', 'Suspicious benign']}
 
 
-def directories(trial_id, run_num, args):
-    trial = f"{trial_id}-run-{str(run_num).zfill(4)}"
+def directories(args):
+    trial_id = datetime.now().strftime('%d%m%y%H%M%S')
     dir_dict = {'data': DATA_DIR,
                 'data_csv': {'train': os.path.join(MAIN_DIR, TRAIN_CSV),
                              'val': os.path.join(MAIN_DIR, VAL_CSV),
                              'test': os.path.join(MAIN_DIR, TEST_CSV)},
-                'logs': os.path.join(LOGS_DIR, args['mode'], args['image_type'], trial),
-                'trial': os.path.join(TRIALS_DIR, args['mode'], args['image_type'], trial)}
+                'logs': os.path.join(LOGS_DIR, args['mode'], args['image_type'], trial_id),
+                'trial': os.path.join(TRIALS_DIR, args['mode'], args['image_type'], trial_id)}
     try:
         dir_dict['logs'] = dir_dict['logs'] + f"-{os.environ['SLURMD_NODENAME']}"
         dir_dict['trial'] = dir_dict['trial'] + f"-{os.environ['SLURMD_NODENAME']}"
@@ -89,5 +91,5 @@ if __name__ == '__main__':
                  'image_type': 'both',
                  'image_size': 100}
 
-    a = directories(trial_id=1, run_num=0, args=test_args)
+    a = directories(args=test_args)
     print(a['main'])

@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from config import CLASS_NAMES
-from dataset import MelData
+from data_pipe import MelData
 from model import model_fn
 # from tensorflow_addons.losses import SigmoidFocalCrossEntropy
 from metrics import metrics

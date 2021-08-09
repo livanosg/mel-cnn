@@ -3,8 +3,8 @@ from string import ascii_lowercase
 import numpy as np
 import pandas as pd
 
-from config import NP_RNG, DATA_DIR, COLUMNS
-from prep_dataset import preproc_datasets
+from config import NP_RNG, DATA_DIR, COLUMNS, TRAIN_CSV, VAL_CSV, TEST_CSV
+from data_prep import preproc_datasets
 
 isic18 = pd.read_csv(os.path.join(DATA_DIR, 'isic18.csv'))
 [isic18.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in isic18.columns]
@@ -84,6 +84,6 @@ total_val = isic18_val.append(isic19_val).append(isic20_val).append(mednode_val)
 total_test = isic19_test.append(isic20_test).append(mednode_test).append(ph2_test).append(spt_test).append(dermofit_test)
 total_data_len = len(total_train) + len(total_val) + len(total_test)
 
-preproc_datasets(total_train, 'train.csv', total_data_len=total_data_len)
-preproc_datasets(total_val, 'val.csv', total_data_len=total_data_len)
-preproc_datasets(total_test, 'test.csv', total_data_len=total_data_len)
+preproc_datasets(total_train, TRAIN_CSV, total_data_len=total_data_len)
+preproc_datasets(total_val, VAL_CSV, total_data_len=total_data_len)
+preproc_datasets(total_test, TEST_CSV, total_data_len=total_data_len)
