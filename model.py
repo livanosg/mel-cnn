@@ -1,7 +1,7 @@
 import numpy as np
 from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Reshape, Concatenate, AveragePooling2D, GlobalAvgPool2D
-from tensorflow.keras.layers import Dense, Conv2D, LSTM, LayerNormalization
+from tensorflow.keras.layers import Dense, Conv2D, LSTM, BatchNormalization
 from tensorflow.keras.activations import swish
 from tensorflow.keras.regularizers import l1_l2
 from tensorflow import dtypes
@@ -12,7 +12,7 @@ def model_fn(args):
 
     activ = swish  # ReLU(negative_slope=args["relu_grad"])
     rglzr = l1_l2(l1=0., l2=0.0002)
-    normalization = LayerNormalization
+    normalization = BatchNormalization
     # -------------------------------================= Image data =================----------------------------------- #
     base_model = args['model'](include_top=False, input_shape=args['input_shape'])
     base_model.trainable = False
