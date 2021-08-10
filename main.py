@@ -35,6 +35,9 @@ if __name__ == '__main__':
             os.environ['CUDA_VISIBLE_DEVICES'] = f"{os.environ['SLURM_PROCID']}"
     except KeyError:
         pass
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
     # Set verbose for TF CPP LOG
     # 0 = all logs, 1 = filter out INFO, 2 = 1 + WARNING, 3 = 2 + ERROR
