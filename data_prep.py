@@ -60,8 +60,8 @@ def check_create_dataset(args, force=False):
 def preproc_datasets(df, save_to, total_data_len):
     df.fillna(-10)
     df["age_approx"] -= (df["age_approx"] % 10)
-    df.replace(to_replace=MAPPER, inplace=True)
     df["image"] = df["dataset_id"] + f"{os.sep}data{os.sep}" + df["image"]
+    df.replace(to_replace=MAPPER, inplace=True)
 
     print(f"{save_to.split('.')[0]} ratio: {len(df) / total_data_len}")
     df.to_csv(save_to, index=False, columns=["dataset_id", "class", "anatom_site_general", "sex", "image", "age_approx", "image_type"])

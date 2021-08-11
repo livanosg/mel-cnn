@@ -209,28 +209,20 @@ class CyclicLR(Callback):
 
 
 class TestCallback(Callback):
-    def __init__(self, test_data, val_data, args):
+    def __init__(self, args, val_data, test_data):
         super().__init__()
-        self.dir_dict = args["dir_dict"]
         self.args = args
         self.test_data = test_data
         self.validation_data = val_data
-        self.mode = args["mode"]
-        self.image_type = args['image_type']
-        self.trial_path = self.dir_dict["trial"]
-        self.best_model = self.dir_dict["save_path"]
-        self.num_classes = args['num_classes']
-        self.class_names = args['class_names']
-        self.weights = args['weights']
 
     def on_train_end(self, logs=None):
-        model = tf.keras.models.load_model(self.best_model, custom_objects={'metrics': metrics})
+        model = tf.keras.models.load_model(self.args["dir_dict"]["save_path"], custom_objects={'metrics': metrics})
         for idx, dataset in enumerate([self.test_data, self.validation_data]):
             if idx == 0:
                 dataset_type = "test"
             else:
                 dataset_type = "validation"
-            save_dir = os.path.join(self.trial_path, dataset_type)
+            save_dir = os.path.join(self.args["dir_dict"]["trial"], dataset_type)
             os.makedirs(save_dir)
             y_prob = model.predict(dataset)
             dataset_to_numpy = np.asarray(list(map(lambda x: x[1]['class'], dataset.as_numpy_iterator())), dtype=object)
@@ -238,12 +230,12 @@ class TestCallback(Callback):
             y_true = np.argmax(one_hot_labels, axis=-1)
             y_pred = np.argmax(y_prob, axis=-1)
 
-            confmat_image = cm_image(y_true=y_true, y_pred=y_pred, class_names=self.class_names)
+            confmat_image = cm_image(y_true=y_true, y_pred=y_pred, class_names=self.args['class_names'])
             with open(os.path.join(save_dir, "cm.png"), "wb") as f:
                 f.write(confmat_image)
             with open(os.path.join(save_dir, "report.txt"), "w") as f:
-                labels = list(range(len(self.class_names)))
-                f.write(classification_report(y_true=y_true, y_pred=y_pred, target_names=list([self.class_names[i] for i in labels]), labels=labels, digits=3, zero_division=0))
+                labels = list(range(len(self.args['class_names'])))
+                f.write(classification_report(y_true=y_true, y_pred=y_pred, target_names=list([self.args['class_names'][i] for i in labels]), labels=labels, digits=3, zero_division=0))
                 # In binary classification,
                 # recall of the positive class is also known as "sensitivity";
                 # recall of the negative class is also known as "specificity".
@@ -251,32 +243,32 @@ class TestCallback(Callback):
                 # is only shown for multi-label or multi-class with a subset of classes,
                 # because it corresponds to accuracy otherwise and would be the same for all metrics.
 
-            for _class in range(self.num_classes):
-                if self.num_classes == 2 and _class == 0:
+            for _class in range(self.args['num_classes']):
+                if self.args['num_classes'] == 2 and _class == 0:
                     pass
                 else:
                     fpr_roc, tpr_roc, thresholds_roc = roc_curve(y_true=y_true, y_score=y_prob[..., _class], pos_label=_class)
                     precision, recall, thresholds = precision_recall_curve(y_true=y_true, probas_pred=y_prob[..., _class], pos_label=_class)
                     class_auc = auc(fpr_roc, tpr_roc)
                     with open(os.path.join(save_dir, "report.txt"), "a") as f:
-                        if (self.num_classes == 2 and _class == 1) or (self.num_classes != 2 and _class == 0):
-                            col_1 = len(max(CLASS_NAMES[self.mode], key=len))
+                        if (self.args['num_classes'] == 2 and _class == 1) or (self.args['num_classes'] != 2 and _class == 0):
+                            col_1 = len(max(CLASS_NAMES[self.args['mode']], key=len))
                             f.write(f"{''.rjust(col_1, ' ')} {'AUC'.rjust(10)}\n")
-                        f.write(f"{CLASS_NAMES[self.mode][_class].rjust(col_1)} {str(np.round(class_auc, 3)).rjust(10)}\n")
+                        f.write(f"{CLASS_NAMES[self.args['mode']][_class].rjust(col_1)} {str(np.round(class_auc, 3)).rjust(10)}\n")
                     plt.figure(1)
                     plt.plot([0, 1], [0, 1], "k--")
-                    plt.plot(fpr_roc, tpr_roc, label=f"{self.class_names[_class]} (area = {class_auc:.3f})")
+                    plt.plot(fpr_roc, tpr_roc, label=f"{self.args['class_names'][_class]} (area = {class_auc:.3f})")
                     plt.xlabel("False positive rate")
                     plt.ylabel("True positive rate")
-                    plt.title(f"ROC curve {self.image_type}-{dataset_type}")
+                    plt.title(f"ROC curve {self.args['image_type']}-{dataset_type}")
                     plt.legend(loc="best")
 
                     plt.figure(2)
                     plt.plot([0, 1], [1, 0], "k--")
-                    plt.plot(recall, precision, label=f"{self.class_names[_class]}")
+                    plt.plot(recall, precision, label=f"{self.args['class_names'][_class]}")
                     plt.xlabel("Precision")
                     plt.ylabel("Recall")
-                    plt.title(f"PR curve {self.image_type}-{dataset_type}")
+                    plt.title(f"PR curve {self.args['image_type']}-{dataset_type}")
                     plt.legend(loc="best")
 
             plt.figure(1)

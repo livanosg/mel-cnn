@@ -1,5 +1,5 @@
 import os
-from config import MAPPER, BEN_MAL_MAPPER, NEV_MEL_OTHER_MAPPER, CLASS_NAMES, MAIN_DIR, NP_RNG, TF_RNG
+from config import MAPPER, BEN_MAL_MAPPER, NEV_MEL_MAPPER, CLASS_NAMES, MAIN_DIR, NP_RNG, TF_RNG
 import tensorflow as tf
 import tensorflow_addons as tfa
 import numpy as np
@@ -7,64 +7,48 @@ import pandas as pd
 
 
 class MelData:
-    def __init__(self, dir_dict: dict, args: dict, batch: int = 8):
+    def __init__(self, args: dict):
         self.args = args
-        self.batch = batch
-        self.dir_dict = dir_dict
-        self.image_folder = self.dir_dict["image_folder"]
-        self.class_names = CLASS_NAMES[self.args['mode']]
-        self.num_classes = len(self.class_names)
-        self.train_data_df = pd.read_csv(self.dir_dict["data_csv"]["train"])
-        self.val_data_df = pd.read_csv(self.dir_dict["data_csv"]["val"])
-        self.test_data_df = pd.read_csv(self.dir_dict["data_csv"]["test"])
+        self.train_data_df = self.preproc_df('train')
+        self.val_data_df = self.preproc_df('val')
+        self.test_data_df = self.preproc_df('test')
+        self.class_counts = dict(self.train_data_df['class'].value_counts())
+        self.image_type_counts = dict(self.train_data_df["image_type"].value_counts())
+        self.train_data = self.ohe_map(self.set_sample_weight(self.train_data_df).sample(frac=self.args["dataset_frac"], random_state=NP_RNG.bit_generator))
+        self.val_data = self.ohe_map(self.set_sample_weight(self.val_data_df).sample(frac=self.args["dataset_frac"], random_state=NP_RNG.bit_generator))
+        self.test_data = self.ohe_map(self.set_sample_weight(self.test_data_df))
+        for i in ['all', 'train', 'val', 'test']:
+            self.data_info(i)
+
+    def preproc_df(self, mode):
+        df = pd.read_csv(self.args['dir_dict']['data_csv'][mode])
+        df['image'] = self.args['dir_dict']['image_folder'] + df['image']
         if self.args['mode'] == 'ben_mal':
-            self.train_data_df.replace(to_replace=BEN_MAL_MAPPER, inplace=True)
-            self.val_data_df.replace(to_replace=BEN_MAL_MAPPER, inplace=True)
-            self.test_data_df.replace(to_replace=BEN_MAL_MAPPER, inplace=True)
-        if self.args['mode'] == 'nev_mel':
-            self.train_data_df.replace(to_replace=NEV_MEL_OTHER_MAPPER, inplace=True)
-            self.val_data_df.replace(to_replace=NEV_MEL_OTHER_MAPPER, inplace=True)
-            self.test_data_df.replace(to_replace=NEV_MEL_OTHER_MAPPER, inplace=True)
+            mapper = BEN_MAL_MAPPER
+        elif self.args['mode'] == 'nev_mel':
+            mapper = NEV_MEL_MAPPER
+        else:
+            mapper = None
+        df.replace(to_replace=mapper, inplace=True)
         if self.args['image_type'] != 'both':  # Keep derm or clinic, samples.
-            self.train_data_df = self.train_data_df[self.train_data_df['image_type'] == MAPPER['image_type'][self.args['image_type']]]
-            self.val_data_df = self.val_data_df[self.val_data_df['image_type'] == MAPPER['image_type'][self.args['image_type']]]
-            self.test_data_df = self.test_data_df[self.test_data_df['image_type'] == MAPPER['image_type'][self.args['image_type']]]
+            df.drop(df['image_type'] != MAPPER['image_type'][self.args['image_type']], errors='ignore', inplace=True)
         if self.args['mode'] in ['ben_mal', 'nev_mel']:
-            self.train_data_df = self.train_data_df[self.train_data_df['class'] != 2]
-            self.val_data_df = self.val_data_df[self.val_data_df['class'] != 2]
-            self.test_data_df = self.test_data_df[self.test_data_df['class'] != 2]
+            df.drop(df['class'] == 2, errors='ignore', inplace=True)
         if self.args['mode'] in ['5cls']:
-            self.train_data_df = self.train_data_df[self.train_data_df['class'] != 5]
-            self.val_data_df = self.val_data_df[self.val_data_df['class'] != 5]
-            self.test_data_df = self.test_data_df[self.test_data_df['class'] != 5]
+            df.drop(df['class'] == 5, errors='ignore', inplace=True)
+        return df
 
-        self.class_counts = dict(self.train_data_df['class'].value_counts(sort=False, ascending=True))
-        self.weights_per_class = np.divide(len(self.train_data_df),
-                                           np.multiply(self.num_classes, [self.class_counts[k]for k in sorted(self.class_counts.keys())]))
-        self.image_type_counts = dict(self.train_data_df["image_type"].value_counts(sort=False, ascending=True))
-        self.weights_per_image_type = np.divide(np.sum(len(self.train_data_df)), np.multiply(len(self.image_type_counts), [self.image_type_counts[k] for k in sorted(self.image_type_counts)]))
-        self.prep_train_data_df = self.set_sample_weight(self.train_data_df)
-        self.prep_val_data_df = self.set_sample_weight(self.val_data_df)
-        self.prep_test_data_df = self.set_sample_weight(self.test_data_df)
-        self.train_data = self.ohe_map(dict(self.train_data_df.sample(frac=self.args["dataset_frac"], random_state=NP_RNG.bit_generator)))
-        self.val_data = self.ohe_map(dict(self.val_data_df.sample(frac=self.args["dataset_frac"], random_state=NP_RNG.bit_generator)))
-        self.test_data = self.ohe_map(dict(self.test_data_df))
-        self.attr = self.dataset_attributes()
-        self.data_info('all')
-        self.data_info('train')
-        self.data_info('val')
-        self.data_info('test')
+    def set_sample_weight(self, df):
+        weights_per_class = np.divide(len(self.train_data_df),
+                                      np.multiply(self.args['num_classes'], [self.class_counts[k]for k in sorted(self.class_counts.keys())]))
+        weights_per_image_type = np.divide(np.sum(len(self.train_data_df)),
+                                           np.multiply(len(self.image_type_counts), [self.image_type_counts[k] for k in sorted(self.image_type_counts)]))
+        weights_per_image_type = 1 / (1 + np.exp(-weights_per_image_type))  # Through sigmoid
 
-    def set_sample_weight(self, data):
-        data["image"] = self.image_folder + data["image"]
-        data['image_type_weights'] = 1.
-        data['class_weights'] = 1.
-        for ixd, image_type in enumerate(sorted(self.image_type_counts)):
-            data.loc[data['image_type'] == image_type, 'image_type_weights'] = self.weights_per_image_type[ixd]
-        for idx, _class in enumerate(sorted(self.class_counts)):
-            data.loc[data['class'] == _class, 'class_weights'] = self.weights_per_class[idx]
-        data['sample_weights'] = (data['image_type_weights'] + data['class_weights']) / 2
-        return data
+        for idx1, image_type in enumerate(sorted(self.image_type_counts)):
+            for idx2, _class in enumerate(sorted(self.class_counts)):
+                df.loc[(df['image_type'] == image_type) & (df['class'] == _class), 'sample_weights'] = (weights_per_image_type[idx1] + weights_per_class[idx2]) / 2
+        return df
 
     def ohe_map(self, features):
         """ Turn features to one-hot encoded vectors.
@@ -75,15 +59,14 @@ class MelData:
             or
             features: dict, labels: dict, sample_weights
         """
-        features["image_type"] = tf.keras.backend.one_hot(indices=np.asarray(features["image_type"]), num_classes=2)
-        features["sex"] = tf.keras.backend.one_hot(indices=np.asarray(features["sex"]), num_classes=2)
-        features["age_approx"] = tf.keras.backend.one_hot(indices=np.asarray(features["age_approx"]), num_classes=10)
-        features["anatom_site_general"] = tf.keras.backend.one_hot(indices=np.asarray(features["anatom_site_general"]), num_classes=6)
-        features["class"] = tf.keras.backend.one_hot(indices=np.asarray(features["class"]), num_classes=self.num_classes)
-        labels = {"class": features.pop("class")}
-        sample_weights = features.pop("sample_weights")
-
-        return features, labels, sample_weights
+        ohe_features = {'image': features['image'],
+                        'image_type': tf.keras.backend.one_hot(indices=features['image_type'], num_classes=2),
+                        'sex': tf.keras.backend.one_hot(indices=features['sex'], num_classes=2),
+                        'age_approx': tf.keras.backend.one_hot(indices=features['age_approx'], num_classes=10),
+                        'anatom_site_general': tf.keras.backend.one_hot(indices=features['anatom_site_general'], num_classes=6)}
+        labels = {'class': tf.keras.backend.one_hot(indices=features['class'], num_classes=self.args['num_classes'])}
+        sample_weights = tf.convert_to_tensor(features['sample_weights'].astype(float))
+        return ohe_features, labels, sample_weights
 
     def data_info(self, mode):
         dataset_info_dict = {}
@@ -118,31 +101,16 @@ class MelData:
         info.to_csv(save_path + '.csv')
         return dataset_info_dict
 
-    def dataset_attributes(self):
-        return {
-            'mode': self.args['mode'],
-            'classes': self.class_names, 'num_classes': self.num_classes,
-            'train_class_samples': np.sum(self.train_data[1]['class'], axis=0), 'train_len': len(self.train_data[1]['class']),
-            'val_class_samples': np.sum(self.val_data[1]['class'], axis=0), 'val_len': len(self.val_data[1]['class']),
-            'test_class_samples': np.sum(self.test_data[1]['class'], axis=0), 'test_len': len(self.test_data[1]['class']),
-            'weights_per_image_type': self.weights_per_image_type,
-            'weights_per_class': self.weights_per_class,
-            'sample_weights': self.prep_train_data_df['sample_weights'].value_counts(sort=True, ascending=True)
-        }
-
     def info(self):
-        attr = self.dataset_attributes()
-        return f"Mode: {attr['mode']}\n" \
-               f"Classes: {attr['classes']}\n" \
-               f"Train Class Samples: {attr['train_class_samples']}\n" \
-               f"Train Length: {attr['train_len']}\n" \
-               f"Validation Class Samples: {attr['val_class_samples']}\n" \
-               f"Validation Length: {attr['val_len']}\n" \
-               f"Test Class Samples: {attr['test_class_samples']}\n" \
-               f"Test Length: {attr['test_len']}\n" \
-               f"Weights per class:{attr['weights_per_class']}\n"\
-               f"Sample weight by image type:{attr['weights_per_image_type']}\n" \
-               f"Total sample weights: \n{attr['sample_weights']}\n"
+        return f"Mode: {self.args['mode']}\n" \
+               f"Classes: {self.args['class_names']}\n" \
+               f"Train Class Samples: {np.sum(self.train_data[1]['class'], axis=0)}\n" \
+               f"Train Length: {len(self.train_data[1]['class'])}\n" \
+               f"Validation Class Samples: {np.sum(self.val_data[1]['class'], axis=0)}\n" \
+               f"Validation Length: {len(self.val_data[1]['class'])}\n" \
+               f"Test Class Samples: {np.sum(self.test_data[1]['class'], axis=0)}\n" \
+               f"Test Length: {len(self.test_data[1]['class'])}\n" \
+               f"Total sample weights: \n{self.train_data_df['sample_weights'].value_counts(sort=True, ascending=True)}\n"
 
     def get_dataset(self, mode=None, repeat=1):
         if mode == 'train':
@@ -180,15 +148,11 @@ class MelData:
                                                                           filter_shape=5, name='Gaussian_filter'),
                                       lambda: sample['image'])
             return sample, label, sample_weight
-
-        dataset[0].pop('dataset_id')
-        dataset[0].pop('image_type_weights')
-        dataset[0].pop('class_weights')
         dataset = tf.data.Dataset.from_tensor_slices(dataset)
-        dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE).prefetch(buffer_size=tf.data.experimental.AUTOTUNE).cache()
+        dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE).cache()
         if mode == 'train':
             dataset = dataset.map(image_augm, num_parallel_calls=tf.data.experimental.AUTOTUNE).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
-        dataset = dataset.batch(self.batch)
+        dataset = dataset.batch(self.args['batch_size'])
         options = tf.data.Options()
         options.experimental_threading.max_intra_op_parallelism = 1
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA

@@ -20,7 +20,7 @@ def training(args):
 
     args['model'] = models[args['model']]
     # --------------------------------------------------- Dataset ---------------------------------------------------- #
-    global_batch = args['batch_size'] * args['strategy'].num_replicas_in_sync
+    args['batch_size'] = args['batch_size'] * args['strategy'].num_replicas_in_sync  # Global Batch
     args['input_shape'] = (args['image_size'], args['image_size'], 3)
     # ---------------------------------------------------- Model ----------------------------------------------------- #
     args["learning_rate"] = args["learning_rate"] * args['strategy'].num_replicas_in_sync
@@ -30,11 +30,10 @@ def training(args):
                  "adamax": tf.keras.optimizers.Adamax, "nadam": tf.keras.optimizers.Nadam}
 
     with args['strategy'].scope():
-        datasets = MelData(dir_dict=args['dir_dict'], args=args, batch=global_batch)
+        datasets = MelData(args=args)
         train_data = datasets.get_dataset(mode='train')
         val_data = datasets.get_dataset(mode='val')
         test_data = datasets.get_dataset(mode='test')
-        args['weights'] = datasets.weights_per_class
         with open(args['dir_dict']['hparams_logs'], 'a') as f:
             f.write(datasets.info() + f"Number of replicas in sync: {args['strategy'].num_replicas_in_sync}\n")
 
@@ -43,10 +42,10 @@ def training(args):
                              loss='categorical_crossentropy',  # SigmoidFocalCrossEntropy(gamma=2.5, alpha=0.2, reduction=tf.keras.losses.Reduction.AUTO), # custom_loss(datasets.weights_per_class)
                              metrics=metrics())
     # --------------------------------------------------- Callbacks --------------------------------------------------- #
-    callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=20),
+    callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=0),
                  EnrTensorboard(data=val_data, class_names=args['class_names'], log_dir=args["dir_dict"]["logs"],
-                                profile_batch=(1292, 1295), mode=args["mode"]),
-                 TestCallback(test_data=test_data, val_data=val_data, args=args),
+                                profile_batch=0, mode=args["mode"]),
+                 TestCallback(args=args, val_data=val_data, test_data=test_data),
                  ReduceLROnPlateau(factor=0.75, patience=10),
                  EarlyStopping(verbose=args["verbose"], patience=args["early_stop"])]
     # ------------------------------------------------- Train model -------------------------------------------------- #

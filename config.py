@@ -55,9 +55,9 @@ MAPPER = {'image_type': {'clinic': 0,
 BEN_MAL_MAPPER = {'class': {0: 0, 2: 0, 4: 0, 5: 0,  # Group 0: NV, NNV, SUS, unknown | 1: MEL, NMC
                             1: 1, 3: 1}
                   }
-NEV_MEL_OTHER_MAPPER = {'class': {0: 0,  # Group 0: NV, | 1: MEL | 2: NNV, NMC, SUS, unknown
-                                  1: 1,
-                                  2: 2, 3: 2, 4: 2, 5: 2}}
+NEV_MEL_MAPPER = {'class': {0: 0,  # Group 0: NV, | 1: MEL | 2: NNV, NMC, SUS, unknown
+                            1: 1,
+                            2: 2, 3: 2, 4: 2, 5: 2}}
 CLASS_NAMES = {'ben_mal': ['Benign', 'Malignant'],
                'nev_mel': ['Nevus', 'Melanoma'],
                '5cls': ['Nevus', 'Melanoma', 'Non-Nevus benign', 'Non-Melanocytic Carcinoma', 'Suspicious benign']}
