@@ -1,5 +1,4 @@
 import tensorflow as tf
-from tensorflow.keras.applications import xception, inception_v3, efficientnet
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from data_pipe import MelData
 from model import model_fn
