@@ -2,7 +2,7 @@ import os
 from string import ascii_lowercase
 import pandas as pd
 
-from config import NP_RNG, DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH
+from config import NP_RNG, DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH, ISIC_ORIG_TEST_PATH
 from data_prep import preproc_datasets
 
 isic18 = pd.read_csv(os.path.join(DATA_DIR, 'isic18.csv'))
@@ -36,6 +36,8 @@ ph2 = ph2[COLUMNS]
 up = pd.read_csv(os.path.join(DATA_DIR, 'up.csv'))
 [up.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in up.columns]
 up = up[COLUMNS]
+
+isic20_orig_test = pd.read_csv(os.path.join(DATA_DIR, 'isic20_test.csv'))
 
 isic18_val = isic18
 
@@ -86,3 +88,4 @@ total_data_len = len(total_train) + len(total_val) + len(total_test)
 preproc_datasets(total_train, TRAIN_CSV_PATH, total_data_len=total_data_len)
 preproc_datasets(total_val, VAL_CSV_PATH, total_data_len=total_data_len)
 preproc_datasets(total_test, TEST_CSV_PATH, total_data_len=total_data_len)
+preproc_datasets(isic20_orig_test, ISIC_ORIG_TEST_PATH, total_data_len=total_data_len)

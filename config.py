@@ -15,6 +15,7 @@ TRIALS_DIR = os.path.join(MAIN_DIR, 'trials')
 TRAIN_CSV_PATH = os.path.join(MAIN_DIR, 'data_train.csv')
 VAL_CSV_PATH = os.path.join(MAIN_DIR, 'data_val.csv')
 TEST_CSV_PATH = os.path.join(MAIN_DIR, 'data_test.csv')
+ISIC_ORIG_TEST_PATH = os.path.join(MAIN_DIR, 'isic20_test.csv')
 
 COLUMNS = ['dataset_id', 'patient_id', 'lesion_id', 'image', 'image_type', 'sex', 'age_approx', 'anatom_site_general', 'class']
 MAPPER = {'image_type': {'clinic': 0,
