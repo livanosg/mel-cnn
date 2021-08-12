@@ -13,9 +13,9 @@ class MelData:
         self.val_data_df = self.preproc_df('val')
         self.test_data_df = self.preproc_df('test')
         self.class_counts = dict(self.train_data_df['class'].value_counts())
-        self.image_type_counts = dict(self.train_data_df["image_type"].value_counts())
-        self.train_data = self.ohe_map(self.set_sample_weight(self.train_data_df).sample(frac=self.args["dataset_frac"], random_state=NP_RNG.bit_generator))
-        self.val_data = self.ohe_map(self.set_sample_weight(self.val_data_df).sample(frac=self.args["dataset_frac"], random_state=NP_RNG.bit_generator))
+        self.image_type_counts = dict(self.train_data_df['image_type'].value_counts())
+        self.train_data = self.ohe_map(self.set_sample_weight(self.train_data_df).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator))
+        self.val_data = self.ohe_map(self.set_sample_weight(self.val_data_df).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator))
         self.test_data = self.ohe_map(self.set_sample_weight(self.test_data_df))
         for i in ['all', 'train', 'val', 'test']:
             self.data_info(i)
@@ -31,11 +31,11 @@ class MelData:
             mapper = None
         df.replace(to_replace=mapper, inplace=True)
         if self.args['image_type'] != 'both':  # Keep derm or clinic, samples.
-            df.drop(df['image_type'] != MAPPER['image_type'][self.args['image_type']], errors='ignore', inplace=True)
+            df.drop(df[df['image_type'] != MAPPER['image_type'][self.args['image_type']]].index, errors='ignore', inplace=True)
         if self.args['mode'] in ['ben_mal', 'nev_mel']:
-            df.drop(df['class'] == 2, errors='ignore', inplace=True)
+            df.drop(df[df['class'] == 2].index, errors='ignore', inplace=True)
         if self.args['mode'] in ['5cls']:
-            df.drop(df['class'] == 5, errors='ignore', inplace=True)
+            df.drop(df[df['class'] == 5].index, errors='ignore', inplace=True)
         return df
 
     def set_sample_weight(self, df):
@@ -86,22 +86,32 @@ class MelData:
             dataset_img_type_dict = {}
             for image_type in dataset_part['image_type'].unique():
                 dataset_image_part = dataset_part[dataset_part.loc[:, 'image_type'] == image_type]
-                class_counts = dataset_image_part['class'].value_counts()
                 dataset_class_dict = {}
-                for k, v in class_counts.items():
+                for k, v in dataset_image_part['class'].value_counts().items():
                     dataset_class_dict[CLASS_NAMES[self.args['mode']][k]] = v
                 dataset_img_type_dict[image_type_inv[image_type]] = dataset_class_dict
             dataset_info_dict[dataset_id] = dataset_img_type_dict
         info = pd.DataFrame(dataset_info_dict).stack().apply(pd.Series)
         info = info[sorted(info.columns)]
         info.fillna(0, inplace=True)
-        save_path = os.path.join(MAIN_DIR, 'data_info', f'{self.args["mode"]}', f'{self.args["image_type"]}', f"{mode}_data_info")
+        save_path = os.path.join(MAIN_DIR, 'data_info', f"{self.args['mode']}", f"{self.args['image_type']}", f"{mode}_data_info")
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         info.to_html(save_path + '.html', bold_rows=False, border=4)
         info.to_csv(save_path + '.csv')
         return dataset_info_dict
 
     def info(self):
+        image_type_inv = {}
+        dict_1 = {}
+        for (key, value) in MAPPER['image_type'].items():
+            image_type_inv[value] = key
+        for _image_type in self.image_type_counts:
+            dict_2 = {}
+            for _class in self.class_counts:
+                dict_2[CLASS_NAMES[self.args['mode']][_class]] = self.train_data_df.loc[(self.train_data_df['image_type'] == _image_type) & (self.train_data_df['class'] == _class), 'sample_weights'].value_counts()
+            dict_1[image_type_inv[_image_type]] = {key+'\n': f"{'weight:'.rjust(8) + ' ' + str(round(float(value.keys().values), 4)).ljust(10)}\n"
+                                                             f"{'count:'.rjust(8) + ' ' + str(int(value.values)).ljust(10)}" for key, value in dict_2.items()}
+
         return f"Mode: {self.args['mode']}\n" \
                f"Classes: {self.args['class_names']}\n" \
                f"Train Class Samples: {np.sum(self.train_data[1]['class'], axis=0)}\n" \
@@ -110,7 +120,7 @@ class MelData:
                f"Validation Length: {len(self.val_data[1]['class'])}\n" \
                f"Test Class Samples: {np.sum(self.test_data[1]['class'], axis=0)}\n" \
                f"Test Length: {len(self.test_data[1]['class'])}\n" \
-               f"Total sample weights: \n{self.train_data_df['sample_weights'].value_counts(sort=True, ascending=True)}\n"
+               'Weights:\n' + '\n'.join([''.join([str(key).rjust(8) + ' ', key2, str(value2)]) for key, value in dict_1.items() for key2, value2 in value.items()]) + '\n'
 
     def get_dataset(self, mode=None, repeat=1):
         if mode == 'train':
@@ -125,7 +135,7 @@ class MelData:
         def tf_imread(sample, label, sample_weight):
             sample['image'] = tf.reshape(tensor=tf.image.decode_image(tf.io.read_file(sample['image']), channels=3),
                                          shape=self.args['input_shape'])
-            sample['image'] = self.args['preprocess_fn'](sample["image"])
+            sample['image'] = self.args['preprocess_fn'](sample['image'])
             return sample, label, sample_weight
 
         def image_augm(sample, label, sample_weight):
