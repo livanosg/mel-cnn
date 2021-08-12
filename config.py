@@ -85,13 +85,3 @@ def directories(args):
     dir_dict['backup'] = os.path.join(dir_dict['trial'], 'backup')
     dir_dict['image_folder'] = os.path.join(MAIN_DIR, f"proc_{args['image_size']}_{args['colour']}", 'data/')
     return dir_dict
-
-
-if __name__ == '__main__':
-    test_args = {'mode': 'nev_mel',
-                 'dataset_frac': 1,
-                 'image_type': 'both',
-                 'image_size': 100}
-
-    a = directories(args=test_args)
-    print(a['main'])
