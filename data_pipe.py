@@ -142,6 +142,11 @@ class MelData:
             dataset = self.isic20_test_data
         else:
             raise ValueError(f"{mode} is not a valid mode.")
+        if self.args['only_image']:
+            dataset[0].pop('image_type')
+            dataset[0].pop('sex')
+            dataset[0].pop('age_approx')
+            dataset[0].pop('anatom_site_general')
 
         def tf_imread(sample, label=None, sample_weight=None):
             if mode == 'isic20_test':

@@ -28,6 +28,8 @@ def parse_module():
     parser.add_argument('--verbose', '-v', action='count', default=0, help='Set verbosity.')
     parser.add_argument('--layers', '-lrs', default=1, type=int, help='Select set of layers.')
     parser.add_argument('--test', '-test', action='store_true', help='Test to isic2020.')
+    parser.add_argument('--only-image', '-oi', action='store_true', help='Test to isic2020.')
+
     parser.add_argument('--test-model', '-tstmdl', type=str, help='Test to isic2020.')
     return parser
 

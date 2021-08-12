@@ -43,37 +43,41 @@ def model_fn(args):
     conv1x1_2_3x1 = normalization()(conv1x1_2_3x1)
     conv1x1_2_3x1 = Dropout(rate=args['dropout'])(conv1x1_2_3x1)
     inc_mod = Concatenate()([conv1x1ap, conv1x1, conv1x1_1x3, conv1x1_3x1, conv1x1_2_1x3, conv1x1_2_3x1])
-    avg_pool = GlobalAvgPool2D()(inc_mod)
+    common_layers = GlobalAvgPool2D()(inc_mod)
     # --------------------------------================ Tabular data =================--------------------------------- #
-    image_type_input = Input(shape=(2,), name='image_type', dtype=dtypes.float32)
-    sex_input = Input(shape=(2,), name='sex', dtype=dtypes.float32)
-    anatom_site_input = Input(shape=(6,), name='anatom_site_general', dtype=dtypes.float32)
-    age_input = Input(shape=(10,), name='age_approx', dtype=dtypes.float32)
+    if not args['only_image']:
+        image_type_input = Input(shape=(2,), name='image_type', dtype=dtypes.float32)
+        sex_input = Input(shape=(2,), name='sex', dtype=dtypes.float32)
+        anatom_site_input = Input(shape=(6,), name='anatom_site_general', dtype=dtypes.float32)
+        age_input = Input(shape=(10,), name='age_approx', dtype=dtypes.float32)
 
-    image_type = Reshape(target_shape=(2, 1))(image_type_input)
-    sex = Reshape(target_shape=(2, 1))(sex_input)
-    anatom_site = Reshape(target_shape=(6, 1))(anatom_site_input)
-    age = Reshape(target_shape=(10, 1))(age_input)
+        image_type = Reshape(target_shape=(2, 1))(image_type_input)
+        sex = Reshape(target_shape=(2, 1))(sex_input)
+        anatom_site = Reshape(target_shape=(6, 1))(anatom_site_input)
+        age = Reshape(target_shape=(10, 1))(age_input)
 
-    image_type = LSTM(4, return_sequences=True)(image_type)
-    image_type = normalization()(image_type)
+        image_type = LSTM(4, return_sequences=True)(image_type)
+        image_type = normalization()(image_type)
 
-    sex = LSTM(4, return_sequences=True)(sex)
-    sex = normalization()(sex)
+        sex = LSTM(4, return_sequences=True)(sex)
+        sex = normalization()(sex)
 
-    anatom_site = LSTM(4, return_sequences=True)(anatom_site)
-    anatom_site = normalization()(anatom_site)
+        anatom_site = LSTM(4, return_sequences=True)(anatom_site)
+        anatom_site = normalization()(anatom_site)
 
-    age = LSTM(4, return_sequences=True)(age)
-    age = normalization()(age)
+        age = LSTM(4, return_sequences=True)(age)
+        age = normalization()(age)
 
-    concat_inputs = Concatenate(-2)([image_type, sex, anatom_site, age])
-    lstm = LSTM(32, dropout=args['dropout'])(concat_inputs)
-    lstm = normalization()(lstm)
-    # -------------------------------================== Concat part ==================---------------------------------#
-    common_layers = Concatenate(axis=1)([avg_pool, lstm])
+        concat_inputs = Concatenate(-2)([image_type, sex, anatom_site, age])
+        lstm = LSTM(32, dropout=args['dropout'])(concat_inputs)
+        lstm = normalization()(lstm)
+        # -------------------------------================== Concat part ==================---------------------------------#
+        common_layers = Concatenate(axis=1)([common_layers, lstm])
     common_layers = Dense(32, activation=activ, kernel_regularizer=rglzr)(common_layers)
     common_layers = normalization()(common_layers)
     common_layers = Dropout(args['dropout'])(common_layers)
     output_layer = Dense(args['num_classes'], activation='softmax', kernel_regularizer=rglzr, name='class')(common_layers)
-    return Model([image_input, image_type_input, sex_input, anatom_site_input, age_input], [output_layer])
+    if args['only_image']:
+        return Model([image_input], [output_layer])
+    else:
+        return Model([image_input, image_type_input, sex_input, anatom_site_input, age_input], [output_layer])
