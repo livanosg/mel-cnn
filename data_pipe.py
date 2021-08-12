@@ -12,11 +12,14 @@ class MelData:
         self.train_data_df = self.preproc_df('train')
         self.val_data_df = self.preproc_df('val')
         self.test_data_df = self.preproc_df('test')
+        self.isic20_test_df = self.preproc_df('isic_20_test')
+
         self.class_counts = dict(self.train_data_df['class'].value_counts())
         self.image_type_counts = dict(self.train_data_df['image_type'].value_counts())
         self.train_data = self.ohe_map(self.set_sample_weight(self.train_data_df).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator))
         self.val_data = self.ohe_map(self.set_sample_weight(self.val_data_df).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator))
         self.test_data = self.ohe_map(self.set_sample_weight(self.test_data_df))
+        self.isic20_test_data = self.ohe_map(self.isic20_test_df)
         for i in ['all', 'train', 'val', 'test']:
             self.data_info(i)
 
@@ -34,8 +37,9 @@ class MelData:
             df.drop(df[df['image_type'] != MAPPER['image_type'][self.args['image_type']]].index, errors='ignore', inplace=True)
         if self.args['mode'] in ['ben_mal', 'nev_mel']:
             df.drop(df[df['class'] == 2].index, errors='ignore', inplace=True)
-        if self.args['mode'] in ['5cls']:
-            df.drop(df[df['class'] == 5].index, errors='ignore', inplace=True)
+        if len(df[df['dataset_id'] == 'isic20_test']) == 0:
+            if self.args['mode'] in ['5cls']:
+                df.drop(df[df['class'] == 5].index, errors='ignore', inplace=True)
         return df
 
     def set_sample_weight(self, df):
@@ -64,9 +68,12 @@ class MelData:
                         'sex': tf.keras.backend.one_hot(indices=features['sex'], num_classes=2),
                         'age_approx': tf.keras.backend.one_hot(indices=features['age_approx'], num_classes=10),
                         'anatom_site_general': tf.keras.backend.one_hot(indices=features['anatom_site_general'], num_classes=6)}
-        labels = {'class': tf.keras.backend.one_hot(indices=features['class'], num_classes=self.args['num_classes'])}
-        sample_weights = tf.convert_to_tensor(features['sample_weights'].astype(float))
-        return ohe_features, labels, sample_weights
+        if len(features[features['dataset_id'] == 'isic20_test']) == 0:
+            labels = {'class': tf.keras.backend.one_hot(indices=features['class'], num_classes=self.args['num_classes'])}
+            sample_weights = tf.convert_to_tensor(features['sample_weights'].astype(float))
+            return ohe_features, labels, sample_weights
+        else:
+            return ohe_features
 
     def data_info(self, mode):
         dataset_info_dict = {}
@@ -129,14 +136,20 @@ class MelData:
             dataset = self.val_data
         elif mode == 'test':
             dataset = self.test_data
+        elif mode == 'isic20_test':
+            dataset = self.isic20_test_data
         else:
             raise ValueError(f"{mode} is not a valid mode.")
 
-        def tf_imread(sample, label, sample_weight):
+        def tf_imread(sample):
+            if mode == 'isic20_test':
+                image_path = sample['image']
             sample['image'] = tf.reshape(tensor=tf.image.decode_image(tf.io.read_file(sample['image']), channels=3),
                                          shape=self.args['input_shape'])
             sample['image'] = self.args['preprocess_fn'](sample['image'])
-            return sample, label, sample_weight
+            if mode == 'isic20_test':
+                return sample, image_path
+            return sample
 
         def image_augm(sample, label, sample_weight):
             translation = TF_RNG.uniform(shape=[2], minval=-20, maxval=20, dtype=tf.float32)
@@ -158,10 +171,15 @@ class MelData:
                                                                           filter_shape=5, name='Gaussian_filter'),
                                       lambda: sample['image'])
             return sample, label, sample_weight
+
         dataset = tf.data.Dataset.from_tensor_slices(dataset)
-        dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE).cache()
+        if mode in ['train', 'val', 'test']:
+            dataset = dataset.map(lambda sample, label, sample_weight: (tf_imread(sample), label, sample_weight), num_parallel_calls=tf.data.experimental.AUTOTUNE).cache()
+        else:
+            dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         if mode == 'train':
             dataset = dataset.map(image_augm, num_parallel_calls=tf.data.experimental.AUTOTUNE).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+
         dataset = dataset.batch(self.args['batch_size'])
         options = tf.data.Options()
         options.experimental_threading.max_intra_op_parallelism = 1

@@ -69,7 +69,8 @@ def directories(args):
     dir_dict = {'data': DATA_DIR,
                 'data_csv': {'train': TRAIN_CSV_PATH,
                              'val': VAL_CSV_PATH,
-                             'test': TEST_CSV_PATH},
+                             'test': TEST_CSV_PATH,
+                             'isic_20_test': ISIC_ORIG_TEST_PATH},
                 'logs': os.path.join(LOGS_DIR, args['mode'], args['image_type'], trial_id),
                 'trial': os.path.join(TRIALS_DIR, args['mode'], args['image_type'], trial_id)}
     try:

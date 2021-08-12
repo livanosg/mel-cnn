@@ -1,7 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
-from config import CLASS_NAMES
 from data_pipe import MelData
 from model import model_fn
 from metrics import metrics
@@ -9,21 +8,7 @@ from callbacks import EnrTensorboard, TestCallback, LaterCheckpoint
 
 
 def training(args):
-    args['class_names'] = CLASS_NAMES[args["mode"]]
-    args['num_classes'] = len(args['class_names'])
-    models = {'xept': xception.Xception, 'incept': inception_v3.InceptionV3,
-              'effnet0': efficientnet.EfficientNetB0, 'effnet1': efficientnet.EfficientNetB1}
-
-    preproc_input_fn = {'xept':  xception.preprocess_input, 'incept': inception_v3.preprocess_input,
-                        'effnet0': efficientnet.preprocess_input, 'effnet1':  efficientnet.preprocess_input}
-    args['preprocess_fn'] = preproc_input_fn[args['model']]
-
-    args['model'] = models[args['model']]
     # --------------------------------------------------- Dataset ---------------------------------------------------- #
-    args['batch_size'] = args['batch_size'] * args['strategy'].num_replicas_in_sync  # Global Batch
-    args['input_shape'] = (args['image_size'], args['image_size'], 3)
-    # ---------------------------------------------------- Model ----------------------------------------------------- #
-    args["learning_rate"] = args["learning_rate"] * args['strategy'].num_replicas_in_sync
     optimizer = {"adam": tf.keras.optimizers.Adam, "ftrl": tf.keras.optimizers.Ftrl,
                  "sgd": tf.keras.optimizers.SGD, "rmsprop": tf.keras.optimizers.RMSprop,
                  "adadelta": tf.keras.optimizers.Adadelta, "adagrad": tf.keras.optimizers.Adagrad,

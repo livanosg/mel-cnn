@@ -1,7 +1,10 @@
 import os
 import argparse
-from config import directories
+
+from tensorflow.keras.applications import xception, inception_v3, efficientnet
+from config import directories, CLASS_NAMES
 from data_prep import check_create_dataset
+from test_isic20 import test_isic20
 from train_script import training
 import tensorflow as tf
 
@@ -24,12 +27,17 @@ def parse_module():
     parser.add_argument('--mode', '-mod', required=True, type=str, choices=['5cls', 'ben_mal', 'nev_mel'], help='Select the type of outputs.')
     parser.add_argument('--verbose', '-v', action='count', default=0, help='Set verbosity.')
     parser.add_argument('--layers', '-lrs', default=1, type=int, help='Select set of layers.')
+    parser.add_argument('--test', '-test', action='store_true', help='Test to isic2020.')
+    parser.add_argument('--test-model', '-tstmdl', type=str, help='Test to isic2020.')
     return parser
 
 
 if __name__ == '__main__':
     args = parse_module().parse_args().__dict__
     print(args)
+    args['dir_dict'] = directories(args=args)
+    check_create_dataset(args=args)
+
     try:
         if int(os.environ['SLURM_STEP_TASKS_PER_NODE']) > 1:
             os.environ['CUDA_VISIBLE_DEVICES'] = f"{os.environ['SLURM_PROCID']}"
@@ -67,11 +75,26 @@ if __name__ == '__main__':
             except KeyError:
                 pass
 
-    args['dir_dict'] = directories(args=args)
-    check_create_dataset(args=args)
     with open(args['dir_dict']['hparams_logs'], 'a') as f:
         [f.write(f"{key.capitalize()}: {args[key]}\n") for key in args.keys() if key not in ('dir_dict', 'hparams')]
         f.write('Directories\n')
         [f.write(f"{key.capitalize()}: {args['dir_dict'][key]}\n") for key in args['dir_dict'].keys()]
-    training(args=args)
+    args['class_names'] = CLASS_NAMES[args["mode"]]
+    args['num_classes'] = len(args['class_names'])
+    args['input_shape'] = (args['image_size'], args['image_size'], 3)
+    args['batch_size'] = args['batch_size'] * args['strategy'].num_replicas_in_sync  # Global Batch
+    args["learning_rate"] = args["learning_rate"] * args['strategy'].num_replicas_in_sync
+    models = {'xept': xception.Xception, 'incept': inception_v3.InceptionV3,
+              'effnet0': efficientnet.EfficientNetB0, 'effnet1': efficientnet.EfficientNetB1}
+    preproc_input_fn = {'xept':  xception.preprocess_input, 'incept': inception_v3.preprocess_input,
+                        'effnet0': efficientnet.preprocess_input, 'effnet1':  efficientnet.preprocess_input}
+    args['preprocess_fn'] = preproc_input_fn[args['model']]
+    args['model'] = models[args['model']]
+
+    if args['test']:
+        print('Testing')
+        args['dir_dict']["save_path"] = args['test_model']
+        test_isic20(args=args)
+    else:
+        training(args=args)
     exit()
