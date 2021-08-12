@@ -12,14 +12,16 @@ class MelData:
         self.train_data_df = self.preproc_df('train')
         self.val_data_df = self.preproc_df('val')
         self.test_data_df = self.preproc_df('test')
-        self.isic20_test_df = self.preproc_df('isic_20_test')
 
         self.class_counts = dict(self.train_data_df['class'].value_counts())
         self.image_type_counts = dict(self.train_data_df['image_type'].value_counts())
         self.train_data = self.ohe_map(self.set_sample_weight(self.train_data_df).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator))
         self.val_data = self.ohe_map(self.set_sample_weight(self.val_data_df).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator))
         self.test_data = self.ohe_map(self.set_sample_weight(self.test_data_df))
-        self.isic20_test_data = self.ohe_map(self.isic20_test_df)
+
+        if self.args['test']:
+            self.isic20_test_df = self.preproc_df('isic_20_test')
+            self.isic20_test_data = self.ohe_map(self.isic20_test_df)
         for i in ['all', 'train', 'val', 'test']:
             self.data_info(i)
 
@@ -35,9 +37,9 @@ class MelData:
         df.replace(to_replace=mapper, inplace=True)
         if self.args['image_type'] != 'both':  # Keep derm or clinic, samples.
             df.drop(df[df['image_type'] != MAPPER['image_type'][self.args['image_type']]].index, errors='ignore', inplace=True)
-        if self.args['mode'] in ['ben_mal', 'nev_mel']:
-            df.drop(df[df['class'] == 2].index, errors='ignore', inplace=True)
         if len(df[df['dataset_id'] == 'isic20_test']) == 0:
+            if self.args['mode'] in ['ben_mal', 'nev_mel']:
+                df.drop(df[df['class'] == 2].index, errors='ignore', inplace=True)
             if self.args['mode'] in ['5cls']:
                 df.drop(df[df['class'] == 5].index, errors='ignore', inplace=True)
         return df
@@ -141,7 +143,7 @@ class MelData:
         else:
             raise ValueError(f"{mode} is not a valid mode.")
 
-        def tf_imread(sample):
+        def tf_imread(sample, label=None, sample_weight=None):
             if mode == 'isic20_test':
                 image_path = sample['image']
             sample['image'] = tf.reshape(tensor=tf.image.decode_image(tf.io.read_file(sample['image']), channels=3),
@@ -149,7 +151,8 @@ class MelData:
             sample['image'] = self.args['preprocess_fn'](sample['image'])
             if mode == 'isic20_test':
                 return sample, image_path
-            return sample
+            else:
+                return sample, label, sample_weight
 
         def image_augm(sample, label, sample_weight):
             translation = TF_RNG.uniform(shape=[2], minval=-20, maxval=20, dtype=tf.float32)
@@ -174,7 +177,7 @@ class MelData:
 
         dataset = tf.data.Dataset.from_tensor_slices(dataset)
         if mode in ['train', 'val', 'test']:
-            dataset = dataset.map(lambda sample, label, sample_weight: (tf_imread(sample), label, sample_weight), num_parallel_calls=tf.data.experimental.AUTOTUNE).cache()
+            dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE).cache()
         else:
             dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         if mode == 'train':
