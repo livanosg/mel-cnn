@@ -38,21 +38,19 @@ if __name__ == '__main__':
     args = parse_module().parse_args().__dict__
     args['dir_dict'] = directories(args=args)
     check_create_dataset(args=args, force=True)
-    exit()
     try:
         if int(os.environ['SLURM_STEP_TASKS_PER_NODE']) > 1:
             os.environ['CUDA_VISIBLE_DEVICES'] = f"{os.environ['SLURM_PROCID']}"
     except KeyError:
         pass
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
-    # Set verbose for TF CPP LOG
-    # 0 = all logs, 1 = filter out INFO, 2 = 1 + WARNING, 3 = 2 + ERROR
     os.environ['AUTOGRAPH_VERBOSITY'] = '1'
-    if args['verbose'] > 3:
+
+    if args['verbose'] > 3:  # 0 = all logs, 1 = filter out INFO, 2 = 1 + WARNING, 3 = 2 + ERROR
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
     else:
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = f"{3 - args['verbose']}"
-    # Set verbose for keras
+    # Set verbosity for keras
     if args['verbose'] == 1:
         args['verbose'] = 2
     elif args['verbose'] >= 2:

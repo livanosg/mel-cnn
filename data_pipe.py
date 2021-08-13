@@ -15,13 +15,11 @@ class MelData:
 
         self.class_counts = dict(self.train_data_df['class'].value_counts())
         self.image_type_counts = dict(self.train_data_df['image_type'].value_counts())
-        self.train_data = self.ohe_map(self.set_sample_weight(self.train_data_df).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator))
-        self.val_data = self.ohe_map(self.set_sample_weight(self.val_data_df).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator))
-        self.test_data = self.ohe_map(self.set_sample_weight(self.test_data_df))
-
+        self.datasets = {'train': self.ohe_map(self.set_sample_weight(self.train_data_df).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator)),
+                         'val': self.ohe_map(self.set_sample_weight(self.val_data_df).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator)),
+                         'test': self.ohe_map(self.set_sample_weight(self.test_data_df))}
         if self.args['test']:
-            self.isic20_test_df = self.preproc_df('isic_20_test')
-            self.isic20_test_data = self.ohe_map(self.isic20_test_df)
+            self.isic20_test_data = self.ohe_map(self.preproc_df('isic_20_test'))
         for i in ['all', 'train', 'val', 'test']:
             self.data_info(i)
 
@@ -37,7 +35,7 @@ class MelData:
         df.replace(to_replace=mapper, inplace=True)
         if self.args['image_type'] != 'both':  # Keep derm or clinic, samples.
             df.drop(df[df['image_type'] != MAPPER['image_type'][self.args['image_type']]].index, errors='ignore', inplace=True)
-        if len(df[df['dataset_id'] == 'isic20_test']) == 0:
+        if not self.args['test']:
             if self.args['mode'] in ['ben_mal', 'nev_mel']:
                 df.drop(df[df['class'] == 2].index, errors='ignore', inplace=True)
             if self.args['mode'] in ['5cls']:
@@ -70,12 +68,12 @@ class MelData:
                         'sex': tf.keras.backend.one_hot(indices=features['sex'], num_classes=2),
                         'age_approx': tf.keras.backend.one_hot(indices=features['age_approx'], num_classes=10),
                         'anatom_site_general': tf.keras.backend.one_hot(indices=features['anatom_site_general'], num_classes=6)}
-        if len(features[features['dataset_id'] == 'isic20_test']) == 0:
+        if self.args['test']:
+            return ohe_features
+        else:
             labels = {'class': tf.keras.backend.one_hot(indices=features['class'], num_classes=self.args['num_classes'])}
             sample_weights = tf.convert_to_tensor(features['sample_weights'].astype(float))
             return ohe_features, labels, sample_weights
-        else:
-            return ohe_features
 
     def data_info(self, mode):
         dataset_info_dict = {}
@@ -123,25 +121,19 @@ class MelData:
 
         return f"Mode: {self.args['mode']}\n" \
                f"Classes: {self.args['class_names']}\n" \
-               f"Train Class Samples: {np.sum(self.train_data[1]['class'], axis=0)}\n" \
-               f"Train Length: {len(self.train_data[1]['class'])}\n" \
-               f"Validation Class Samples: {np.sum(self.val_data[1]['class'], axis=0)}\n" \
-               f"Validation Length: {len(self.val_data[1]['class'])}\n" \
-               f"Test Class Samples: {np.sum(self.test_data[1]['class'], axis=0)}\n" \
-               f"Test Length: {len(self.test_data[1]['class'])}\n" \
+               f"Train Class Samples: {np.sum(self.datasets['train'][1]['class'], axis=0)}\n" \
+               f"Train Length: {len(self.datasets['train'][1]['class'])}\n" \
+               f"Validation Class Samples: {np.sum(self.datasets['val'][1]['class'], axis=0)}\n" \
+               f"Validation Length: {len(self.datasets['val'][1]['class'])}\n" \
+               f"Test Class Samples: {np.sum(self.datasets['test'][1]['class'], axis=0)}\n" \
+               f"Test Length: {len(self.datasets['test'][1]['class'])}\n" \
                'Weights:\n' + '\n'.join([''.join([str(key).rjust(8) + ' ', key2, str(value2)]) for key, value in dict_1.items() for key2, value2 in value.items()]) + '\n'
 
     def get_dataset(self, mode=None, repeat=1):
-        if mode == 'train':
-            dataset = self.train_data
-        elif mode == 'val':
-            dataset = self.val_data
-        elif mode == 'test':
-            dataset = self.test_data
-        elif mode == 'isic20_test':
+        if self.args['test']:
             dataset = self.isic20_test_data
         else:
-            raise ValueError(f"{mode} is not a valid mode.")
+            dataset = self.datasets[mode]
         if self.args['only_image']:
             dataset[0].pop('image_type')
             dataset[0].pop('sex')
@@ -149,8 +141,7 @@ class MelData:
             dataset[0].pop('anatom_site_general')
 
         def tf_imread(sample, label=None, sample_weight=None):
-            if mode == 'isic20_test':
-                image_path = sample['image']
+            image_path = sample['image']
             sample['image'] = tf.reshape(tensor=tf.image.decode_image(tf.io.read_file(sample['image']), channels=3),
                                          shape=self.args['input_shape'])
             sample['image'] = self.args['preprocess_fn'](sample['image'])
@@ -183,10 +174,10 @@ class MelData:
         dataset = tf.data.Dataset.from_tensor_slices(dataset)
         if mode in ['train', 'val', 'test']:
             dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE).cache()
+            if mode == 'train':
+                dataset = dataset.map(image_augm, num_parallel_calls=tf.data.experimental.AUTOTUNE).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
         else:
             dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        if mode == 'train':
-            dataset = dataset.map(image_augm, num_parallel_calls=tf.data.experimental.AUTOTUNE).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
         dataset = dataset.batch(self.args['batch_size'])
         options = tf.data.Options()
