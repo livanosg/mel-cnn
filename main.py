@@ -36,10 +36,9 @@ def parse_module():
 
 if __name__ == '__main__':
     args = parse_module().parse_args().__dict__
-    print(args)
     args['dir_dict'] = directories(args=args)
-    check_create_dataset(args=args)
-
+    check_create_dataset(args=args, force=True)
+    exit()
     try:
         if int(os.environ['SLURM_STEP_TASKS_PER_NODE']) > 1:
             os.environ['CUDA_VISIBLE_DEVICES'] = f"{os.environ['SLURM_PROCID']}"

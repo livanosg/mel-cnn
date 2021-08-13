@@ -1,10 +1,4 @@
 import tensorflow.keras.backend as K
-from tensorflow.keras.metrics import AUC
-
-
-def metrics():
-    auc = AUC(multi_label=True)
-    return [auc]
 
 
 def sensitivity(y_true, y_pred):

@@ -10,7 +10,6 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import roc_curve, precision_recall_curve, auc, classification_report, confusion_matrix
 
 from config import CLASS_NAMES
-from metrics import metrics
 matplotlib.use('cairo')
 
 
@@ -216,7 +215,7 @@ class TestCallback(Callback):
         self.validation_data = val_data
 
     def on_train_end(self, logs=None):
-        model = tf.keras.models.load_model(self.args["dir_dict"]["save_path"], custom_objects={'metrics': metrics})
+        model = tf.keras.models.load_model(self.args["dir_dict"]["save_path"])
         for idx, dataset in enumerate([self.test_data, self.validation_data]):
             if idx == 0:
                 dataset_type = "test"

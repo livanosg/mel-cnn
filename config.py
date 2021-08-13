@@ -1,6 +1,5 @@
 import os
 from datetime import datetime
-
 import tensorflow as tf
 import numpy as np
 
@@ -26,28 +25,28 @@ MAPPER = {'image_type': {'clinic': 0,
                   None: -1},
           'age_approx': {None: -1, 0: 0, 10: 1, 20: 2, 30: 3, 40: 4,
                          50: 5, 60: 6, 70: 7, 80: 8, 90: 9},
-          'anatom_site_general': {'abdomen': 0, 'back': 0, 'chest': 0, 'anterior torso': 0,
-                                  'posterior torso': 0, 'lateral_torso': 0, 'torso': 0,
-                                  'upper extremity': 1, 'upper_extremity': 1, 'upper limbs': 1,
-                                  'head/neck': 2, 'head neck': 2,
-                                  'lower extremity': 3, 'lower_extremity': 3, 'lower limbs': 3, 'buttocks': 3,
+          'anatom_site_general': {'abdomen': 0, 'back': 0, 'chest': 0, 'anterior torso': 0, 'CHEST': 0, 'BACK': 0,
+                                  'posterior torso': 0, 'lateral_torso': 0, 'torso': 0, 'ABDOMEN': 0,
+                                  'upper extremity': 1, 'upper_extremity': 1, 'upper limbs': 1, 'ARM': 1, 'HAND': 1, 'FOREARM': 1,
+                                  'head/neck': 2, 'head neck': 2, 'NECK': 2, 'FACE': 2, 'NOSE': 2, 'SCALP': 2, 'EAR': 2,
+                                  'lower extremity': 3, 'lower_extremity': 3, 'lower limbs': 3, 'buttocks': 3, 'THIGH': 3, 'FOOT': 3,
                                   'acral': 4, 'palms/soles': 4,
-                                  'genital areas': 5, 'oral/genital': 5,
+                                  'genital areas': 5, 'oral/genital': 5, 'LIP': 5,
                                   None: -1},
           #  0: Nevus | 1: Melanoma | 2: Non-Nevus benign | 3: Non-Melanocytic Carcinoma | 4: Suspicious
           'class':
               {'NV': 0, 'nevus': 0, 'clark nevus': 0, 'reed or spitz nevus': 0, 'naevus': 0, 'Common Nevus': 0, 'dermal nevus': 0,
-               'blue nevus': 0, 'congenital nevus': 0, 'recurrent nevus': 0, 'combined nevus': 0, 'ML': 0,
+               'blue nevus': 0, 'congenital nevus': 0, 'recurrent nevus': 0, 'combined nevus': 0, 'ML': 0, 'NEV': 0,
 
                'MEL': 1, 'melanoma': 1, 'melanoma (less than 0.76 mm)': 1, 'melanoma (in situ)': 1, 'melanoma (0.76 to 1.5 mm)': 1,
                'melanoma (more than 1.5 mm)': 1, 'Melanoma': 1, 'melanoma metastasis': 1,
 
                'NNV': 2, 'BKL': 2, 'seborrheic keratosis': 2, 'lichenoid keratosis': 2, 'lentigo': 2, 'lentigo NOS': 2,
                'dermatofibroma': 2, 'solar lentigo': 2, 'melanosis': 2, 'miscellaneous': 2, 'cafe-au-lait macule': 2,
-               'VASC': 2, 'DF': 2, 'vascular lesion': 2, 'SK': 2, 'PYO': 2,
+               'VASC': 2, 'DF': 2, 'vascular lesion': 2, 'SK': 2, 'PYO': 2, 'SEK': 2,
 
                'NMC': 3, 'BCC': 3, 'AKIEC': 3, 'SCC': 3, 'basal cell carcinoma': 3, 'IEC': 3,
-               'SUS': 4, 'ANV': 4, 'atypical melanocytic proliferation': 4, 'AK': 4, 'Atypical Nevus': 4,
+               'SUS': 4, 'ANV': 4, 'atypical melanocytic proliferation': 4, 'AK': 4, 'Atypical Nevus': 4, 'ACK': 4,
 
                'unknown': 5
                }
