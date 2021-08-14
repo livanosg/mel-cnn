@@ -159,23 +159,18 @@ class MelData:
                 return sample, label, sample_weight
 
         def image_augm(sample, label, sample_weight):
-            translation = TF_RNG.uniform(shape=[2], minval=-20, maxval=20, dtype=tf.float32)
-            random_degrees = tf.cast(TF_RNG.uniform(shape=[1], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32)
-            rand = TF_RNG.uniform(shape=[1], maxval=1., dtype=tf.float32)
-            sharp = TF_RNG.uniform(shape=[1], maxval=2., dtype=tf.float32)
-            sigma = float(NP_RNG.random(size=1)) * 2
+            trans_rat = self.args['image_size'] * 0.05
             seeds = TF_RNG.make_seeds(5)
-            sample['image'] = tf.image.stateless_random_flip_left_right(image=sample['image'], seed=seeds[:, 0])
-            sample['image'] = tf.image.stateless_random_flip_up_down(image=sample['image'], seed=seeds[:, 1])
+            sample['image'] = tf.image.stateless_random_flip_up_down(image=sample['image'], seed=seeds[:, 0])
+            sample['image'] = tf.image.stateless_random_flip_left_right(image=sample['image'], seed=seeds[:, 1])
             sample['image'] = tf.image.stateless_random_brightness(image=sample['image'], max_delta=0.1, seed=seeds[:, 2])
             sample['image'] = tf.image.stateless_random_contrast(image=sample['image'], lower=.5, upper=1.5, seed=seeds[:, 3])
             sample['image'] = tf.image.stateless_random_saturation(image=sample['image'], lower=0.8, upper=1.2, seed=seeds[:, 4])
-            sample['image'] = tfa.image.rotate(images=sample['image'], angles=random_degrees, name='Rotation')
-            sample['image'] = tfa.image.translate(sample['image'], translations=translation, name='Translation')
-            sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=sharp, name='Sharpness')
-            sample['image'] = tf.cond(tf.math.less_equal(rand, 0.5),
-                                      lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=sigma,
-                                                                          filter_shape=5, name='Gaussian_filter'),
+            sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=TF_RNG.uniform(shape=[1], maxval=2., dtype=tf.float32), name='Sharpness')
+            sample['image'] = tfa.image.translate(sample['image'], translations=TF_RNG.uniform(shape=[2], minval=-trans_rat, maxval=trans_rat, dtype=tf.float32), name='Translation')
+            sample['image'] = tfa.image.rotate(images=sample['image'], angles=tf.cast(TF_RNG.uniform(shape=[1], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32), name='Rotation')
+            sample['image'] = tf.cond(tf.math.less_equal(TF_RNG.uniform(shape=[1], maxval=1., dtype=tf.float32), 0.5),
+                                      lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=float(NP_RNG.random(size=1)) * 2, filter_shape=5, name='Gaussian_filter'),
                                       lambda: sample['image'])
             return sample, label, sample_weight
 

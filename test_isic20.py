@@ -6,6 +6,7 @@ import tensorflow as tf
 from data_pipe import MelData
 from datetime import datetime
 
+
 def test_isic20(args):
     uid = datetime.now().strftime('%d%m%y%H%M%S')
     args['batch_size'] = 256
