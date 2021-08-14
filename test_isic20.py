@@ -1,11 +1,13 @@
+import datetime
 import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from data_pipe import MelData
-
+from datetime import datetime
 
 def test_isic20(args):
+    uid = datetime.now().strftime('%d%m%y%H%M%S')
     args['batch_size'] = 256
     dataset = MelData(args=args)
     model = tf.keras.models.load_model(args["dir_dict"]["save_path"])
@@ -19,6 +21,6 @@ def test_isic20(args):
     results = np.vstack(results).reshape((-1))
     paths = np.vstack(paths).reshape((-1))
     df = pd.DataFrame({'image_name': paths, 'target': results})
-    df.loc[:, 'image_name'].apply(lambda image_path: os.path.splitext(os.path.basename(image_path))[0])
+    df.loc[:, 'image_name'].apply(lambda image_path: os.path.splitext(os.path.basename(image_path.decode()))[0])
     # noinspection PyTypeChecker
-    df.to_csv(path_or_buf='results.csv', index=False)
+    df.to_csv(path_or_buf=f"results-{uid}.csv", index=False)

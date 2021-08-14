@@ -4,6 +4,7 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 import numpy as np
 import pandas as pd
+from data_prep import hair_removal
 
 
 class MelData:
@@ -47,7 +48,7 @@ class MelData:
                                       np.multiply(self.args['num_classes'], [self.class_counts[k]for k in sorted(self.class_counts.keys())]))
         weights_per_image_type = np.divide(np.sum(len(self.train_data_df)),
                                            np.multiply(len(self.image_type_counts), [self.image_type_counts[k] for k in sorted(self.image_type_counts)]))
-        weights_per_image_type = 1 / (1 + np.exp(-weights_per_image_type))  # Through sigmoid
+        weights_per_image_type = np.sqrt(weights_per_image_type)  # Through sqrt
 
         for idx1, image_type in enumerate(sorted(self.image_type_counts)):
             for idx2, _class in enumerate(sorted(self.class_counts)):
@@ -132,18 +133,25 @@ class MelData:
     def get_dataset(self, mode=None, repeat=1):
         if self.args['test']:
             dataset = self.isic20_test_data
+            if self.args['only_image']:
+                dataset.pop('image_type')
+                dataset.pop('sex')
+                dataset.pop('age_approx')
+                dataset.pop('anatom_site_general')
         else:
             dataset = self.datasets[mode]
-        if self.args['only_image']:
-            dataset[0].pop('image_type')
-            dataset[0].pop('sex')
-            dataset[0].pop('age_approx')
-            dataset[0].pop('anatom_site_general')
+            if self.args['only_image']:
+                dataset[0].pop('image_type')
+                dataset[0].pop('sex')
+                dataset[0].pop('age_approx')
+                dataset[0].pop('anatom_site_general')
 
         def tf_imread(sample, label=None, sample_weight=None):
             image_path = sample['image']
-            sample['image'] = tf.reshape(tensor=tf.image.decode_image(tf.io.read_file(sample['image']), channels=3),
-                                         shape=self.args['input_shape'])
+            sample['image'] = tf.image.decode_image(tf.io.read_file(sample['image']), channels=3)
+            if self.args['test']:
+                sample['image'] = tf.numpy_function(hair_removal, [sample['image']], np.uint8)
+            sample['image'] = tf.reshape(tensor=sample['image'], shape=self.args['input_shape'])
             sample['image'] = self.args['preprocess_fn'](sample['image'])
             if mode == 'isic20_test':
                 return sample, image_path
@@ -172,13 +180,11 @@ class MelData:
             return sample, label, sample_weight
 
         dataset = tf.data.Dataset.from_tensor_slices(dataset)
-        if mode in ['train', 'val', 'test']:
-            dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE).cache()
-            if mode == 'train':
-                dataset = dataset.map(image_augm, num_parallel_calls=tf.data.experimental.AUTOTUNE).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
-        else:
-            dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-
+        dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        if not self.args['test']:
+            dataset = dataset.cache()
+        if mode == 'train':
+            dataset = dataset.map(image_augm, num_parallel_calls=tf.data.experimental.AUTOTUNE).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
         dataset = dataset.batch(self.args['batch_size'])
         options = tf.data.Options()
         options.experimental_threading.max_intra_op_parallelism = 1
