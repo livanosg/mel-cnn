@@ -45,14 +45,16 @@ class MelData:
 
     def set_sample_weight(self, df):
         weights_per_class = np.divide(len(self.train_data_df),
-                                      np.multiply(self.args['num_classes'], [self.class_counts[k]for k in sorted(self.class_counts.keys())]))
+                                      np.multiply(self.args['num_classes'], [self.class_counts[k]for k in sorted(self.class_counts)]))
         weights_per_image_type = np.divide(np.sum(len(self.train_data_df)),
                                            np.multiply(len(self.image_type_counts), [self.image_type_counts[k] for k in sorted(self.image_type_counts)]))
         # weights_per_image_type = np.sqrt(weights_per_image_type)  # Through sqrt
 
         for idx1, image_type in enumerate(sorted(self.image_type_counts)):
             for idx2, _class in enumerate(sorted(self.class_counts)):
-                df.loc[(df['image_type'] == image_type) & (df['class'] == _class), 'sample_weights'] = (weights_per_image_type[idx1] + weights_per_class[idx2]) / 2
+                df.loc[(df['image_type'] == image_type) & (df['class'] == _class), 'sample_weights'] = (weights_per_image_type[idx1] + weights_per_class[idx2])
+        df['sample_weights'] /= df['sample_weights'].min()
+
         return df
 
     def ohe_map(self, features):
