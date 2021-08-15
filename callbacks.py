@@ -263,7 +263,6 @@ class TestCallback(Callback):
                     plt.legend(loc="best")
 
                     plt.figure(2)
-                    plt.plot([0, 1], [1, 0], "k--")
                     plt.plot(recall, precision, label=f"{self.args['class_names'][_class]}")
                     plt.xlabel("Precision")
                     plt.ylabel("Recall")
