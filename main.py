@@ -44,6 +44,13 @@ if __name__ == '__main__':
         pass
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
     os.environ['AUTOGRAPH_VERBOSITY'] = '1'
+    physical_devices = tf.config.list_physical_devices('GPU')
+    try:
+        tf.config.experimental.set_memory_growth(physical_devices[0], True)
+        print('DONE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1')
+    except:
+        # Invalid device or cannot modify virtual devices once initialized.
+        pass
 
     if args['verbose'] > 3:  # 0 = all logs, 1 = filter out INFO, 2 = 1 + WARNING, 3 = 2 + ERROR
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'

@@ -41,4 +41,5 @@ def training(args):
     custom_model.fit(x=train_data, epochs=args["epochs"],
                      validation_data=val_data,
                      callbacks=callbacks, verbose=args["verbose"])
+    custom_model.predict()
     tf.keras.backend.clear_session()

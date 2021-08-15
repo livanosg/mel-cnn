@@ -54,8 +54,6 @@ class MelData:
             for idx2, _class in enumerate(sorted(self.class_counts)):
                 df.loc[(df['image_type'] == image_type) & (df['class'] == _class), 'sample_weights'] = (weights_per_image_type[idx1] + weights_per_class[idx2])
         df['sample_weights'] /= df['sample_weights'].min()
-        print(df['sample_weights'].unique())
-        exit()
         return df
 
     def ohe_map(self, features):
