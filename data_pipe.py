@@ -4,7 +4,7 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 import numpy as np
 import pandas as pd
-from data_prep import hair_removal
+# from data_prep import hair_removal
 
 
 class MelData:
@@ -150,7 +150,8 @@ class MelData:
             image_path = sample['image']
             sample['image'] = tf.image.decode_image(tf.io.read_file(sample['image']), channels=3)
             if self.args['test']:
-                sample['image'] = tf.numpy_function(hair_removal, [sample['image']], np.uint8)
+                pass
+                # sample['image'] = tf.numpy_function(hair_removal, [sample['image']], np.uint8)
             sample['image'] = tf.reshape(tensor=sample['image'], shape=self.args['input_shape'])
             sample['image'] = self.args['preprocess_fn'](sample['image'])
             if mode == 'isic20_test':
