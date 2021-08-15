@@ -48,7 +48,7 @@ class MelData:
                                       np.multiply(self.args['num_classes'], [self.class_counts[k]for k in sorted(self.class_counts.keys())]))
         weights_per_image_type = np.divide(np.sum(len(self.train_data_df)),
                                            np.multiply(len(self.image_type_counts), [self.image_type_counts[k] for k in sorted(self.image_type_counts)]))
-        weights_per_image_type = np.sqrt(weights_per_image_type)  # Through sqrt
+        # weights_per_image_type = np.sqrt(weights_per_image_type)  # Through sqrt
 
         for idx1, image_type in enumerate(sorted(self.image_type_counts)):
             for idx2, _class in enumerate(sorted(self.class_counts)):
