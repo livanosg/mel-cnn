@@ -45,8 +45,8 @@ MAPPER = {'image_type': {'clinic': 0,
                'dermatofibroma': 2, 'solar lentigo': 2, 'melanosis': 2, 'miscellaneous': 2, 'cafe-au-lait macule': 2,
                'VASC': 2, 'DF': 2, 'vascular lesion': 2, 'SK': 2, 'PYO': 2, 'SEK': 2,
 
-               'NMC': 3, 'BCC': 3, 'AKIEC': 3, 'SCC': 3, 'basal cell carcinoma': 3, 'IEC': 3,
-               'SUS': 4, 'ANV': 4, 'atypical melanocytic proliferation': 4, 'AK': 4, 'Atypical Nevus': 4, 'ACK': 4,
+               'NMC': 3, 'BCC': 3, 'SCC': 3, 'basal cell carcinoma': 3, 'IEC': 3,
+               'SUS': 4, 'ANV': 4, 'atypical melanocytic proliferation': 4, 'AK': 4, 'AKIEC': 4, 'Atypical Nevus': 4, 'ACK': 4,
 
                'unknown': 5
                }
