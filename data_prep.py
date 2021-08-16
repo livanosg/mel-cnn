@@ -14,15 +14,11 @@ def hair_removal(src):
     return dst
 
 
-sizes = list()
-
-
 def resize_cvt_color(sample, args):
     image_path = os.path.join(args['dir_dict']['data'], sample['image'])
     new_path = os.path.join(args['dir_dict']['image_folder'], sample['image'])
     if not os.path.isfile(new_path):
         image = cv2.imread(image_path)  # Resize to 500pxl/max_side
-        sizes.append(tuple(image.shape))
         resize = 500 / max(image.shape)
         image = cv2.resize(src=image, dsize=None, fx=resize, fy=resize, interpolation=cv2.INTER_NEAREST_EXACT)
         image = hair_removal(image)
@@ -45,7 +41,7 @@ def resize_cvt_color(sample, args):
 def check_create_dataset(args, force=False):
     os.environ['OMP_NUM_THREADS'] = '1'
     if not os.path.exists(args['dir_dict']['image_folder']) or force is True:
-        print(f"Writing dataset in {args['dir_dict']['image_folder']}\nDataset Specs: img_size: {args['image_size']}, colour: {args['colour']}")
+        print(f"Checking dataset in {args['dir_dict']['image_folder']}\nDataset Specs: img_size: {args['image_size']}, colour: {args['colour']}")
         samples = pd.read_csv(args['dir_dict']['data_csv']['train']).append(
             pd.read_csv(args['dir_dict']['data_csv']['val'])).append(
             pd.read_csv(args['dir_dict']['data_csv']['test'])).append(
@@ -54,6 +50,5 @@ def check_create_dataset(args, force=False):
         pool.starmap(resize_cvt_color, [(sample, args) for _, sample in samples.iterrows()])
         pool.close()
         print('Done!')
-        print(set(sizes))
     else:
         print(f"Dataset {args['dir_dict']['image_folder']} exists!")
