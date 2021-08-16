@@ -1,5 +1,4 @@
 import os
-from string import ascii_lowercase
 import pandas as pd
 
 from config import NP_RNG, DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH, ISIC_ORIG_TEST_PATH, MAPPER
@@ -37,54 +36,39 @@ up = pd.read_csv(os.path.join(DATA_DIR, 'up.csv'))
 up = up[COLUMNS]
 padufes = pd.read_csv(os.path.join(DATA_DIR, 'padufes.csv'))
 
+
+padufes_ids = padufes["patient_id"].unique()
+NP_RNG.shuffle(padufes_ids)
+padufes_train = padufes.loc[padufes["patient_id"].isin(padufes_ids[:int(len(padufes_ids) * 0.9)])]
+padufes_val = padufes.loc[padufes["patient_id"].isin(padufes_ids[int(len(padufes_ids) * 0.9):])]
+
+
 isic20_orig_test = pd.read_csv(os.path.join(DATA_DIR, 'isic20_test.csv'))
-
 isic18_test = isic18
-
 nans_isic19 = isic19[isic19["lesion_id"].isna()]
 isic19_not_nans = isic19[~isic19.index.isin(nans_isic19.index)]
 isic19_ids = isic19_not_nans["lesion_id"].unique()
 NP_RNG.shuffle(isic19_ids)
-isic19_train = isic19.loc[isic19["lesion_id"].isin(isic19_ids[:int(len(isic19_ids) * 0.8)])].append(nans_isic19)
-isic19_val = isic19.loc[isic19["lesion_id"].isin(isic19_ids[int(len(isic19_ids) * 0.8):int(len(isic19_ids) * 0.9)])]
-isic19_test = isic19.loc[isic19["lesion_id"].isin(isic19_ids[int(len(isic19_ids) * 0.9):])]
-
+isic19_train = isic19.loc[isic19["lesion_id"].isin(isic19_ids[:int(len(isic19_ids) * 0.9)])].append(nans_isic19)
+isic19_val = isic19.loc[isic19["lesion_id"].isin(isic19_ids[int(len(isic19_ids) * 0.9):])]  # int(len(isic19_ids) * 0.9)
 isic20_ids = isic20["patient_id"].unique()
 NP_RNG.shuffle(isic20_ids)
-isic20_train = isic20.loc[isic20["patient_id"].isin(isic20_ids[:int(len(isic20_ids) * 0.8)])]
-isic20_val = isic20.loc[isic20["patient_id"].isin(isic20_ids[int(len(isic20_ids) * 0.8):int(len(isic20_ids) * 0.9)])]
-isic20_test = isic20.loc[isic20["patient_id"].isin(isic20_ids[int(len(isic20_ids) * 0.9):])]
+isic20_train = isic20.loc[isic20["patient_id"].isin(isic20_ids[:int(len(isic20_ids) * 0.9)])]
+isic20_val = isic20.loc[isic20["patient_id"].isin(isic20_ids[int(len(isic20_ids) * 0.9):])]
+spt_test = spt[spt.index.isin(spt_test_idx.index)]
+spt_val = spt[spt.index.isin(spt_val_idx.index)].append(spt_test)
+spt_train = spt[~spt.index.isin(spt_val.index)]
+dermofit_test = dermofit
+mednode_train = mednode.sample(frac=0.9, random_state=NP_RNG.bit_generator)
+mednode_val = mednode[~mednode.index.isin(mednode_train.index)]
+ph2_train = ph2.sample(frac=0.9, random_state=NP_RNG.bit_generator)
+ph2_val = ph2[~ph2.index.isin(ph2_train.index)]
+up_test = up
+total_train = padufes_train.append(isic19_train).append(isic20_train).append(spt_train).append(mednode_train).append(ph2_train)
+total_val = padufes_val.append(isic19_val).append(isic20_val).append(spt_val).append(mednode_val).append(ph2_val)
+total_test = isic18_test.append(dermofit_test).append(up_test)
 
-# spt_val = spt[spt.index.isin(spt_val_idx.index)]
-# spt_test = spt[spt.index.isin(spt_test_idx.index)]
-spt_train = spt  # [~spt.index.isin(spt_val.append(spt_test).index)]
-
-
-dermofit['ids'] = dermofit['image'].apply(lambda x: x.split(os.sep)[1])
-for idx, pat_id in enumerate(dermofit['ids']):
-    if pat_id.endswith(tuple(ascii_lowercase)):
-        dermofit.loc[idx, 'ids'] = pat_id[:-1]
-dermofit_ids = dermofit['ids'].unique()
-NP_RNG.shuffle(dermofit_ids)
-dermofit_val = dermofit.loc[dermofit['ids'].isin(dermofit_ids[:int(len(dermofit_ids) * 0.5)])]
-dermofit_test = dermofit.loc[dermofit['ids'].isin(dermofit_ids[int(len(dermofit_ids) * 0.5):])]
-
-
-mednode_train = mednode  # .sample(frac=0.8, random_state=NP_RNG.bit_generator)
-# mednode_val = mednode[~mednode.index.isin(mednode_train.index)].sample(frac=0.5, random_state=NP_RNG.bit_generator)
-# mednode_test = mednode[~mednode.index.isin(mednode_train.append(mednode_val).index)]
-
-ph2_train = ph2  # .sample(frac=0.8, random_state=NP_RNG.bit_generator)
-# ph2_val = ph2[~ph2.index.isin(ph2_train.index)].sample(frac=0.5, random_state=NP_RNG.bit_generator)
-# ph2_test = ph2[~ph2.index.isin(ph2_train.append(ph2_val).index)]
-
-up_train = up
-total_train = isic19_train.append(isic20_train).append(spt_train).append(mednode_train).append(ph2_train).append(up_train).append(padufes)
-total_val = isic19_val.append(isic20_val).append(dermofit_val)  # .append(spt_val).append(mednode_val).append(ph2_val).append(isic18_val)
-total_test = isic18_test.append(isic19_test).append(isic20_test).append(dermofit_test)  # .append(spt_test).append(mednode_test).append(ph2_test)
 total_data_len = len(total_train) + len(total_val) + len(total_test)
-
-
 for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (total_test, TEST_CSV_PATH), (isic20_orig_test, ISIC_ORIG_TEST_PATH)]:
     columns = ['dataset_id', 'anatom_site_general', 'sex', 'image', 'age_approx', 'image_type', 'class']
     df.fillna(-10)
