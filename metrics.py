@@ -1,31 +1,16 @@
+import os
 import io
 import itertools
-import os
-
-import matplotlib
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
 from sklearn.metrics import roc_curve, precision_recall_curve, auc, classification_report, confusion_matrix
+from matplotlib import pyplot as plt, use as plt_use
 from config import CLASS_NAMES
-matplotlib.use('cairo')
-import tensorflow.keras.backend as K
-import tensorflow as tf
-
-def sensitivity(y_true, y_pred):
-    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
-    return true_positives / (possible_positives + K.epsilon())
-
-
-def specificity(y_true, y_pred):
-    true_negatives = K.sum(K.round(K.clip((1-y_true) * (1-y_pred), 0, 1)))
-    possible_negatives = K.sum(K.round(K.clip(1-y_true, 0, 1)))
-    return true_negatives / (possible_negatives + K.epsilon())
+plt_use('cairo')
 
 
 def calc_metrics(args, model, dataset, dataset_type):
-    save_dir = os.path.join(args["dir_dict"]["trial"], dataset_type)
+    save_dir = os.path.join(os.path.dirname(os.path.dirname(args['dir_dict']["save_path"])), dataset_type)
     os.makedirs(save_dir)
     y_prob = model.predict(dataset)
     if args['test']:
@@ -42,7 +27,7 @@ def calc_metrics(args, model, dataset, dataset_type):
         # noinspection PyTypeChecker
         df.to_csv(path_or_buf=os.path.join(save_dir, f'{dataset_type}_results.csv'), index=False)
     else:
-        dataset_to_numpy = np.asarray(list(map(lambda x: x[1]['class'], dataset.as_numpy_iterator())), dtype=object)
+        dataset_to_numpy = np.asarray(list(map(lambda dt: dt[1]['class'], dataset.as_numpy_iterator())), dtype=object)
         one_hot_labels = np.concatenate(dataset_to_numpy)
         y_true = np.argmax(one_hot_labels, axis=-1)
         y_pred = np.argmax(y_prob, axis=-1)
