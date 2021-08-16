@@ -1,4 +1,5 @@
 import numpy as np
+from tensorflow.keras.applications import xception, inception_v3, efficientnet
 from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Reshape, Concatenate, AveragePooling2D, GlobalAvgPool2D
 from tensorflow.keras.layers import Dense, Conv2D, LSTM, Dropout, LayerNormalization
@@ -13,7 +14,11 @@ def model_fn(args):
     rglzr = l1_l2(l1=0., l2=0.0002)
     normalization = LayerNormalization
     # -------------------------------================= Image data =================----------------------------------- #
-    base_model = args['model'](include_top=False, input_shape=args['input_shape'])
+
+    base_model = {'xept': xception.Xception,
+                  'incept': inception_v3.InceptionV3,
+                  'effnet0': efficientnet.EfficientNetB0,
+                  'effnet1': efficientnet.EfficientNetB1}[args['model']](include_top=False, input_shape=args['input_shape'])
     base_model.trainable = False
     image_input = Input(shape=args['input_shape'], name='image')
     base_model = base_model(image_input, training=False)

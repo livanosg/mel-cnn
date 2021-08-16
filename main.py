@@ -1,6 +1,5 @@
 import os
 import argparse
-from tensorflow.keras.applications import xception, inception_v3, efficientnet
 from config import directories, CLASS_NAMES
 from data_pipe import MelData
 from data_prep import check_create_dataset
@@ -30,13 +29,17 @@ def parser():
     args_parser.add_argument('--layers', '-lrs', default=2, type=int, help='Select set of layers.')
     args_parser.add_argument('--validate', '-val', action='store_true', help='Test to isic2020.')
     args_parser.add_argument('--test', '-test', action='store_true', help='Test to isic2020.')
-    args_parser.add_argument('--test-model', '-tstmdl', type=str, help='Test to isic2020.')
+    args_parser.add_argument('--test-model', '-testmodel', type=str, help='Test to isic2020.')
     return args_parser
 
 
 if __name__ == '__main__':
     args = parser().parse_args().__dict__
     args['dir_dict'] = directories(args=args)
+    args['class_names'] = CLASS_NAMES[args["mode"]]
+    args['num_classes'] = len(args['class_names'])
+    args['input_shape'] = (args['image_size'], args['image_size'], 3)
+
     check_create_dataset(args=args, force=True)
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
     os.environ['AUTOGRAPH_VERBOSITY'] = '1'
@@ -64,17 +67,8 @@ if __name__ == '__main__':
         strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver)
     else:
         strategy = tf.distribute.MirroredStrategy()
-    args['class_names'] = CLASS_NAMES[args["mode"]]
-    args['num_classes'] = len(args['class_names'])
-    args['input_shape'] = (args['image_size'], args['image_size'], 3)
     args['batch_size'] = args['batch_size'] * strategy.num_replicas_in_sync  # Global Batch
     args["learning_rate"] = args["learning_rate"] * strategy.num_replicas_in_sync
-    models = {'xept': xception.Xception, 'incept': inception_v3.InceptionV3,
-              'effnet0': efficientnet.EfficientNetB0, 'effnet1': efficientnet.EfficientNetB1}
-    preproc_input_fn = {'xept':  xception.preprocess_input, 'incept': inception_v3.preprocess_input,
-                        'effnet0': efficientnet.preprocess_input, 'effnet1':  efficientnet.preprocess_input}
-    args['preprocess_fn'] = preproc_input_fn[args['model']]
-    args['model'] = models[args['model']]
     datasets = MelData(args=args)
     args['train_data'] = datasets.get_dataset(mode='train')
     args['val_data'] = datasets.get_dataset(mode='val')
@@ -90,7 +84,6 @@ if __name__ == '__main__':
     if args['test'] or args['validate']:
         args['dir_dict']["save_path"] = args['test_model']
         args['dir_dict']['trial'] = os.path.dirname(os.path.dirname(args['dir_dict']["save_path"]))
-
         model = tf.keras.models.load_model(args["dir_dict"]["save_path"])
         if args['test']:
             calc_metrics(args=args, model=model, dataset=args['isic20_test'], dataset_type='isic20_test')
@@ -101,5 +94,8 @@ if __name__ == '__main__':
     else:
         with strategy.scope():
             training(args=args)
+        model = tf.keras.models.load_model(args['dir_dict']['save_path'])
+        calc_metrics(args=args, model=model, dataset=args['test_data'], dataset_type='test')
+        calc_metrics(args=args, model=model, dataset=args['val_data'], dataset_type='val')
     exit()
 

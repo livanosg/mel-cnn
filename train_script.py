@@ -1,9 +1,9 @@
 import os.path
 import tensorflow as tf
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, TensorBoard
 from tensorflow.keras.metrics import AUC
 from model import model_fn
-from callbacks import EnrTensorboard, TestCallback, LaterCheckpoint
+from callbacks import LaterCheckpoint
 
 
 def training(args):
@@ -23,14 +23,11 @@ def training(args):
                          metrics=[AUC(multi_label=True)])
     # --------------------------------------------------- Callbacks --------------------------------------------------- #
     callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=25),
-                 EnrTensorboard(data=args['val_data'], class_names=args['class_names'], log_dir=args["dir_dict"]["logs"],
-                                profile_batch=0, mode=args["mode"]),
-                 TestCallback(args=args),
+                 TensorBoard(log_dir=args["dir_dict"]["logs"], profile_batch=0),
                  ReduceLROnPlateau(factor=0.75, patience=10),
                  EarlyStopping(verbose=args["verbose"], patience=args["early_stop"])]
     # ------------------------------------------------- Train model -------------------------------------------------- #
     custom_model.fit(x=args['train_data'], epochs=args["epochs"],
                      validation_data=args['val_data'],
                      callbacks=callbacks, verbose=args["verbose"])
-    custom_model.predict()
     tf.keras.backend.clear_session()

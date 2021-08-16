@@ -1,10 +1,8 @@
 import os
 from datetime import datetime
-import tensorflow as tf
 import numpy as np
 
 NP_RNG = np.random.default_rng(1312)
-TF_RNG = tf.random.Generator.from_non_deterministic_state()
 MAIN_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(MAIN_DIR, 'data')
 LOGS_DIR = os.path.join(MAIN_DIR, 'logs')

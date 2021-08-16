@@ -10,8 +10,8 @@ plt_use('cairo')
 
 
 def calc_metrics(args, model, dataset, dataset_type):
-    save_dir = args['dir_dict']['trials']
-    os.makedirs(save_dir)
+    save_dir = os.path.join(args['dir_dict']['trial'], dataset_type)
+    os.makedirs(save_dir, exist_ok=True)
     y_prob = model.predict(dataset)
     if args['test']:
         results = []
@@ -25,7 +25,7 @@ def calc_metrics(args, model, dataset, dataset_type):
         df = pd.DataFrame({'image_name': paths, 'target': results})
         df.loc[:, 'image_name'].apply(lambda image_path: os.path.splitext(os.path.basename(image_path.decode()))[0])
         # noinspection PyTypeChecker
-        df.to_csv(path_or_buf=os.path.join(save_dir, f'{dataset_type}_results.csv'), index=False)
+        df.to_csv(path_or_buf=os.path.join(save_dir, 'results.csv'), index=False)
     else:
         dataset_to_numpy = np.asarray(list(map(lambda dt: dt[1]['class'], dataset.as_numpy_iterator())), dtype=object)
         one_hot_labels = np.concatenate(dataset_to_numpy)

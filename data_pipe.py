@@ -1,10 +1,10 @@
 import os
-from config import MAPPER, BEN_MAL_MAPPER, NEV_MEL_MAPPER, CLASS_NAMES, MAIN_DIR, NP_RNG, TF_RNG
+from config import MAPPER, BEN_MAL_MAPPER, NEV_MEL_MAPPER, CLASS_NAMES, MAIN_DIR, NP_RNG
 import tensorflow as tf
+from tensorflow.keras.applications import xception, inception_v3, efficientnet
 import tensorflow_addons as tfa
 import numpy as np
 import pandas as pd
-# from data_prep import hair_removal
 
 
 class MelData:
@@ -13,6 +13,7 @@ class MelData:
         self.train_data_df = self.preproc_df('train')
         self.val_data_df = self.preproc_df('val')
         self.test_data_df = self.preproc_df('test')
+        self.TF_RNG = tf.random.Generator.from_non_deterministic_state()
 
         self.class_counts = dict(self.train_data_df['class'].value_counts())
         self.image_type_counts = dict(self.train_data_df['image_type'].value_counts())
@@ -136,7 +137,9 @@ class MelData:
             if self.args['test']:
                 pass
                 # sample['image'] = tf.numpy_function(hair_removal, [sample['image']], np.uint8)
-            sample['image'] = self.args['preprocess_fn'](sample['image'])
+            sample['image'] = {'xept': xception.preprocess_input, 'incept': inception_v3.preprocess_input,
+                               'effnet0': efficientnet.preprocess_input,
+                               'effnet1': efficientnet.preprocess_input}[self.args['model']](sample['image'])
             sample['image'] = tf.reshape(tensor=sample['image'], shape=self.args['input_shape'])
             if mode == 'isic20_test':
                 return sample, image_path
@@ -145,16 +148,16 @@ class MelData:
 
         def image_augm(sample, label, sample_weight):
             trans_rat = self.args['image_size'] * 0.05
-            seeds = TF_RNG.make_seeds(5)
+            seeds = self.TF_RNG.make_seeds(5)
             sample['image'] = tf.image.stateless_random_flip_up_down(image=sample['image'], seed=seeds[:, 0])
             sample['image'] = tf.image.stateless_random_flip_left_right(image=sample['image'], seed=seeds[:, 1])
             sample['image'] = tf.image.stateless_random_brightness(image=sample['image'], max_delta=0.1, seed=seeds[:, 2])
             sample['image'] = tf.image.stateless_random_contrast(image=sample['image'], lower=.5, upper=1.5, seed=seeds[:, 3])
             sample['image'] = tf.image.stateless_random_saturation(image=sample['image'], lower=0.8, upper=1.2, seed=seeds[:, 4])
-            sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=TF_RNG.uniform(shape=[1], maxval=2., dtype=tf.float32), name='Sharpness')
-            sample['image'] = tfa.image.translate(sample['image'], translations=TF_RNG.uniform(shape=[2], minval=-trans_rat, maxval=trans_rat, dtype=tf.float32), name='Translation')
-            sample['image'] = tfa.image.rotate(images=sample['image'], angles=tf.cast(TF_RNG.uniform(shape=[1], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32), name='Rotation')
-            sample['image'] = tf.cond(tf.math.less_equal(TF_RNG.uniform(shape=[1], maxval=1., dtype=tf.float32), 0.5),
+            sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=self.TF_RNG.uniform(shape=[1], maxval=2., dtype=tf.float32), name='Sharpness')
+            sample['image'] = tfa.image.translate(sample['image'], translations=self.TF_RNG.uniform(shape=[2], minval=-trans_rat, maxval=trans_rat, dtype=tf.float32), name='Translation')
+            sample['image'] = tfa.image.rotate(images=sample['image'], angles=tf.cast(self.TF_RNG.uniform(shape=[1], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32), name='Rotation')
+            sample['image'] = tf.cond(tf.math.less_equal(self.TF_RNG.uniform(shape=[1], maxval=1., dtype=tf.float32), 0.5),
                                       lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=float(NP_RNG.random(size=1)) * 2, filter_shape=5, name='Gaussian_filter'),
                                       lambda: sample['image'])
             return sample, label, sample_weight
