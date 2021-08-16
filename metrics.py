@@ -23,7 +23,7 @@ def calc_metrics(args, model, dataset, dataset_type):
         results = np.vstack(results).reshape((-1))
         paths = np.vstack(paths).reshape((-1))
         df = pd.DataFrame({'image_name': paths, 'target': results})
-        df.loc[:, 'image_name'].apply(lambda image_path: os.path.splitext(os.path.basename(image_path.decode()))[0])
+        df.loc[:, 'image_name'].apply(lambda image_path: os.path.splitext(os.path.basename(str(image_path, 'UTF-8')))[0])
         # noinspection PyTypeChecker
         df.to_csv(path_or_buf=os.path.join(save_dir, 'results.csv'), index=False)
     else:

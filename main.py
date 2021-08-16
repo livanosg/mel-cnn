@@ -82,15 +82,17 @@ if __name__ == '__main__':
             f.write(f"Number of replicas in sync: {strategy.num_replicas_in_sync}\n")
             f.write(datasets.info())
     if args['test'] or args['validate']:
-        args['dir_dict']["save_path"] = args['test_model']
-        args['dir_dict']['trial'] = os.path.dirname(os.path.dirname(args['dir_dict']["save_path"]))
-        model = tf.keras.models.load_model(args["dir_dict"]["save_path"])
-        if args['test']:
-            calc_metrics(args=args, model=model, dataset=args['isic20_test'], dataset_type='isic20_test')
-        elif args['validate']:
-            args['dir_dict']["save_path"] = args['test_model']
-            calc_metrics(args=args, model=model, dataset=args['val_data'], dataset_type='validation')
-            calc_metrics(args=args, model=model, dataset=args['test_data'], dataset_type='test')
+        for i in ['/home/livanosg/projects/results/mel-cnn/trials/ben_mal/derm/140821133043-gpu13/models/best-model']:
+            # args['dir_dict']["save_path"] = args['test_model']
+            args['dir_dict']["save_path"] = i
+            args['dir_dict']['trial'] = os.path.dirname(os.path.dirname(args['dir_dict']["save_path"]))
+            model = tf.keras.models.load_model(args["dir_dict"]["save_path"])
+            if args['test']:
+                calc_metrics(args=args, model=model, dataset=args['isic20_test'], dataset_type='isic20_test')
+            elif args['validate']:
+                args['dir_dict']["save_path"] = args['test_model']
+                calc_metrics(args=args, model=model, dataset=args['val_data'], dataset_type='validation')
+                calc_metrics(args=args, model=model, dataset=args['test_data'], dataset_type='test')
     else:
         with strategy.scope():
             training(args=args)
@@ -98,4 +100,3 @@ if __name__ == '__main__':
         calc_metrics(args=args, model=model, dataset=args['test_data'], dataset_type='test')
         calc_metrics(args=args, model=model, dataset=args['val_data'], dataset_type='val')
     exit()
-
