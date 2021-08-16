@@ -10,7 +10,7 @@ plt_use('cairo')
 
 
 def calc_metrics(args, model, dataset, dataset_type):
-    save_dir = os.path.join(os.path.dirname(os.path.dirname(args['dir_dict']["save_path"])), dataset_type)
+    save_dir = args['dir_dict']['trials']
     os.makedirs(save_dir)
     y_prob = model.predict(dataset)
     if args['test']:

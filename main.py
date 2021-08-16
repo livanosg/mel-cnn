@@ -89,6 +89,8 @@ if __name__ == '__main__':
             f.write(datasets.info())
     if args['test'] or args['validate']:
         args['dir_dict']["save_path"] = args['test_model']
+        args['dir_dict']['trial'] = os.path.dirname(os.path.dirname(args['dir_dict']["save_path"]))
+
         model = tf.keras.models.load_model(args["dir_dict"]["save_path"])
         if args['test']:
             calc_metrics(args=args, model=model, dataset=args['isic20_test'], dataset_type='isic20_test')

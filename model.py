@@ -4,7 +4,7 @@ from tensorflow.keras.layers import Reshape, Concatenate, AveragePooling2D, Glob
 from tensorflow.keras.layers import Dense, Conv2D, LSTM, Dropout, LayerNormalization
 from tensorflow.keras.activations import swish, relu
 from tensorflow.keras.regularizers import l1_l2
-from tensorflow import dtypes
+import tensorflow as tf
 
 
 def model_fn(args):
@@ -45,10 +45,10 @@ def model_fn(args):
     common_layers = GlobalAvgPool2D()(inc_mod)
     # --------------------------------================ Tabular data =================--------------------------------- #
     if not args['only_image']:
-        image_type_input = Input(shape=(2,), name='image_type', dtype=dtypes.float32)
-        sex_input = Input(shape=(2,), name='sex', dtype=dtypes.float32)
-        anatom_site_input = Input(shape=(6,), name='anatom_site_general', dtype=dtypes.float32)
-        age_input = Input(shape=(10,), name='age_approx', dtype=dtypes.float32)
+        image_type_input = Input(shape=(2,), name='image_type', dtype=tf.float32)
+        sex_input = Input(shape=(2,), name='sex', dtype=tf.float32)
+        anatom_site_input = Input(shape=(6,), name='anatom_site_general', dtype=tf.float32)
+        age_input = Input(shape=(10,), name='age_approx', dtype=tf.float32)
 
         image_type = Reshape(target_shape=(2, 1))(image_type_input)
         sex = Reshape(target_shape=(2, 1))(sex_input)

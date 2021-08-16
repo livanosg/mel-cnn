@@ -2,7 +2,6 @@ import os.path
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.metrics import AUC
-from data_pipe import MelData
 from model import model_fn
 from callbacks import EnrTensorboard, TestCallback, LaterCheckpoint
 

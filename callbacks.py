@@ -151,13 +151,14 @@ class CyclicLR(Callback):
 
 
 class TestCallback(Callback):
-    def __init__(self, args,):
+    def __init__(self, args):
         super().__init__()
         self.args = args
 
     def on_train_end(self, logs=None):
-        calc_metrics(self.args, self.args['test_data'], 'test')
-        calc_metrics(self.args, self.args['val_data'], 'val')
+        model = tf.keras.models.load_model(self.args['dir_dict']['save_path'])
+        calc_metrics(args=self.args, model=model, dataset=self.args['test_data'], dataset_type='test')
+        calc_metrics(args=self.args, model=model, dataset=self.args['val_data'], dataset_type='val')
 
 
 class LaterCheckpoint(ModelCheckpoint):

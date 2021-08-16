@@ -14,11 +14,15 @@ def hair_removal(src):
     return dst
 
 
+sizes = list()
+
+
 def resize_cvt_color(sample, args):
     image_path = os.path.join(args['dir_dict']['data'], sample['image'])
     new_path = os.path.join(args['dir_dict']['image_folder'], sample['image'])
     if not os.path.isfile(new_path):
         image = cv2.imread(image_path)  # Resize to 500pxl/max_side
+        sizes.append(tuple(image.shape))
         resize = 500 / max(image.shape)
         image = cv2.resize(src=image, dsize=None, fx=resize, fy=resize, interpolation=cv2.INTER_NEAREST_EXACT)
         image = hair_removal(image)
@@ -50,5 +54,6 @@ def check_create_dataset(args, force=False):
         pool.starmap(resize_cvt_color, [(sample, args) for _, sample in samples.iterrows()])
         pool.close()
         print('Done!')
+        print(set(sizes))
     else:
         print(f"Dataset {args['dir_dict']['image_folder']} exists!")
