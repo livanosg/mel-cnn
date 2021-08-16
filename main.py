@@ -89,7 +89,7 @@ if __name__ == '__main__':
             model = tf.keras.models.load_model(args["dir_dict"]["save_path"])
             if args['test']:
                 calc_metrics(args=args, model=model, dataset=args['isic20_test'], dataset_type='isic20_test')
-            elif args['validate']:
+            else:
                 args['dir_dict']["save_path"] = args['test_model']
                 calc_metrics(args=args, model=model, dataset=args['val_data'], dataset_type='validation')
                 calc_metrics(args=args, model=model, dataset=args['test_data'], dataset_type='test')

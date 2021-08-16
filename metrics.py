@@ -12,8 +12,7 @@ plt_use('cairo')
 def calc_metrics(args, model, dataset, dataset_type):
     save_dir = os.path.join(args['dir_dict']['trial'], dataset_type)
     os.makedirs(save_dir, exist_ok=True)
-    y_prob = model.predict(dataset)
-    if args['test']:
+    if dataset_type == 'isic20_test':
         results = []
         paths = []
         for x in dataset.as_numpy_iterator():
@@ -23,10 +22,11 @@ def calc_metrics(args, model, dataset, dataset_type):
         results = np.vstack(results).reshape((-1))
         paths = np.vstack(paths).reshape((-1))
         df = pd.DataFrame({'image_name': paths, 'target': results})
-        df.loc[:, 'image_name'].apply(lambda image_path: os.path.splitext(os.path.basename(str(image_path, 'UTF-8')))[0])
+        df['image_name'] = df['image_name'].apply(lambda path: os.path.splitext(os.path.basename(path.decode('UTF-8')))[0])
         # noinspection PyTypeChecker
         df.to_csv(path_or_buf=os.path.join(save_dir, 'results.csv'), index=False)
     else:
+        y_prob = model.predict(dataset)
         dataset_to_numpy = np.asarray(list(map(lambda dt: dt[1]['class'], dataset.as_numpy_iterator())), dtype=object)
         one_hot_labels = np.concatenate(dataset_to_numpy)
         y_true = np.argmax(one_hot_labels, axis=-1)
@@ -52,8 +52,7 @@ def calc_metrics(args, model, dataset, dataset_type):
                 pass
             else:
                 fpr_roc, tpr_roc, thresholds_roc = roc_curve(y_true=y_true, y_score=y_prob[..., _class], pos_label=_class)
-                precision, recall, thresholds = precision_recall_curve(y_true=y_true, probas_pred=y_prob[..., _class],
-                                                                       pos_label=_class)
+                precision, recall, thresholds = precision_recall_curve(y_true=y_true, probas_pred=y_prob[..., _class], pos_label=_class)
                 class_auc = auc(fpr_roc, tpr_roc)
                 with open(os.path.join(save_dir, "report.txt"), "a") as f:
                     if (args['num_classes'] == 2 and _class == 1) or (args['num_classes'] != 2 and _class == 0):
@@ -76,11 +75,11 @@ def calc_metrics(args, model, dataset, dataset_type):
                 plt.title(f"PR curve {args['image_type']}-{dataset_type}")
                 plt.legend(loc="best")
 
-            plt.figure(1)
-            plt.savefig(os.path.join(save_dir, "roc.jpg"))
-            plt.figure(2)
-            plt.savefig(os.path.join(save_dir, "pr.jpg"))
-            plt.close("all")
+        plt.figure(1)
+        plt.savefig(os.path.join(save_dir, "roc.jpg"))
+        plt.figure(2)
+        plt.savefig(os.path.join(save_dir, "pr.jpg"))
+        plt.close("all")
 
 
 def plot_confusion_matrix(cm, class_names):

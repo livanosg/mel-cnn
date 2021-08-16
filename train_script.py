@@ -14,7 +14,6 @@ def training(args):
                  "adamax": tf.keras.optimizers.Adamax, "nadam": tf.keras.optimizers.Nadam}
 
     custom_model = model_fn(args=args)
-
     with open(os.path.join(args['dir_dict']['trial'], 'model_summary.txt'), 'w') as f:
         custom_model.summary(print_fn=lambda x: f.write(x + '\n'))
 
@@ -22,12 +21,11 @@ def training(args):
                          loss='categorical_crossentropy',  # SigmoidFocalCrossEntropy(gamma=2.5, alpha=0.2, reduction=tf.keras.losses.Reduction.AUTO), # custom_loss(datasets.weights_per_class)
                          metrics=[AUC(multi_label=True)])
     # --------------------------------------------------- Callbacks --------------------------------------------------- #
-    callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=25),
-                 TensorBoard(log_dir=args["dir_dict"]["logs"], profile_batch=0),
+    callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=0),
+                 # TensorBoard(log_dir=args["dir_dict"]["logs"], profile_batch=0),
                  ReduceLROnPlateau(factor=0.75, patience=10),
                  EarlyStopping(verbose=args["verbose"], patience=args["early_stop"])]
     # ------------------------------------------------- Train model -------------------------------------------------- #
     custom_model.fit(x=args['train_data'], epochs=args["epochs"],
                      validation_data=args['val_data'],
                      callbacks=callbacks, verbose=args["verbose"])
-    tf.keras.backend.clear_session()
