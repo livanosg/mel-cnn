@@ -2,29 +2,28 @@ import os
 import multiprocessing as mp
 import math
 import cv2
+import numpy as np
 import pandas as pd
-
-
-def hair_removal(src):
-    grayScale = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)  # Convert to grayscale.
-    kernel = cv2.getStructuringElement(1, (17, 17))  # Kernel for the morphological filtering.
-    blackhat = cv2.morphologyEx(grayScale, cv2.MORPH_BLACKHAT, kernel)  # Black Top Hat transformation to find the hair contours.
-    ret, thresh2 = cv2.threshold(blackhat, 10, 255, cv2.THRESH_BINARY)  # intensify the hair contours for the inpainting algorithm
-    dst = cv2.inpaint(src, thresh2, 1, cv2.INPAINT_NS)  # inpaint the original image.
-    return dst
+from hair_removal import remove_and_inpaint  # 600 × 600 pixels
 
 
 def resize_cvt_color(sample, args):
     image_path = os.path.join(args['dir_dict']['data'], sample['image'])
     new_path = os.path.join(args['dir_dict']['image_folder'], sample['image'])
+
+    def resize(image, size):
+        resize = int(size) / max(image.shape)
+        return cv2.resize(src=image, dsize=None, fx=resize, fy=resize, interpolation=cv2.INTER_NEAREST_EXACT)
+
     if not os.path.isfile(new_path):
-        image = cv2.imread(image_path)  # Resize to 500pxl/max_side
-        resize = 500 / max(image.shape)
-        image = cv2.resize(src=image, dsize=None, fx=resize, fy=resize, interpolation=cv2.INTER_NEAREST_EXACT)
-        image = hair_removal(image)
+        image = cv2.imread(image_path)
+        image = resize(image, 500)  # Resize to 500pxl
+        print(f"Before: {image_path}  -  {image.max()}")
+        image, steps = remove_and_inpaint(image)
+        image = np.multiply(image, 255.).astype(np.uint8)
+        print(f"After: {image_path}  -   {image.max()}")
         if int(args['image_size']) != 500:
-            resize = int(args['image_size']) / max(image.shape)
-            image = cv2.resize(src=image, dsize=None, fx=resize, fy=resize, interpolation=cv2.INTER_NEAREST_EXACT)
+            image = resize(image, args['image_size'])
         dx = (image.shape[0] - image.shape[1]) / 2  # Compare height-width
         tblr = [math.ceil(abs(dx)), math.floor(abs(dx)), 0, 0]  # Pad top-bottom
         if dx > 0:  # If height > width
@@ -46,7 +45,7 @@ def check_create_dataset(args, force=False):
             pd.read_csv(args['dir_dict']['data_csv']['val'])).append(
             pd.read_csv(args['dir_dict']['data_csv']['test'])).append(
             pd.read_csv(args['dir_dict']['data_csv']['isic20_test']))
-        pool = mp.Pool(len(os.sched_getaffinity(0)))
+        pool = mp.Pool(mp.cpu_count())
         pool.starmap(resize_cvt_color, [(sample, args) for _, sample in samples.iterrows()])
         pool.close()
         print('Done!')
