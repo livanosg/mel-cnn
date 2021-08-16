@@ -22,7 +22,7 @@ def training(args):
                          metrics=[AUC(multi_label=True)])
     # --------------------------------------------------- Callbacks --------------------------------------------------- #
     callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=0),
-                 # TensorBoard(log_dir=args["dir_dict"]["logs"], profile_batch=0),
+                 TensorBoard(log_dir=args["dir_dict"]["logs"], profile_batch=0),
                  ReduceLROnPlateau(factor=0.75, patience=10),
                  EarlyStopping(verbose=args["verbose"], patience=args["early_stop"])]
     # ------------------------------------------------- Train model -------------------------------------------------- #

@@ -39,7 +39,7 @@ padufes = pd.read_csv(os.path.join(DATA_DIR, 'padufes.csv'))
 
 isic20_orig_test = pd.read_csv(os.path.join(DATA_DIR, 'isic20_test.csv'))
 
-isic18_val = isic18
+isic18_test = isic18
 
 nans_isic19 = isic19[isic19["lesion_id"].isna()]
 isic19_not_nans = isic19[~isic19.index.isin(nans_isic19.index)]
@@ -55,9 +55,9 @@ isic20_train = isic20.loc[isic20["patient_id"].isin(isic20_ids[:int(len(isic20_i
 isic20_val = isic20.loc[isic20["patient_id"].isin(isic20_ids[int(len(isic20_ids) * 0.8):int(len(isic20_ids) * 0.9)])]
 isic20_test = isic20.loc[isic20["patient_id"].isin(isic20_ids[int(len(isic20_ids) * 0.9):])]
 
-spt_val = spt[spt.index.isin(spt_val_idx.index)]
-spt_test = spt[spt.index.isin(spt_test_idx.index)]
-spt_train = spt[~spt.index.isin(spt_val.append(spt_test).index)]
+# spt_val = spt[spt.index.isin(spt_val_idx.index)]
+# spt_test = spt[spt.index.isin(spt_test_idx.index)]
+spt_train = spt  # [~spt.index.isin(spt_val.append(spt_test).index)]
 
 
 dermofit['ids'] = dermofit['image'].apply(lambda x: x.split(os.sep)[1])
@@ -70,18 +70,18 @@ dermofit_val = dermofit.loc[dermofit['ids'].isin(dermofit_ids[:int(len(dermofit_
 dermofit_test = dermofit.loc[dermofit['ids'].isin(dermofit_ids[int(len(dermofit_ids) * 0.5):])]
 
 
-mednode_train = mednode.sample(frac=0.8, random_state=NP_RNG.bit_generator)
-mednode_val = mednode[~mednode.index.isin(mednode_train.index)].sample(frac=0.5, random_state=NP_RNG.bit_generator)
-mednode_test = mednode[~mednode.index.isin(mednode_train.append(mednode_val).index)]
+mednode_train = mednode  # .sample(frac=0.8, random_state=NP_RNG.bit_generator)
+# mednode_val = mednode[~mednode.index.isin(mednode_train.index)].sample(frac=0.5, random_state=NP_RNG.bit_generator)
+# mednode_test = mednode[~mednode.index.isin(mednode_train.append(mednode_val).index)]
 
-ph2_train = ph2.sample(frac=0.8, random_state=NP_RNG.bit_generator)
-ph2_val = ph2[~ph2.index.isin(ph2_train.index)].sample(frac=0.5, random_state=NP_RNG.bit_generator)
-ph2_test = ph2[~ph2.index.isin(ph2_train.append(ph2_val).index)]
+ph2_train = ph2  # .sample(frac=0.8, random_state=NP_RNG.bit_generator)
+# ph2_val = ph2[~ph2.index.isin(ph2_train.index)].sample(frac=0.5, random_state=NP_RNG.bit_generator)
+# ph2_test = ph2[~ph2.index.isin(ph2_train.append(ph2_val).index)]
 
 up_train = up
 total_train = isic19_train.append(isic20_train).append(spt_train).append(mednode_train).append(ph2_train).append(up_train).append(padufes)
-total_val = isic18_val.append(isic19_val).append(isic20_val).append(mednode_val).append(ph2_val).append(spt_val).append(dermofit_val)
-total_test = isic19_test.append(isic20_test).append(mednode_test).append(ph2_test).append(spt_test).append(dermofit_test)
+total_val = isic19_val.append(isic20_val).append(dermofit_val)  # .append(spt_val).append(mednode_val).append(ph2_val).append(isic18_val)
+total_test = isic18_test.append(isic19_test).append(isic20_test).append(dermofit_test)  # .append(spt_test).append(mednode_test).append(ph2_test)
 total_data_len = len(total_train) + len(total_val) + len(total_test)
 
 
