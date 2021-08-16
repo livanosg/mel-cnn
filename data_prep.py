@@ -8,9 +8,9 @@ import pandas as pd
 def hair_removal(src):
     grayScale = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)  # Convert to grayscale.
     kernel = cv2.getStructuringElement(1, (17, 17))  # Kernel for the morphological filtering.
-    blackhat = cv2.morphologyEx(grayScale, cv2.MORPH_BLACKHAT, kernel)  # BlackHat filtering to find the hair contours.
+    blackhat = cv2.morphologyEx(grayScale, cv2.MORPH_BLACKHAT, kernel)  # Black Top Hat transformation to find the hair contours.
     ret, thresh2 = cv2.threshold(blackhat, 10, 255, cv2.THRESH_BINARY)  # intensify the hair contours for the inpainting algorithm
-    dst = cv2.inpaint(src, thresh2, 1, cv2.INPAINT_TELEA)  # inpaint the original image.
+    dst = cv2.inpaint(src, thresh2, 1, cv2.INPAINT_NS)  # inpaint the original image.
     return dst
 
 
