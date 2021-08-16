@@ -69,7 +69,7 @@ def directories(args):
                 'data_csv': {'train': TRAIN_CSV_PATH,
                              'val': VAL_CSV_PATH,
                              'test': TEST_CSV_PATH,
-                             'isic_20_test': ISIC_ORIG_TEST_PATH},
+                             'isic20_test': ISIC_ORIG_TEST_PATH},
                 'logs': os.path.join(LOGS_DIR, args['mode'], args['image_type'], trial_id),
                 'trial': os.path.join(TRIALS_DIR, args['mode'], args['image_type'], trial_id)}
     try:
@@ -82,5 +82,5 @@ def directories(args):
     dir_dict['hparams_logs'] = os.path.join(dir_dict['trial'], 'hparams_log.txt')
     dir_dict['save_path'] = os.path.join(dir_dict['trial'], 'models', 'best-model')  # + "{epoch:03d}"
     dir_dict['backup'] = os.path.join(dir_dict['trial'], 'backup')
-    dir_dict['image_folder'] = os.path.join(MAIN_DIR, f"proc_{args['image_size']}_{args['colour']}", 'data/')
+    dir_dict['image_folder'] = os.path.join(MAIN_DIR, f"proc_{args['image_size']}_{args['colour']}", 'data')
     return dir_dict

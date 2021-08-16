@@ -45,7 +45,7 @@ def check_create_dataset(args, force=False):
         samples = pd.read_csv(args['dir_dict']['data_csv']['train']).append(
             pd.read_csv(args['dir_dict']['data_csv']['val'])).append(
             pd.read_csv(args['dir_dict']['data_csv']['test'])).append(
-            pd.read_csv(args['dir_dict']['data_csv']['isic_20_test']))
+            pd.read_csv(args['dir_dict']['data_csv']['isic20_test']))
         pool = mp.Pool(len(os.sched_getaffinity(0)))
         pool.starmap(resize_cvt_color, [(sample, args) for _, sample in samples.iterrows()])
         pool.close()

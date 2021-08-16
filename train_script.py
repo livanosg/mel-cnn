@@ -13,12 +13,6 @@ def training(args):
                  "sgd": tf.keras.optimizers.SGD, "rmsprop": tf.keras.optimizers.RMSprop,
                  "adadelta": tf.keras.optimizers.Adadelta, "adagrad": tf.keras.optimizers.Adagrad,
                  "adamax": tf.keras.optimizers.Adamax, "nadam": tf.keras.optimizers.Nadam}
-    datasets = MelData(args=args)
-    train_data = datasets.get_dataset(mode='train')
-    val_data = datasets.get_dataset(mode='val')
-    test_data = datasets.get_dataset(mode='test')
-    with open(args['dir_dict']['hparams_logs'], 'a') as f:
-        f.write(datasets.info())
 
     custom_model = model_fn(args=args)
 
@@ -30,14 +24,14 @@ def training(args):
                          metrics=[AUC(multi_label=True)])
     # --------------------------------------------------- Callbacks --------------------------------------------------- #
     callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=25),
-                 EnrTensorboard(data=val_data, class_names=args['class_names'], log_dir=args["dir_dict"]["logs"],
+                 EnrTensorboard(data=args['val_data'], class_names=args['class_names'], log_dir=args["dir_dict"]["logs"],
                                 profile_batch=0, mode=args["mode"]),
-                 TestCallback(args=args, val_data=val_data, test_data=test_data),
+                 TestCallback(args=args),
                  ReduceLROnPlateau(factor=0.75, patience=10),
                  EarlyStopping(verbose=args["verbose"], patience=args["early_stop"])]
     # ------------------------------------------------- Train model -------------------------------------------------- #
-    custom_model.fit(x=train_data, epochs=args["epochs"],
-                     validation_data=val_data,
+    custom_model.fit(x=args['train_data'], epochs=args["epochs"],
+                     validation_data=args['val_data'],
                      callbacks=callbacks, verbose=args["verbose"])
     custom_model.predict()
     tf.keras.backend.clear_session()
