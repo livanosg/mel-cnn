@@ -2,9 +2,16 @@ import os
 import multiprocessing as mp
 import math
 import cv2
-import numpy as np
 import pandas as pd
-from hair_removal import remove_and_inpaint  # 600 × 600 pixels
+
+
+def remove_hair_inpaint(image):
+    grayScale = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    kernel = cv2.getStructuringElement(1, (9, 9))
+    blackhat = cv2.morphologyEx(grayScale, cv2.MORPH_BLACKHAT, kernel)  # Black hat filter
+    bhg = cv2.GaussianBlur(blackhat, (3, 3), cv2.BORDER_DEFAULT)  # Gaussian filter
+    ret, mask = cv2.threshold(bhg, 10, 255, cv2.THRESH_BINARY)  # Binary thresholding (MASK)
+    return cv2.inpaint(image, mask, 6, cv2.INPAINT_NS)  # Replace pixels of the mask
 
 
 def resize_cvt_color(sample, args):
@@ -18,10 +25,7 @@ def resize_cvt_color(sample, args):
     if not os.path.isfile(new_path):
         image = cv2.imread(image_path)
         image = resize(image, 500)  # Resize to 500pxl
-        print(f"Before: {image_path}  -  {image.max()}")
-        image, steps = remove_and_inpaint(image)
-        image = np.multiply(image, 255.).astype(np.uint8)
-        print(f"After: {image_path}  -   {image.max()}")
+        image = remove_hair_inpaint(image)
         if int(args['image_size']) != 500:
             image = resize(image, args['image_size'])
         dx = (image.shape[0] - image.shape[1]) / 2  # Compare height-width
