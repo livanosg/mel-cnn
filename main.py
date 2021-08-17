@@ -16,7 +16,7 @@ def parser():
     args_parser.add_argument('--image_type', '-it', required=True, type=str, choices=['derm', 'clinic', 'both'], help='Select image type to use during training.')
     args_parser.add_argument('--only-image', '-io', action='store_true', help='Test to isic2020.')
     args_parser.add_argument('--colour', '-clr', default='rgb', type=str, help='Select image size.')
-    args_parser.add_argument('--batch-size', '-btch', default=4, type=int, help='Select batch size.')
+    args_parser.add_argument('--batch-size', '-btch', default=8, type=int, help='Select batch size.')
     args_parser.add_argument('--learning-rate', '-lr', default=1e-5, type=float, help='Select learning rate.')
     args_parser.add_argument('--dropout', '-dor', default=0.2, type=float, help='Select dropout ratio.')
     args_parser.add_argument('--activation', '-act', default='swish', choices=['relu', 'swish'], type=str, help='Select leaky relu gradient.')
