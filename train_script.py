@@ -11,7 +11,7 @@ def training(args, strategy):
     optimizer = {"adam": tf.keras.optimizers.Adam, "ftrl": tf.keras.optimizers.Ftrl,
                  "sgd": tf.keras.optimizers.SGD, "rmsprop": tf.keras.optimizers.RMSprop,
                  "adadelta": tf.keras.optimizers.Adadelta, "adagrad": tf.keras.optimizers.Adagrad,
-                 "adamax": tf.keras.optimizers.Adamax, "nadam": tf.keras.optimizers.Nadam}[args["optimizer"]](learning_rate=args["learning_rate"])
+                 "adamax": tf.keras.optimizers.Adamax, "nadam": tf.keras.optimizers.Nadam}[args["optimizer"]](learning_rate=args["learning_rate"] * args['replicas'])
 
     with strategy.scope():
         custom_model = model_fn(args=args)

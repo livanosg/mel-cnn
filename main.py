@@ -55,8 +55,7 @@ if __name__ == '__main__':
         strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver)
     else:
         strategy = tf.distribute.MirroredStrategy()
-    args['batch_size'] = args['batch_size'] * strategy.num_replicas_in_sync  # Global Batch
-    args["learning_rate"] = args["learning_rate"] * strategy.num_replicas_in_sync
+    args['replicas'] = strategy.num_replicas_in_sync
     datasets = MelData(args=args)
     args['train_data'] = datasets.get_dataset(mode='train')
     args['val_data'] = datasets.get_dataset(mode='val')
@@ -74,12 +73,11 @@ if __name__ == '__main__':
             calc_metrics(args=args, model=model, dataset=args['test_data'], dataset_type='test')
     else:
         with open(args['dir_dict']['hparams_logs'], 'a') as f:
-            [f.write(f"{key.capitalize()}: {args[key]}\n") for key in args.keys() if key not in ('dir_dict', 'hparams',
-                                                                                                 'train_data', 'val_data',
-                                                                                                 'test_data', 'isic20_test')]
+            [f.write(f"{': '.join([key.capitalize().rjust(25), str(args[key])])}\n") for key in args.keys() if key not in ('dir_dict', 'hparams',
+                                                                                                                      'train_data', 'val_data',
+                                                                                                                      'test_data', 'isic20_test')]
             f.write(f"Number of replicas in sync: {strategy.num_replicas_in_sync}\n")
             f.write(datasets.info())
-
         training(args=args, strategy=strategy)
         model = tf.keras.models.load_model(args['dir_dict']['save_path'])
         calc_metrics(args=args, model=model, dataset=args['test_data'], dataset_type='test')

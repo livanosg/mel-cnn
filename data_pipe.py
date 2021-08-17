@@ -10,11 +10,11 @@ import pandas as pd
 class MelData:
     def __init__(self, args: dict):
         self.args = args
+        self.batch_size = self.args['batch_size'] * self.args['replicas']
         self.train_data_df = self.preproc_df('train')
         self.val_data_df = self.preproc_df('val')
         self.test_data_df = self.preproc_df('test')
         self.TF_RNG = tf.random.Generator.from_non_deterministic_state()
-
         self.class_counts = dict(self.train_data_df['class'].value_counts())
         self.image_type_counts = dict(self.train_data_df['image_type'].value_counts())
         self.datasets = {'train': self.ohe_map(self.set_sample_weight(self.train_data_df).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator)),
@@ -174,7 +174,7 @@ class MelData:
             dataset = dataset.cache()
         if mode == 'train':
             dataset = dataset.map(image_augm, num_parallel_calls=tf.data.experimental.AUTOTUNE).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
-        dataset = dataset.batch(self.args['batch_size'])
+        dataset = dataset.batch(self.batch_size)
         options = tf.data.Options()
         options.experimental_threading.max_intra_op_parallelism = 1
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
