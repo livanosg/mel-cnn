@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 
-from config import NP_RNG, DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH, ISIC_ORIG_TEST_PATH, MAPPER
+from config import NP_RNG, DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH, ISIC_ORIG_TEST_PATH, DATA_MAP
 
 isic18 = pd.read_csv(os.path.join(DATA_DIR, 'isic18.csv'))
 [isic18.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in isic18.columns]
@@ -71,10 +71,9 @@ total_test = isic18_test.append(dermofit_test).append(up_test)
 total_data_len = len(total_train) + len(total_val) + len(total_test)
 for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (total_test, TEST_CSV_PATH), (isic20_orig_test, ISIC_ORIG_TEST_PATH)]:
     columns = ['dataset_id', 'anatom_site_general', 'sex', 'image', 'age_approx', 'image_type', 'class']
-    df.fillna(-10)
     df['age_approx'] -= (df['age_approx'] % 10)
     df['image'] = df['dataset_id'] + f"{os.sep}data{os.sep}" + df['image']
-    df.replace(to_replace=MAPPER, inplace=True)
+    df.replace(to_replace=DATA_MAP, inplace=True)
     print(f"{os.path.split(save_to)[-1].rjust(15)}| Count:{str(len(df)).rjust(6)} Ratio:{str(round(len(df) / total_data_len, 3)).rjust(6)}")
     if 'isic20_test' in df['dataset_id'].unique():
         columns.remove('class')

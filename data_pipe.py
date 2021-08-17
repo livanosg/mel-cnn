@@ -1,5 +1,5 @@
 import os
-from config import MAPPER, BEN_MAL_MAPPER, NEV_MEL_MAPPER, CLASS_NAMES, MAIN_DIR, NP_RNG
+from config import DATA_MAP, BEN_MAL_MAP, NEV_MEL_MAP, CLASS_NAMES, MAIN_DIR, NP_RNG
 import tensorflow as tf
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
 import tensorflow_addons as tfa
@@ -28,14 +28,14 @@ class MelData:
         df = pd.read_csv(self.args['dir_dict']['data_csv'][mode])
         df['image'] = df['image'].apply(lambda x: os.path.join(self.args['dir_dict']['image_folder'], x))
         if self.args['mode'] == 'ben_mal':
-            mapper = BEN_MAL_MAPPER
+            mapper = BEN_MAL_MAP
         elif self.args['mode'] == 'nev_mel':
-            mapper = NEV_MEL_MAPPER
+            mapper = NEV_MEL_MAP
         else:
             mapper = None
         df.replace(to_replace=mapper, inplace=True)
         if self.args['image_type'] != 'both':  # Keep derm or clinic, samples.
-            df.drop(df[df['image_type'] != MAPPER['image_type'][self.args['image_type']]].index, errors='ignore', inplace=True)
+            df.drop(df[df['image_type'] != DATA_MAP['image_type'][self.args['image_type']]].index, errors='ignore', inplace=True)
         if not mode == 'isic20_test':
             if self.args['mode'] in ['ben_mal', 'nev_mel']:
                 df.drop(df[df['class'] == 2].index, errors='ignore', inplace=True)
@@ -80,7 +80,7 @@ class MelData:
             df = self.val_data_df
         else:
             df = self.test_data_df
-        for (key, value) in MAPPER['image_type'].items():
+        for (key, value) in DATA_MAP['image_type'].items():
             image_type_inv[value] = key
         for dataset_id in df['dataset_id'].unique():
             dataset_part = df[df.loc[:, 'dataset_id'] == dataset_id]  # fraction per class
@@ -104,24 +104,21 @@ class MelData:
     def info(self):
         image_type_inv = {}
         dict_1 = {}
-        for (key, value) in MAPPER['image_type'].items():
+        for (key, value) in DATA_MAP['image_type'].items():
             image_type_inv[value] = key
         for _image_type in self.image_type_counts:
             dict_2 = {}
             for _class in self.class_counts:
                 dict_2[CLASS_NAMES[self.args['mode']][_class]] = self.train_data_df.loc[(self.train_data_df['image_type'] == _image_type) & (self.train_data_df['class'] == _class), 'sample_weights'].value_counts()
-            dict_1[image_type_inv[_image_type]] = {key+'\n': f"{'weight:'.rjust(8) + ' ' + str(round(float(value.keys().values), 4)).ljust(10)}\n"
-                                                             f"{'count:'.rjust(8) + ' ' + str(int(value.values)).ljust(10)}" for key, value in dict_2.items()}
+            dict_1[image_type_inv[_image_type]] = {key: round(float(value.keys().values), 4) for key, value in dict_2.items()}
 
-        return f"Mode: {self.args['mode']}\n" \
-               f"Classes: {self.args['class_names']}\n" \
+        return f"Train Length: {len(self.datasets['train'][1]['class'])}\n" \
                f"Train Class Samples: {np.sum(self.datasets['train'][1]['class'], axis=0)}\n" \
-               f"Train Length: {len(self.datasets['train'][1]['class'])}\n" \
-               f"Validation Class Samples: {np.sum(self.datasets['val'][1]['class'], axis=0)}\n" \
                f"Validation Length: {len(self.datasets['val'][1]['class'])}\n" \
-               f"Test Class Samples: {np.sum(self.datasets['test'][1]['class'], axis=0)}\n" \
+               f"Validation Class Samples: {np.sum(self.datasets['val'][1]['class'], axis=0)}\n" \
                f"Test Length: {len(self.datasets['test'][1]['class'])}\n" \
-               'Weights:\n' + '\n'.join([''.join([str(key).rjust(8) + ' ', key2, str(value2)]) for key, value in dict_1.items() for key2, value2 in value.items()]) + '\n'
+               f"Test Class Samples: {np.sum(self.datasets['test'][1]['class'], axis=0)}\n" \
+               f"{'Weights'.center(40)}"'\n' + '\n'.join([' '.join([str(key).rjust(6), key2.ljust(26), str(value2).ljust(8)]) for key, value in dict_1.items() for key2, value2 in value.items()]) + '\n'
 
     def get_dataset(self, mode=None, repeat=1):
         dataset = self.datasets[mode]

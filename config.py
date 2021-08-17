@@ -14,13 +14,13 @@ TEST_CSV_PATH = os.path.join(MAIN_DIR, 'data_test.csv')
 ISIC_ORIG_TEST_PATH = os.path.join(MAIN_DIR, 'isic20_test.csv')
 
 COLUMNS = ['dataset_id', 'patient_id', 'lesion_id', 'image', 'image_type', 'sex', 'age_approx', 'anatom_site_general', 'class']
-MAPPER = {'image_type': {'clinic': 0,
-                         'derm': 1,
-                         },
+DATA_MAP = {'image_type': {'clinic': 0,
+                           'derm': 1,
+                           },
           'sex': {'m': 0, 'male': 0,
                   'f': 1, 'female': 1,
-                  None: -1},
-          'age_approx': {None: -1, 0: 0, 10: 1, 20: 2, 30: 3, 40: 4,
+                  np.nan: -1},
+          'age_approx': {np.nan: -1, 0: 0, 10: 1, 20: 2, 30: 3, 40: 4,
                          50: 5, 60: 6, 70: 7, 80: 8, 90: 9},
           'anatom_site_general': {'abdomen': 0, 'back': 0, 'chest': 0, 'anterior torso': 0, 'CHEST': 0, 'BACK': 0,
                                   'posterior torso': 0, 'lateral_torso': 0, 'torso': 0, 'ABDOMEN': 0,
@@ -29,9 +29,9 @@ MAPPER = {'image_type': {'clinic': 0,
                                   'lower extremity': 3, 'lower_extremity': 3, 'lower limbs': 3, 'buttocks': 3, 'THIGH': 3, 'FOOT': 3,
                                   'acral': 4, 'palms/soles': 4,
                                   'genital areas': 5, 'oral/genital': 5, 'LIP': 5,
-                                  None: -1},
-          #  0: Nevus | 1: Melanoma | 2: Non-Nevus benign | 3: Non-Melanocytic Carcinoma | 4: Suspicious
-          'class':
+                                  np.nan: -1},
+            #  0: Nevus | 1: Melanoma | 2: Non-Nevus benign | 3: Non-Melanocytic Carcinoma | 4: Suspicious
+            'class':
               {'NV': 0, 'nevus': 0, 'clark nevus': 0, 'reed or spitz nevus': 0, 'naevus': 0, 'Common Nevus': 0, 'dermal nevus': 0,
                'blue nevus': 0, 'congenital nevus': 0, 'recurrent nevus': 0, 'combined nevus': 0, 'ML': 0, 'NEV': 0,
 
@@ -47,14 +47,14 @@ MAPPER = {'image_type': {'clinic': 0,
 
                'unknown': 5
                }
-          }
+            }
 
-BEN_MAL_MAPPER = {'class': {0: 0, 2: 0, 4: 0, 5: 0,  # Group 0: NV, NNV, SUS, unknown | 1: MEL, NMC
-                            1: 1, 3: 1}
-                  }
-NEV_MEL_MAPPER = {'class': {0: 0,  # Group 0: NV, | 1: MEL | 2: NNV, NMC, SUS, unknown
-                            1: 1,
-                            2: 2, 3: 2, 4: 2, 5: 2}}
+BEN_MAL_MAP = {'class': {0: 0, 2: 0, 4: 0, 5: 0,  # Group 0: NV, NNV, SUS, unknown | 1: MEL, NMC
+                         1: 1, 3: 1}
+               }
+NEV_MEL_MAP = {'class': {0: 0,  # Group 0: NV, | 1: MEL | 2: NNV, NMC, SUS, unknown
+                         1: 1,
+                         2: 2, 3: 2, 4: 2, 5: 2}}
 CLASS_NAMES = {'ben_mal': ['Benign', 'Malignant'],
                'nev_mel': ['Nevus', 'Melanoma'],
                '5cls': ['Nevus', 'Melanoma', 'Non-Nevus benign', 'Non-Melanocytic Carcinoma', 'Suspicious benign']}

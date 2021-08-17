@@ -74,9 +74,8 @@ if __name__ == '__main__':
     else:
         with open(args['dir_dict']['hparams_logs'], 'a') as f:
             [f.write(f"{': '.join([key.capitalize().rjust(25), str(args[key])])}\n") for key in args.keys() if key not in ('dir_dict', 'hparams',
-                                                                                                                      'train_data', 'val_data',
-                                                                                                                      'test_data', 'isic20_test')]
-            f.write(f"Number of replicas in sync: {strategy.num_replicas_in_sync}\n")
+                                                                                                                           'train_data', 'val_data',
+                                                                                                                           'test_data', 'isic20_test')]
             f.write(datasets.info())
         training(args=args, strategy=strategy)
         model = tf.keras.models.load_model(args['dir_dict']['save_path'])
