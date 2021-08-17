@@ -1,6 +1,5 @@
 import os
 import pandas as pd
-
 from config import NP_RNG, DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH, ISIC_ORIG_TEST_PATH, DATA_MAP
 
 isic18 = pd.read_csv(os.path.join(DATA_DIR, 'isic18.csv'))
@@ -64,11 +63,12 @@ mednode_val = mednode[~mednode.index.isin(mednode_train.index)]
 ph2_train = ph2.sample(frac=0.9, random_state=NP_RNG.bit_generator)
 ph2_val = ph2[~ph2.index.isin(ph2_train.index)]
 up_test = up
+
 total_train = padufes_train.append(isic19_train).append(isic20_train).append(spt_train).append(mednode_train).append(ph2_train)
 total_val = padufes_val.append(isic19_val).append(isic20_val).append(spt_val).append(mednode_val).append(ph2_val)
 total_test = isic18_test.append(dermofit_test).append(up_test)
-
 total_data_len = len(total_train) + len(total_val) + len(total_test)
+
 for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (total_test, TEST_CSV_PATH), (isic20_orig_test, ISIC_ORIG_TEST_PATH)]:
     columns = ['dataset_id', 'anatom_site_general', 'sex', 'image', 'age_approx', 'image_type', 'class']
     df['age_approx'] -= (df['age_approx'] % 10)
