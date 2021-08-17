@@ -126,10 +126,16 @@ class MelData:
     def get_dataset(self, mode=None, repeat=1):
         dataset = self.datasets[mode]
         if self.args['only_image']:
-            dataset.pop('image_type')
-            dataset.pop('sex')
-            dataset.pop('age_approx')
-            dataset.pop('anatom_site_general')
+            if isinstance(dataset, tuple):
+                dataset[0].pop('image_type')
+                dataset[0].pop('sex')
+                dataset[0].pop('age_approx')
+                dataset[0].pop('anatom_site_general')
+            else:
+                dataset.pop('image_type')
+                dataset.pop('sex')
+                dataset.pop('age_approx')
+                dataset.pop('anatom_site_general')
 
         def tf_imread(sample, label=None, sample_weight=None):
             image_path = sample['image']
