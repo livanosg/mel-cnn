@@ -19,7 +19,7 @@ def parser():
     args_parser.add_argument('--batch-size', '-btch', default=8, type=int, help='Select batch size.')
     args_parser.add_argument('--learning-rate', '-lr', default=1e-5, type=float, help='Select learning rate.')
     args_parser.add_argument('--dropout', '-dor', default=0.2, type=float, help='Select dropout ratio.')
-    args_parser.add_argument('--activation', '-act', default='relu', choices=['relu', 'swish'], type=str, help='Select leaky relu gradient.')
+    args_parser.add_argument('--activation', '-act', default='swish', choices=['relu', 'swish'], type=str, help='Select leaky relu gradient.')
     args_parser.add_argument('--dataset-frac', '-frac', default=1., type=float, help='Dataset fraction.')
     args_parser.add_argument('--epochs', '-e', default=500, type=int, help='Select epochs.')
     args_parser.add_argument('--early-stop', '-es', default=30, type=int, help='Select early stop epochs.')
@@ -43,25 +43,13 @@ if __name__ == '__main__':
     check_create_dataset(args=args, force=True)
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
     os.environ['AUTOGRAPH_VERBOSITY'] = '1'
-    if args['verbose'] > 3:  # 0 = all logs, 1 = filter out INFO, 2 = 1 + WARNING, 3 = 2 + ERROR
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
-    else:
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = f"{3 - args['verbose']}"
-    # Set verbosity for keras
-    if args['verbose'] == 1:
-        args['verbose'] = 2
-    elif args['verbose'] >= 2:
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = f"{max(0,(3 - args['verbose']))}"  # 0 log all, 1:noINFO, 2:noWARNING, 3:noERROR
+    if args['verbose'] >= 2:  # Set verbosity for keras 0 = silent, 1 = progress bar, 2 = one line per epoch.
         args['verbose'] = 1
     else:
-        args['verbose'] = 0
+        args['verbose'] = 2
 
     if args["strategy"] == 'multiworker':
-        for i in ['http_proxy', 'https_proxy', 'http', 'https']:
-            try:
-                del os.environ[i]
-                print(f'{i} unset')
-            except KeyError:
-                pass
         slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver()
         args["dir_dict"]["save_path"] += f"-{slurm_resolver.task_id}-{slurm_resolver.task_type}"
         strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver)
@@ -74,16 +62,7 @@ if __name__ == '__main__':
     args['val_data'] = datasets.get_dataset(mode='val')
     args['test_data'] = datasets.get_dataset(mode='test')
     args['isic20_test'] = datasets.get_dataset(mode='isic20_test')
-    if not (args['test'] or args['validate']):
-        with open(args['dir_dict']['hparams_logs'], 'a') as f:
-            [f.write(f"{key.capitalize()}: {args[key]}\n") for key in args.keys() if key not in ('dir_dict', 'hparams')]
-            f.write('Directories\n')
-            [f.write(f"{key.capitalize()}: {args['dir_dict'][key]}\n") for key in args['dir_dict'].keys()]
-            f.write(f"Number of replicas in sync: {strategy.num_replicas_in_sync}\n")
-            f.write(datasets.info())
     if args['test'] or args['validate']:
-        # for i in ['/home/livanosg/projects/results/mel-cnn/trials/ben_mal/derm/140821133043-gpu13/models/best-model']:
-        #   args['dir_dict']["save_path"] = i
         args['dir_dict']["save_path"] = args['test_model']
         args['dir_dict']['trial'] = os.path.dirname(os.path.dirname(args['dir_dict']["save_path"]))
         model = tf.keras.models.load_model(args["dir_dict"]["save_path"])
@@ -94,8 +73,14 @@ if __name__ == '__main__':
             calc_metrics(args=args, model=model, dataset=args['val_data'], dataset_type='validation')
             calc_metrics(args=args, model=model, dataset=args['test_data'], dataset_type='test')
     else:
-        with strategy.scope():
-            training(args=args)
+        with open(args['dir_dict']['hparams_logs'], 'a') as f:
+            [f.write(f"{key.capitalize()}: {args[key]}\n") for key in args.keys() if key not in ('dir_dict', 'hparams',
+                                                                                                 'train_data', 'val_data',
+                                                                                                 'test_data', 'isic20_test')]
+            f.write(f"Number of replicas in sync: {strategy.num_replicas_in_sync}\n")
+            f.write(datasets.info())
+
+        training(args=args, strategy=strategy)
         model = tf.keras.models.load_model(args['dir_dict']['save_path'])
         calc_metrics(args=args, model=model, dataset=args['test_data'], dataset_type='test')
         calc_metrics(args=args, model=model, dataset=args['val_data'], dataset_type='val')

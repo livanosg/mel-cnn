@@ -1,5 +1,3 @@
-import itertools
-import os
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import backend as K
@@ -9,10 +7,9 @@ from metrics import calc_metrics, cm_image
 
 
 class EnrTensorboard(TensorBoard):
-    def __init__(self, data, mode, class_names, **kwargs):
+    def __init__(self, val_data, class_names, **kwargs):
         super().__init__(**kwargs)
-        self.eval_data = data
-        self.mode = mode
+        self.val_data = val_data
         self.class_names = class_names
 
     def on_epoch_end(self, epoch, logs=None):
@@ -21,9 +18,9 @@ class EnrTensorboard(TensorBoard):
 
         # Use the model to predict the values from the validation dataset.
         y_true = []
-        test_pred = self.model.predict(self.eval_data)
+        test_pred = self.model.predict(self.val_data)
         test_pred = np.argmax(test_pred, axis=1)
-        for data in self.eval_data:
+        for data in self.val_data:
             y_true.append(np.argmax(data[1]["class"], axis=1))
         y_true = np.concatenate(y_true)
         # Calculate the confusion matrix
