@@ -81,6 +81,6 @@ if __name__ == '__main__':
         model = tf.keras.models.load_model(args['dir_dict']['save_path'])
         calc_metrics(args=args, model=model, dataset=args['test_data'], dataset_type='test')
         calc_metrics(args=args, model=model, dataset=args['val_data'], dataset_type='val')
-        if args['mode'] == 'ben_mal':
+        if args['mode'] in ('ben_mal', '5cls'):
             calc_metrics(args=args, model=model, dataset=args['isic20_test'], dataset_type='isic20_test')
     exit()

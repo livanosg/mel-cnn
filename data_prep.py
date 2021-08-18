@@ -14,13 +14,14 @@ def remove_hair_inpaint(image):
     return cv2.inpaint(image, mask, 6, cv2.INPAINT_NS)  # Replace pixels of the mask
 
 
+def resize(image, size):
+    resize = int(size) / max(image.shape)
+    return cv2.resize(src=image, dsize=None, fx=resize, fy=resize, interpolation=cv2.INTER_NEAREST_EXACT)
+
+
 def resize_cvt_color(sample, args):
     image_path = os.path.join(args['dir_dict']['data'], sample['image'])
     new_path = os.path.join(args['dir_dict']['image_folder'], sample['image'])
-
-    def resize(image, size):
-        resize = int(size) / max(image.shape)
-        return cv2.resize(src=image, dsize=None, fx=resize, fy=resize, interpolation=cv2.INTER_NEAREST_EXACT)
 
     if not os.path.isfile(new_path):
         image = cv2.imread(image_path)

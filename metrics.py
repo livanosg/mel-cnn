@@ -6,6 +6,7 @@ import pandas as pd
 from sklearn.metrics import roc_curve, precision_recall_curve, auc, classification_report, confusion_matrix
 from matplotlib import pyplot as plt, use as plt_use
 from config import CLASS_NAMES
+
 plt_use('cairo')
 
 
@@ -17,12 +18,19 @@ def calc_metrics(args, model, dataset, dataset_type):
         paths = []
         for x in dataset.as_numpy_iterator():
             y_prob = model.predict(x[0])
-            results.append(np.vstack(y_prob[..., 1]))
+            if args['mode'] == 'ben_mal':
+                results.append(np.vstack(y_prob[..., 1]))
+            else:  # Test 5cls performance in Benign-Malignant Task
+                # 0: Nevus |  2: Non - Nevus benign | 4: Suspicious
+                # | 1: Melanoma | 3: Non - Melanocytic Carcinoma
+                malignant = np.sum((y_prob[..., 1], y_prob[..., 3]), axis=0)
+                results.append(np.vstack(malignant))
             paths.append(np.vstack(x[1]))
         results = np.vstack(results).reshape((-1))
         paths = np.vstack(paths).reshape((-1))
         df = pd.DataFrame({'image_name': paths, 'target': results})
-        df['image_name'] = df['image_name'].apply(lambda path: os.path.splitext(os.path.basename(path.decode('UTF-8')))[0])
+        df['image_name'] = df['image_name'].apply(
+            lambda path: os.path.splitext(os.path.basename(path.decode('UTF-8')))[0])
         # noinspection PyTypeChecker
         df.to_csv(path_or_buf=os.path.join(save_dir, 'results.csv'), index=False)
     else:
@@ -31,7 +39,6 @@ def calc_metrics(args, model, dataset, dataset_type):
         one_hot_labels = np.concatenate(dataset_to_numpy)
         y_true = np.argmax(one_hot_labels, axis=-1)
         y_pred = np.argmax(y_prob, axis=-1)
-
         confmat_image = cm_image(y_true=y_true, y_pred=y_pred, class_names=args['class_names'])
         with open(os.path.join(save_dir, "cm.png"), "wb") as f:
             f.write(confmat_image)
@@ -51,8 +58,10 @@ def calc_metrics(args, model, dataset, dataset_type):
             if args['num_classes'] == 2 and _class == 0:
                 pass
             else:
-                fpr_roc, tpr_roc, thresholds_roc = roc_curve(y_true=y_true, y_score=y_prob[..., _class], pos_label=_class)
-                precision, recall, thresholds = precision_recall_curve(y_true=y_true, probas_pred=y_prob[..., _class], pos_label=_class)
+                fpr_roc, tpr_roc, thresholds_roc = roc_curve(y_true=y_true, y_score=y_prob[..., _class],
+                                                             pos_label=_class)
+                precision, recall, thresholds = precision_recall_curve(y_true=y_true, probas_pred=y_prob[..., _class],
+                                                                       pos_label=_class)
                 class_auc = auc(fpr_roc, tpr_roc)
                 with open(os.path.join(save_dir, "report.txt"), "a") as f:
                     if (args['num_classes'] == 2 and _class == 1) or (args['num_classes'] != 2 and _class == 0):

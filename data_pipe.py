@@ -48,7 +48,7 @@ class MelData:
                                       np.multiply(self.args['num_classes'], [self.class_counts[k]for k in sorted(self.class_counts)]))
         weights_per_image_type = np.divide(np.sum(len(self.train_data_df)),
                                            np.multiply(len(self.image_type_counts), [self.image_type_counts[k] for k in sorted(self.image_type_counts)]))
-        # weights_per_image_type = np.sqrt(weights_per_image_type)  # Through sqrt
+        weights_per_image_type = np.sqrt(weights_per_image_type)  # Through sqrt
 
         for idx1, image_type in enumerate(sorted(self.image_type_counts)):
             for idx2, _class in enumerate(sorted(self.class_counts)):
@@ -118,7 +118,7 @@ class MelData:
                f"Validation Class Samples: {np.sum(self.datasets['val'][1]['class'], axis=0)}\n" \
                f"Test Length: {len(self.datasets['test'][1]['class'])}\n" \
                f"Test Class Samples: {np.sum(self.datasets['test'][1]['class'], axis=0)}\n" \
-               f"{'Weights'.center(40)}"'\n' + '\n'.join([' '.join([str(key).rjust(6), key2.ljust(26), str(value2).ljust(8)]) for key, value in dict_1.items() for key2, value2 in value.items()]) + '\n'
+               'Weights\n' + '\n'.join([' '.join([str(key).rjust(max(map(len, dict_1.keys()))), key2.ljust(max(map(len, value.keys()))), str(value2).ljust(8)]) for key, value in dict_1.items() for key2, value2 in value.items()]) + '\n'
 
     def get_dataset(self, mode=None, repeat=1):
         dataset = self.datasets[mode]
