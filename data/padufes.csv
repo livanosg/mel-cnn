@@ -1,4 +1,4 @@
-dataset_id,patient_id,lesion_id,image,sex,age_approx,anatom_site_general,image_type,class
+dataset_id,patient_id,lesion_id,image,sex,age_approx,location,image_type,class
 padufes,PAT_1516,1765,PAT_1516_1765_530.png,,8,ARM,0,NEV
 padufes,PAT_46,881,PAT_46_881_939.png,f,55,NECK,0,BCC
 padufes,PAT_1545,1867,PAT_1545_1867_547.png,,77,FACE,0,ACK

@@ -1,4 +1,4 @@
-dataset_id,image,patient,age_approx,anatom_site_general,sex,image_type
+dataset_id,image,patient,age_approx,location,sex,image_type
 isic20_test,ISIC_0052060.jpg,IP_3579794,70,,male,1
 isic20_test,ISIC_0052349.jpg,IP_7782715,40,lower extremity,male,1
 isic20_test,ISIC_0058510.jpg,IP_7960270,55,torso,female,1

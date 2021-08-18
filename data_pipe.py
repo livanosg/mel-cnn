@@ -37,9 +37,9 @@ class MelData:
         if self.args['image_type'] != 'both':  # Keep derm or clinic, samples.
             df.drop(df[df['image_type'] != DATA_MAP['image_type'][self.args['image_type']]].index, errors='ignore', inplace=True)
         if not mode == 'isic20_test':
-            if self.args['mode'] in ['ben_mal', 'nev_mel']:
+            if self.args['mode'] == 'nev_mel':
                 df.drop(df[df['class'] == 2].index, errors='ignore', inplace=True)
-            if self.args['mode'] in ['5cls']:
+            if self.args['mode'] == '5cls':
                 df.drop(df[df['class'] == 5].index, errors='ignore', inplace=True)
         return df
 
@@ -61,7 +61,7 @@ class MelData:
                         'image_type': tf.keras.backend.one_hot(indices=features['image_type'], num_classes=2),
                         'sex': tf.keras.backend.one_hot(indices=features['sex'], num_classes=2),
                         'age_approx': tf.keras.backend.one_hot(indices=features['age_approx'], num_classes=10),
-                        'anatom_site_general': tf.keras.backend.one_hot(indices=features['anatom_site_general'], num_classes=6)}
+                        'location': tf.keras.backend.one_hot(indices=features['location'], num_classes=6)}
         if 'isic20_test' in features['dataset_id'].unique():
             return ohe_features
         else:
@@ -127,12 +127,12 @@ class MelData:
                 dataset[0].pop('image_type')
                 dataset[0].pop('sex')
                 dataset[0].pop('age_approx')
-                dataset[0].pop('anatom_site_general')
+                dataset[0].pop('location')
             else:
                 dataset.pop('image_type')
                 dataset.pop('sex')
                 dataset.pop('age_approx')
-                dataset.pop('anatom_site_general')
+                dataset.pop('location')
 
         def tf_imread(sample, label=None, sample_weight=None):
             image_path = sample['image']

@@ -67,7 +67,7 @@ total_test = isic18_val.append(dermofit).append(up)
 total_data_len = len(total_train) + len(total_val) + len(total_test)
 
 for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (total_test, TEST_CSV_PATH), (isic20_orig_test, ISIC_ORIG_TEST_PATH)]:
-    columns = ['dataset_id', 'anatom_site_general', 'sex', 'image', 'age_approx', 'image_type', 'class']
+    columns = ['dataset_id', 'location', 'sex', 'image', 'age_approx', 'image_type', 'class']
     df['age_approx'] -= (df['age_approx'] % 10)
     df['image'] = df['dataset_id'] + f"{os.sep}data{os.sep}" + df['image']
     df.replace(to_replace=DATA_MAP, inplace=True)

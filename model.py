@@ -52,7 +52,7 @@ def model_fn(args):
     if not args['only_image']:
         image_type_input = Input(shape=(2,), name='image_type', dtype=tf.float32)
         sex_input = Input(shape=(2,), name='sex', dtype=tf.float32)
-        anatom_site_input = Input(shape=(6,), name='anatom_site_general', dtype=tf.float32)
+        anatom_site_input = Input(shape=(6,), name='location', dtype=tf.float32)
         age_input = Input(shape=(10,), name='age_approx', dtype=tf.float32)
 
         image_type = Reshape(target_shape=(2, 1))(image_type_input)

@@ -1,4 +1,4 @@
-dataset_id,patient_id,lesion_id,image,image_type,sex,age_approx,anatom_site_general,class,benign_malignant,target
+dataset_id,patient_id,lesion_id,image,image_type,sex,age_approx,location,class,benign_malignant,target
 isic20,IP_7279968,IL_7972535,ISIC_2637011.jpg,1,m,45,head/neck,unknown,benign,0
 isic20,IP_3075186,IL_4649854,ISIC_0015719.jpg,1,f,45,upper_extremity,unknown,benign,0
 isic20,IP_2842074,IL_9087444,ISIC_0052212.jpg,1,f,50,lower_extremity,nevus,benign,0

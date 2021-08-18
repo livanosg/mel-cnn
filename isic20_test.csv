@@ -1,4 +1,4 @@
-dataset_id,anatom_site_general,sex,image,age_approx,image_type
+dataset_id,location,sex,image,age_approx,image_type
 isic20_test,-1,0,isic20_test/data/ISIC_0052060.jpg,7,1
 isic20_test,3,0,isic20_test/data/ISIC_0052349.jpg,4,1
 isic20_test,0,1,isic20_test/data/ISIC_0058510.jpg,5,1

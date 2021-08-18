@@ -1,4 +1,4 @@
-dataset_id,lesion_id,image,image_type,sex,age_approx,anatom_site_general,class
+dataset_id,lesion_id,image,image_type,sex,age_approx,location,class
 isic19,,ISIC_0000000.jpg,1,f,55,torso,NV
 isic19,,ISIC_0000001.jpg,1,f,30,torso,NV
 isic19,,ISIC_0000002.jpg,1,f,60,upper_extremity,MEL

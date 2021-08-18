@@ -108,8 +108,8 @@ def plot_confusion_matrix(cm, class_names):
     plt.xticks(tick_marks, class_names, rotation=45)
     plt.yticks(tick_marks, class_names)
     # Compute the labels from the normalized confusion matrix.
-    labels = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], decimals=3)
-    # labels = np.around(cm.astype('float'), decimals=3)
+    # labels = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], decimals=3)
+    labels = cm
 
     # Use white text if squares are dark; otherwise black.
     threshold = cm.max() / 2.
