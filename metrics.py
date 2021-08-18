@@ -100,22 +100,19 @@ def plot_confusion_matrix(cm, class_names):
     """
 
     figure = plt.figure(figsize=(7, 7))
-    plt.imshow(cm, interpolation='nearest',
+    normalized_cm = cm / np.expand_dims(cm.sum(axis=1), axis=-1)
+    # Plot the normalized confusion matrix.
+    plt.imshow(normalized_cm, interpolation='nearest',
                cmap=plt.cm.get_cmap("binary"))  # https://matplotlib.org/1.2.1/_images/show_colormaps.png
-    plt.title("Confusion matrix")
-    plt.colorbar()
+    plt.clim(0., 1.)
+    plt.colorbar(shrink=0.7, aspect=20*0.7)
     tick_marks = np.arange(len(class_names))
     plt.xticks(tick_marks, class_names, rotation=45)
     plt.yticks(tick_marks, class_names)
-    # Compute the labels from the normalized confusion matrix.
-    # labels = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], decimals=3)
-    labels = cm
-
-    # Use white text if squares are dark; otherwise black.
-    threshold = cm.max() / 2.
+    # Labels from confusion matrix values.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        color = "white" if cm[i, j] > threshold else "black"
-        plt.text(j, i, labels[i, j], horizontalalignment="center", color=color)
+        color = "white" if normalized_cm[i, j] > 0.5 else "black"
+        plt.text(j, i, cm[i, j], horizontalalignment="center", color=color)
 
     plt.tight_layout()
     plt.ylabel('True label')

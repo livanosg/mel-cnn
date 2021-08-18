@@ -169,5 +169,5 @@ class LaterCheckpoint(ModelCheckpoint):
             pass
         else:
             if self.start_at == epoch:
-                print(f'Epoch {epoch} more than {self.start_at}. Start saving')
+                print(f'Epoch reached {self.start_at}. Start saving')
             super().on_epoch_end(epoch=epoch, logs=logs)

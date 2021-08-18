@@ -59,9 +59,9 @@ BEN_MAL_MAP = {'class': {0: 0, 1: 0, 2: 0, 5: 0,  # Group 0: NV, NNV, SUS, unkno
 NEV_MEL_MAP = {'class': {0: 0,  # Group 0: NV, | 1: MEL | 2: NNV, NMC, SUS, unknown
                          4: 1,
                          1: 2, 2: 2, 3: 2, 5: 2}}
-CLASS_NAMES = {'ben_mal': ['Benign', 'Malignant'],
-               'nev_mel': ['Nevus', 'Melanoma'],
-               '5cls': ['Nevus', 'Non-Nevus benign', 'Suspicious benign', 'Non-Melanocytic Carcinoma', 'Melanoma']}
+CLASS_NAMES = {'ben_mal': ['BEN', 'MAL'],
+               'nev_mel': ['NEV', 'MEL'],
+               '5cls': ['NEV', 'NEV', 'SUS', 'NMC', 'MEL']}
 
 
 def directories(args):
