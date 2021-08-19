@@ -61,7 +61,7 @@ NEV_MEL_MAP = {'class': {0: 0,  # Group 0: NV, | 1: MEL | 2: NNV, NMC, SUS, unkn
                          1: 2, 2: 2, 3: 2, 5: 2}}
 CLASS_NAMES = {'ben_mal': ['BEN', 'MAL'],
                'nev_mel': ['NEV', 'MEL'],
-               '5cls': ['NEV', 'NEV', 'SUS', 'NMC', 'MEL']}
+               '5cls': ['NEV', 'NNV', 'SUS', 'NMC', 'MEL']}
 
 
 def directories(args):

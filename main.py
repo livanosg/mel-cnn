@@ -1,6 +1,7 @@
 import os
 import argparse
 from config import directories, CLASS_NAMES
+from custom_losses import WeightedCategoricalCrossentropy
 from data_pipe import MelData
 from data_prep import check_create_dataset
 from metrics import calc_metrics
@@ -27,7 +28,8 @@ def parser():
     args_parser.add_argument('--mode', '-mod', required=True, type=str, choices=['5cls', 'ben_mal', 'nev_mel'], help='Select the type of outputs.')
     args_parser.add_argument('--verbose', '-v', default=0, action='count', help='Set verbosity.')
     args_parser.add_argument('--layers', '-lrs', default=2, type=int, help='Select set of layers.')
-    args_parser.add_argument('--validate', '-val', action='store_true', help='Test to isic2020.')
+    args_parser.add_argument('--no_image_weights', '-niw', action='store_true', help='Weight only per class.')
+    args_parser.add_argument('--validate', '-val', action='store_true', help='Evaluate model')
     args_parser.add_argument('--test', '-test', action='store_true', help='Test to isic2020.')
     args_parser.add_argument('--test-model', '-testmodel', type=str, help='Test to isic2020.')
     return args_parser
@@ -78,7 +80,7 @@ if __name__ == '__main__':
                                                                                                                            'test_data', 'isic20_test')]
             f.write(datasets.info())
         training(args=args, strategy=strategy)
-        model = tf.keras.models.load_model(args['dir_dict']['save_path'])
+        model = tf.keras.models.load_model(args['dir_dict']['save_path'], custom_objects={'WeightedCategoricalCrossentropy': WeightedCategoricalCrossentropy(mode=args['mode'])})
         calc_metrics(args=args, model=model, dataset=args['test_data'], dataset_type='test')
         calc_metrics(args=args, model=model, dataset=args['val_data'], dataset_type='val')
         if args['mode'] in ('ben_mal', '5cls'):

@@ -46,13 +46,20 @@ class MelData:
     def set_sample_weight(self, df):
         weights_per_class = np.divide(len(self.train_data_df),
                                       np.multiply(self.args['num_classes'], [self.class_counts[k]for k in sorted(self.class_counts)]))
-        weights_per_image_type = np.divide(np.sum(len(self.train_data_df)),
-                                           np.multiply(len(self.image_type_counts), [self.image_type_counts[k] for k in sorted(self.image_type_counts)]))
+        if len(self.image_type_counts) > 1:
+            weights_per_image_type = np.divide(len(self.train_data_df),
+                                               np.multiply(len(self.image_type_counts), [self.image_type_counts[k] for k in sorted(self.image_type_counts)]))
+        else:
+            weights_per_image_type = [0]
         weights_per_image_type = np.sqrt(weights_per_image_type)  # Through sqrt
 
-        for idx1, image_type in enumerate(sorted(self.image_type_counts)):
-            for idx2, _class in enumerate(sorted(self.class_counts)):
-                df.loc[(df['image_type'] == image_type) & (df['class'] == _class), 'sample_weights'] = (weights_per_image_type[idx1] + weights_per_class[idx2])
+        for idx1, _class in enumerate(sorted(self.class_counts)):
+            for idx2, image_type in enumerate(sorted(self.image_type_counts)):
+                if self.args['no_image_weights']:
+                    sample_weight = 1.  # weights_per_class[idx1]
+                else:
+                    sample_weight = weights_per_image_type[idx2]  # weights_per_class[idx1] + weights_per_image_type[idx2]
+                df.loc[(df['image_type'] == image_type) & (df['class'] == _class), 'sample_weights'] = sample_weight
         df['sample_weights'] /= df['sample_weights'].min()
         return df
 
@@ -103,14 +110,15 @@ class MelData:
 
     def info(self):
         image_type_inv = {}
-        dict_1 = {}
         for (key, value) in DATA_MAP['image_type'].items():
             image_type_inv[value] = key
+        info_w = ''
         for _image_type in self.image_type_counts:
-            dict_2 = {}
-            for _class in self.class_counts:
-                dict_2[CLASS_NAMES[self.args['mode']][_class]] = self.train_data_df.loc[(self.train_data_df['image_type'] == _image_type) & (self.train_data_df['class'] == _class), 'sample_weights'].value_counts()
-            dict_1[image_type_inv[_image_type]] = {key: round(float(value.keys().values), 4) for key, value in dict_2.items()}
+            info_w += image_type_inv[_image_type] + '\n'
+            for _class in sorted(self.class_counts):
+                a = np.round(np.squeeze(self.train_data_df.loc[(self.train_data_df['image_type'] == _image_type) & (
+                        self.train_data_df['class'] == _class), 'sample_weights'].unique()), 3)
+                info_w += ' '.join([CLASS_NAMES[self.args['mode']][_class].rjust(len(max(CLASS_NAMES[self.args['mode']], key=len))), str(a)+'\n'])
 
         return f"Train Length: {len(self.datasets['train'][1]['class'])}\n" \
                f"Train Class Samples: {np.sum(self.datasets['train'][1]['class'], axis=0)}\n" \
@@ -118,7 +126,7 @@ class MelData:
                f"Validation Class Samples: {np.sum(self.datasets['val'][1]['class'], axis=0)}\n" \
                f"Test Length: {len(self.datasets['test'][1]['class'])}\n" \
                f"Test Class Samples: {np.sum(self.datasets['test'][1]['class'], axis=0)}\n" \
-               'Weights\n' + '\n'.join([' '.join([str(key).rjust(max(map(len, dict_1.keys()))), key2.ljust(max(map(len, value.keys()))), str(value2).ljust(8)]) for key, value in dict_1.items() for key2, value2 in value.items()]) + '\n'
+               'Weights\n' + info_w
 
     def get_dataset(self, mode=None, repeat=1):
         dataset = self.datasets[mode]
