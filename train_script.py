@@ -21,12 +21,12 @@ def training(args, strategy):
             custom_model.summary(print_fn=lambda x: f.write(x + '\n'))
 
         custom_model.compile(optimizer=optimizer,
-                             loss=WeightedCategoricalCrossentropy(mode=args['mode']),
+                             loss=WeightedCategoricalCrossentropy(mode=args['mode'], num_classes=args['num_classes']),
                              # loss='categorical_crossentropy',  # SigmoidFocalCrossEntropy(gamma=2.5, alpha=0.2, reduction=tf.keras.losses.Reduction.AUTO), # custom_loss(datasets.weights_per_class)
                              metrics=[AUC(multi_label=True)])
         # --------------------------------------------------- Callbacks --------------------------------------------------- #
         callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=25),
-                     EnrTensorboard(log_dir=args["dir_dict"]["logs"], val_data=args['val_data'], class_names=args['class_names'], profile_batch=0),
+                     EnrTensorboard(log_dir=args["dir_dict"]["logs"], val_data=args['val_data'], class_names=args['class_names'], profile_batch=(2, 5)),
                      ReduceLROnPlateau(factor=0.75, patience=10),
                      EarlyStopping(verbose=args["verbose"], patience=args["early_stop"])]
         # ------------------------------------------------- Train model -------------------------------------------------- #

@@ -59,10 +59,10 @@ if __name__ == '__main__':
         strategy = tf.distribute.MirroredStrategy()
     args['replicas'] = strategy.num_replicas_in_sync
     datasets = MelData(args=args)
-    args['train_data'] = datasets.get_dataset(mode='train')
-    args['val_data'] = datasets.get_dataset(mode='val')
-    args['test_data'] = datasets.get_dataset(mode='test')
-    args['isic20_test'] = datasets.get_dataset(mode='isic20_test')
+    args['train_data'] = datasets.get_dataset(data_name='train')
+    args['val_data'] = datasets.get_dataset(data_name='val')
+    args['test_data'] = datasets.get_dataset(data_name='test')
+    args['isic20_test'] = datasets.get_dataset(data_name='isic20_test')
     if args['test'] or args['validate']:
         args['dir_dict']["save_path"] = args['test_model']
         args['dir_dict']['trial'] = os.path.dirname(os.path.dirname(args['dir_dict']["save_path"]))
@@ -73,6 +73,9 @@ if __name__ == '__main__':
             args['dir_dict']["save_path"] = args['test_model']
             calc_metrics(args=args, model=model, dataset=args['val_data'], dataset_type='validation')
             calc_metrics(args=args, model=model, dataset=args['test_data'], dataset_type='test')
+            if args['mode'] in ('ben_mal', '5cls'):
+                calc_metrics(args=args, model=model, dataset=args['isic20_test'], dataset_type='isic20_test')
+
     else:
         with open(args['dir_dict']['hparams_logs'], 'a') as f:
             [f.write(f"{': '.join([key.capitalize().rjust(25), str(args[key])])}\n") for key in args.keys() if key not in ('dir_dict', 'hparams',
@@ -80,7 +83,7 @@ if __name__ == '__main__':
                                                                                                                            'test_data', 'isic20_test')]
             f.write(datasets.info())
         training(args=args, strategy=strategy)
-        model = tf.keras.models.load_model(args['dir_dict']['save_path'], custom_objects={'WeightedCategoricalCrossentropy': WeightedCategoricalCrossentropy(mode=args['mode'])})
+        model = tf.keras.models.load_model(args['dir_dict']['save_path'], custom_objects={'WeightedCategoricalCrossentropy': WeightedCategoricalCrossentropy(mode=args['mode'], num_classes=args['num_classes'])})
         calc_metrics(args=args, model=model, dataset=args['test_data'], dataset_type='test')
         calc_metrics(args=args, model=model, dataset=args['val_data'], dataset_type='val')
         if args['mode'] in ('ben_mal', '5cls'):

@@ -19,9 +19,9 @@ class EnrTensorboard(TensorBoard):
         # Use the model to predict the values from the validation dataset.
         y_true = []
         test_pred = self.model.predict(self.val_data)
-        test_pred = np.argmax(test_pred, axis=1)
+        test_pred = np.argmax(test_pred, axis=-1)
         for data in self.val_data:
-            y_true.append(np.argmax(data[1]["class"], axis=1))
+            y_true.append(np.argmax(data[1]["class"], axis=-1))
         y_true = np.concatenate(y_true)
         # Calculate the confusion matrix
         confmat_image = cm_image(y_true=y_true, y_pred=test_pred, class_names=self.class_names)

@@ -17,15 +17,15 @@ class MelData:
         self.TF_RNG = tf.random.Generator.from_non_deterministic_state()
         self.class_counts = dict(self.train_data_df['class'].value_counts())
         self.image_type_counts = dict(self.train_data_df['image_type'].value_counts())
-        self.datasets = {'train': self.ohe_map(self.set_sample_weight(self.train_data_df).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator)),
-                         'val': self.ohe_map(self.set_sample_weight(self.val_data_df).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator)),
-                         'test': self.ohe_map(self.set_sample_weight(self.test_data_df)),
-                         'isic20_test': self.ohe_map(self.preproc_df('isic20_test'))}
+        self.datasets = {'train': self.ohe_map(self.set_sample_weight(self.train_data_df).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator), mode='train'),
+                         'val': self.ohe_map(self.set_sample_weight(self.val_data_df).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator), mode='val'),
+                         'test': self.ohe_map(self.set_sample_weight(self.test_data_df), mode='test'),
+                         'isic20_test': self.ohe_map(self.preproc_df('isic20_test'), mode='isic20_test')}
         for i in ['all', 'train', 'val', 'test']:
             self.data_info(i)
 
-    def preproc_df(self, mode):
-        df = pd.read_csv(self.args['dir_dict']['data_csv'][mode])
+    def preproc_df(self, data_name):
+        df = pd.read_csv(self.args['dir_dict']['data_csv'][data_name])
         df['image'] = df['image'].apply(lambda x: os.path.join(self.args['dir_dict']['image_folder'], x))
         if self.args['mode'] == 'ben_mal':
             mapper = BEN_MAL_MAP
@@ -36,7 +36,7 @@ class MelData:
         df.replace(to_replace=mapper, inplace=True)
         if self.args['image_type'] != 'both':  # Keep derm or clinic, samples.
             df.drop(df[df['image_type'] != DATA_MAP['image_type'][self.args['image_type']]].index, errors='ignore', inplace=True)
-        if not mode == 'isic20_test':
+        if not data_name == 'isic20_test':
             if self.args['mode'] == 'nev_mel':
                 df.drop(df[df['class'] == 2].index, errors='ignore', inplace=True)
             if self.args['mode'] == '5cls':
@@ -63,13 +63,13 @@ class MelData:
         df['sample_weights'] /= df['sample_weights'].min()
         return df
 
-    def ohe_map(self, features):
+    def ohe_map(self, features, mode):
         ohe_features = {'image': features['image'],
                         'image_type': tf.keras.backend.one_hot(indices=features['image_type'], num_classes=2),
                         'sex': tf.keras.backend.one_hot(indices=features['sex'], num_classes=2),
                         'age_approx': tf.keras.backend.one_hot(indices=features['age_approx'], num_classes=10),
                         'location': tf.keras.backend.one_hot(indices=features['location'], num_classes=6)}
-        if 'isic20_test' in features['dataset_id'].unique():
+        if mode == 'isic20_test':
             return ohe_features
         else:
             labels = {'class': tf.keras.backend.one_hot(indices=features['class'], num_classes=self.args['num_classes'])}
@@ -128,8 +128,8 @@ class MelData:
                f"Test Class Samples: {np.sum(self.datasets['test'][1]['class'], axis=0)}\n" \
                'Weights\n' + info_w
 
-    def get_dataset(self, mode=None, repeat=1):
-        dataset = self.datasets[mode]
+    def get_dataset(self, data_name=None, repeat=1):
+        dataset = self.datasets[data_name]
         if self.args['only_image']:
             if isinstance(dataset, tuple):
                 dataset[0].pop('image_type')
@@ -142,22 +142,7 @@ class MelData:
                 dataset.pop('age_approx')
                 dataset.pop('location')
 
-        def tf_imread(sample, label=None, sample_weight=None):
-            image_path = sample['image']
-            sample['image'] = tf.image.decode_image(tf.io.read_file(sample['image']), channels=3)
-            if self.args['test']:
-                pass
-                # sample['image'] = tf.numpy_function(hair_removal, [sample['image']], np.uint8)
-            sample['image'] = {'xept': xception.preprocess_input, 'incept': inception_v3.preprocess_input,
-                               'effnet0': efficientnet.preprocess_input,
-                               'effnet1': efficientnet.preprocess_input}[self.args['model']](sample['image'])
-            sample['image'] = tf.reshape(tensor=sample['image'], shape=self.args['input_shape'])
-            if mode == 'isic20_test':
-                return sample, image_path
-            else:
-                return sample, label, sample_weight
-
-        def image_augm(sample, label, sample_weight):
+        def image_augm(sample, label=None, sample_weight=None):
             trans_rat = self.args['image_size'] * 0.05
             seeds = self.TF_RNG.make_seeds(5)
             sample['image'] = tf.image.stateless_random_flip_up_down(image=sample['image'], seed=seeds[:, 0])
@@ -173,16 +158,31 @@ class MelData:
                                       lambda: sample['image'])
             return sample, label, sample_weight
 
+        def tf_imread(sample, label=None, sample_weight=None):
+            image_path = sample['image']
+            sample['image'] = tf.image.decode_image(tf.io.read_file(image_path), channels=3, dtype=tf.float32)
+            sample['image'] = tf.reshape(tensor=sample['image'], shape=self.args['input_shape'])
+            # if self.args['test']:
+            #     sample['image'] = tf.numpy_function(hair_removal, [sample['image']], np.uint8)
+            # Normalize input
+            sample['image'] = {'xept': xception.preprocess_input, 'incept': inception_v3.preprocess_input,
+                               'effnet0': efficientnet.preprocess_input,
+                               'effnet1': efficientnet.preprocess_input}[self.args['model']](sample['image'])
+            if data_name == 'isic20_test':
+                return sample, image_path
+            else:
+                return sample, label, sample_weight
         dataset = tf.data.Dataset.from_tensor_slices(dataset)
         dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        if not self.args['test']:
-            dataset = dataset.cache()
-        if mode == 'train':
-            dataset = dataset.map(image_augm, num_parallel_calls=tf.data.experimental.AUTOTUNE).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+        # dataset = dataset.cache()
+        if data_name == 'train':
+            dataset = dataset.map(image_augm, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+
         dataset = dataset.batch(self.batch_size)
         options = tf.data.Options()
         options.experimental_threading.max_intra_op_parallelism = 1
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
         dataset = dataset.with_options(options)
-        dataset = dataset.repeat(repeat)
+        # if not (self.args['test'] or self.args['validate']):
+        #     .repeat(repeat)  # f'cached_{data_name}'
         return dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
