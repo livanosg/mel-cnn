@@ -99,7 +99,7 @@ def plot_confusion_matrix(cm, class_names):
        class_names (array, shape = [n]): String names of the integer classes
     """
 
-    figure = plt.figure(figsize=(7, 7))
+    figure = plt.figure(figsize=(4.5, 4.5))
     normalized_cm = cm / np.expand_dims(cm.sum(axis=1), axis=-1)
     # Plot the normalized confusion matrix.
     plt.imshow(normalized_cm, interpolation='nearest',
@@ -108,15 +108,15 @@ def plot_confusion_matrix(cm, class_names):
     plt.colorbar(shrink=0.7, aspect=20*0.7)
     tick_marks = np.arange(len(class_names))
     plt.xticks(tick_marks, class_names, rotation=45)
-    plt.yticks(tick_marks, class_names)
+    plt.yticks(tick_marks, class_names, rotation=90)
     # Labels from confusion matrix values.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         color = "white" if normalized_cm[i, j] > 0.5 else "black"
         plt.text(j, i, cm[i, j], horizontalalignment="center", color=color)
 
     plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
+    plt.ylabel('True')
+    plt.xlabel('Predicted')
     return figure
 
 

@@ -8,7 +8,7 @@ from metrics import calc_metrics, cm_image
 
 class EnrTensorboard(TensorBoard):
     def __init__(self, val_data, class_names, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(profile_batch=0, **kwargs)
         self.val_data = val_data
         self.class_names = class_names
 
@@ -156,6 +156,8 @@ class TestCallback(Callback):
         model = tf.keras.models.load_model(self.args['dir_dict']['save_path'])
         calc_metrics(args=self.args, model=model, dataset=self.args['val_data'], dataset_type='val')
         calc_metrics(args=self.args, model=model, dataset=self.args['test_data'], dataset_type='test')
+        if self.args['mode'] in ('ben_mal', '5cls'):
+            calc_metrics(args=self.args, model=model, dataset=self.args['isic20_test'], dataset_type='isic20_test')
 
 
 class LaterCheckpoint(ModelCheckpoint):

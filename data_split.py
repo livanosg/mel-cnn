@@ -1,6 +1,7 @@
 import os
 import pandas as pd
-from config import NP_RNG, DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH, ISIC_ORIG_TEST_PATH, DATA_MAP
+from config import NP_RNG, DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH, ISIC_ORIG_TEST_PATH, \
+    DATA_MAP, CLASS_NAMES, MAIN_DIR
 
 isic18_val = pd.read_csv(os.path.join(DATA_DIR, 'isic18.csv'))
 [isic18_val.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in isic18_val.columns]
@@ -67,12 +68,36 @@ total_test = isic18_val.append(dermofit).append(up)
 total_data_len = len(total_train) + len(total_val) + len(total_test)
 
 for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (total_test, TEST_CSV_PATH), (isic20_orig_test, ISIC_ORIG_TEST_PATH)]:
-    df = df.sample(frac=1., random_state=NP_RNG.integers(1313))
+    df = df.sample(frac=1., random_state=NP_RNG.bit_generator)
     columns = ['dataset_id', 'location', 'sex', 'image', 'age_approx', 'image_type', 'class']
     df['age_approx'] -= (df['age_approx'] % 10)
     df['image'] = df['dataset_id'] + f"{os.sep}data{os.sep}" + df['image']
     df.replace(to_replace=DATA_MAP, inplace=True)
     print(f"{os.path.split(save_to)[-1].rjust(15)}| Count:{str(len(df)).rjust(6)} Ratio:{str(round(len(df) / total_data_len, 3)).rjust(6)}")
-    if 'isic20_test' in df['dataset_id'].unique():
+    if os.path.basename(save_to).split('.')[0] == 'isic20_test':
         columns.remove('class')
     df.to_csv(save_to, index=False, columns=columns)
+
+    dataset_info_dict = {}
+    image_type_inv = {}
+    if not os.path.basename(save_to).split('.')[0] == 'isic20_test':
+        for (key, value) in DATA_MAP['image_type'].items():
+            image_type_inv[value] = key
+        for dataset_id in df['dataset_id'].unique():
+            dataset_part = df[df.loc[:, 'dataset_id'] == dataset_id]  # fraction per class
+            dataset_img_type_dict = {}
+            for image_type in dataset_part['image_type'].unique():
+                dataset_image_part = dataset_part[dataset_part.loc[:, 'image_type'] == image_type]
+                dataset_image_part = dataset_image_part.drop(dataset_image_part[dataset_image_part['class'] == 5].index, errors='ignore')
+                dataset_class_dict = {}
+                for k, v in dataset_image_part['class'].value_counts().items():
+                    dataset_class_dict[CLASS_NAMES['5cls'][k]] = v
+                dataset_img_type_dict[image_type_inv[image_type]] = dataset_class_dict
+            dataset_info_dict[dataset_id] = dataset_img_type_dict
+        info = pd.DataFrame(dataset_info_dict).stack().apply(pd.Series)
+        info = info[sorted(info.columns)]
+        info.fillna(0, inplace=True)
+        save_path = os.path.join(MAIN_DIR, 'data_info', os.path.basename(save_to).split('.')[0]+'_info')
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        info.to_html(save_path + '.html', bold_rows=False, border=4)
+        info.to_csv(save_path + '.csv')

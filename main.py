@@ -23,12 +23,13 @@ def parser():
     args_parser.add_argument('--activation', '-act', default='swish', choices=['relu', 'swish'], type=str, help='Select leaky relu gradient.')
     args_parser.add_argument('--dataset-frac', '-frac', default=1., type=float, help='Dataset fraction.')
     args_parser.add_argument('--epochs', '-e', default=500, type=int, help='Select epochs.')
-    args_parser.add_argument('--early-stop', '-es', default=30, type=int, help='Select early stop epochs.')
     args_parser.add_argument('--strategy', '-strg', default='mirrored', type=str, choices=['multiworker', 'mirrored'], help='Select training nodes.')
     args_parser.add_argument('--mode', '-mod', required=True, type=str, choices=['5cls', 'ben_mal', 'nev_mel'], help='Select the type of outputs.')
     args_parser.add_argument('--verbose', '-v', default=0, action='count', help='Set verbosity.')
     args_parser.add_argument('--layers', '-lrs', default=2, type=int, help='Select set of layers.')
-    args_parser.add_argument('--no_image_weights', '-niw', action='store_true', help='Weight only per class.')
+    args_parser.add_argument('--no_image_weights', '-niw', action='store_true', help='Set to not weight per image type.')
+    args_parser.add_argument('--no_image_type', '-nit', action='store_true', help='Set to remove image type from training.')
+
     args_parser.add_argument('--validate', '-val', action='store_true', help='Evaluate model')
     args_parser.add_argument('--test', '-test', action='store_true', help='Test to isic2020.')
     args_parser.add_argument('--test-model', '-testmodel', type=str, help='Test to isic2020.')
@@ -59,10 +60,10 @@ if __name__ == '__main__':
         strategy = tf.distribute.MirroredStrategy()
     args['replicas'] = strategy.num_replicas_in_sync
     datasets = MelData(args=args)
-    args['train_data'] = datasets.get_dataset(data_name='train')
-    args['val_data'] = datasets.get_dataset(data_name='val')
-    args['test_data'] = datasets.get_dataset(data_name='test')
-    args['isic20_test'] = datasets.get_dataset(data_name='isic20_test')
+    args['train_data'] = datasets.get_dataset(pick_dataset='train')
+    args['val_data'] = datasets.get_dataset(pick_dataset='val')
+    args['test_data'] = datasets.get_dataset(pick_dataset='test')
+    args['isic20_test'] = datasets.get_dataset(pick_dataset='isic20_test')
     if args['test'] or args['validate']:
         args['dir_dict']["save_path"] = args['test_model']
         args['dir_dict']['trial'] = os.path.dirname(os.path.dirname(args['dir_dict']["save_path"]))
@@ -81,11 +82,6 @@ if __name__ == '__main__':
             [f.write(f"{': '.join([key.capitalize().rjust(25), str(args[key])])}\n") for key in args.keys() if key not in ('dir_dict', 'hparams',
                                                                                                                            'train_data', 'val_data',
                                                                                                                            'test_data', 'isic20_test')]
-            f.write(datasets.info())
         training(args=args, strategy=strategy)
-        model = tf.keras.models.load_model(args['dir_dict']['save_path'], custom_objects={'WeightedCategoricalCrossentropy': WeightedCategoricalCrossentropy(mode=args['mode'], num_classes=args['num_classes'])})
-        calc_metrics(args=args, model=model, dataset=args['test_data'], dataset_type='test')
-        calc_metrics(args=args, model=model, dataset=args['val_data'], dataset_type='val')
-        if args['mode'] in ('ben_mal', '5cls'):
-            calc_metrics(args=args, model=model, dataset=args['isic20_test'], dataset_type='isic20_test')
+        model = tf.keras.models.load_model(args['dir_dict']['save_path'], custom_objects={'WeightedCategoricalCrossentropy': WeightedCategoricalCrossentropy(args)})
     exit()

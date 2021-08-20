@@ -49,30 +49,32 @@ def model_fn(args):
     inc_mod = Concatenate()([conv1x1ap, conv1x1, conv1x1_1x3, conv1x1_3x1, conv1x1_2_1x3, conv1x1_2_3x1])
     common_layers = GlobalAvgPool2D()(inc_mod)
     # --------------------------------================ Tabular data =================--------------------------------- #
+
     if not args['only_image']:
-        image_type_input = Input(shape=(2,), name='image_type', dtype=tf.float32)
+        if not args['no_image_type']:
+            image_type_input = Input(shape=(2,), name='image_type', dtype=tf.float32)
+            image_type = Reshape(target_shape=(2, 1))(image_type_input)
+            image_type = LSTM(4, activation=activation, return_sequences=True)(image_type)
+            image_type = normalization()(image_type)
+
         sex_input = Input(shape=(2,), name='sex', dtype=tf.float32)
-        anatom_site_input = Input(shape=(6,), name='location', dtype=tf.float32)
-        age_input = Input(shape=(10,), name='age_approx', dtype=tf.float32)
-
-        image_type = Reshape(target_shape=(2, 1))(image_type_input)
         sex = Reshape(target_shape=(2, 1))(sex_input)
-        anatom_site = Reshape(target_shape=(6, 1))(anatom_site_input)
-        age = Reshape(target_shape=(10, 1))(age_input)
-
-        image_type = LSTM(4, activation=activation, return_sequences=True)(image_type)
-        image_type = normalization()(image_type)
-
         sex = LSTM(4, activation=activation, return_sequences=True)(sex)
         sex = normalization()(sex)
 
+        anatom_site_input = Input(shape=(6,), name='location', dtype=tf.float32)
+        anatom_site = Reshape(target_shape=(6, 1))(anatom_site_input)
         anatom_site = LSTM(4, activation=activation, return_sequences=True)(anatom_site)
         anatom_site = normalization()(anatom_site)
 
+        age_input = Input(shape=(10,), name='age_approx', dtype=tf.float32)
+        age = Reshape(target_shape=(10, 1))(age_input)
         age = LSTM(4, activation=activation, return_sequences=True)(age)
         age = normalization()(age)
-
-        concat_inputs = Concatenate(-2)([image_type, sex, anatom_site, age])
+        if args['no_image_type']:
+            concat_inputs = Concatenate(-2)([sex, anatom_site, age])
+        else:
+            concat_inputs = Concatenate(-2)([image_type, sex, anatom_site, age])
         lstm = LSTM(16, activation=activation, dropout=args['dropout'])(concat_inputs)
         lstm = normalization()(lstm)
         # -------------------------------================== Concat part ==================---------------------------------#

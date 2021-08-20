@@ -2,8 +2,7 @@ import os.path
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.metrics import AUC
-
-from custom_losses import WeightedCategoricalCrossentropy
+from custom_losses import WeightedCategoricalCrossentropy, PerClassWeightedCategoricalCrossentropy
 from model import model_fn
 from callbacks import LaterCheckpoint, EnrTensorboard
 
@@ -21,16 +20,14 @@ def training(args, strategy):
             custom_model.summary(print_fn=lambda x: f.write(x + '\n'))
 
         custom_model.compile(optimizer=optimizer,
-                             loss=WeightedCategoricalCrossentropy(mode=args['mode'], num_classes=args['num_classes']),
-                             # loss='categorical_crossentropy',  # SigmoidFocalCrossEntropy(gamma=2.5, alpha=0.2, reduction=tf.keras.losses.Reduction.AUTO), # custom_loss(datasets.weights_per_class)
+                             loss=PerClassWeightedCategoricalCrossentropy(args=args),  # tf.keras.losses.CategoricalCrossentropy(), # WeightedCategoricalCrossentropy
                              metrics=[AUC(multi_label=True)])
         # --------------------------------------------------- Callbacks --------------------------------------------------- #
         callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["save_path"], save_best_only=True, start_at=25),
-                     EnrTensorboard(log_dir=args["dir_dict"]["logs"], val_data=args['val_data'], class_names=args['class_names'], profile_batch=(2, 5)),
+                     EnrTensorboard(log_dir=args["dir_dict"]["logs"], val_data=args['val_data'], class_names=args['class_names']),
                      ReduceLROnPlateau(factor=0.75, patience=10),
-                     EarlyStopping(verbose=args["verbose"], patience=args["early_stop"])]
+                     EarlyStopping(verbose=args["verbose"], patience=20)]
         # ------------------------------------------------- Train model -------------------------------------------------- #
         custom_model.fit(x=args['train_data'], epochs=args["epochs"],
                          validation_data=args['val_data'],
                          callbacks=callbacks, verbose=args["verbose"])
-
