@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from tensorflow.python.keras.callbacks import Callback, TensorBoard, ModelCheckpoint
+from tensorflow.keras.callbacks import Callback, TensorBoard, ModelCheckpoint
 from metrics import calc_metrics, cm_image
 
 
@@ -152,7 +152,7 @@ class TestCallback(Callback):
         self.args = args
 
     def on_train_end(self, logs=None):
-        model = tf.keras.models.load_model(self.args['dir_dict']['save_path'], compile=False)
+        model = tf.keras.models.load_model(self.args['dir_dict']['model_path'], compile=False)
         calc_metrics(args=self.args, model=model, dataset=self.args['val_data'], dataset_type='val')
         calc_metrics(args=self.args, model=model, dataset=self.args['test_data'], dataset_type='test')
         if self.args['mode'] in ('ben_mal', '5cls'):

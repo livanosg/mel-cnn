@@ -1,16 +1,16 @@
 import os
-from config import DATA_MAP, BEN_MAL_MAP, NEV_MEL_MAP, NP_RNG
-import tensorflow as tf
-from tensorflow.keras.applications import xception, inception_v3, efficientnet
-import tensorflow_addons as tfa
 import numpy as np
 import pandas as pd
+import tensorflow as tf
+import tensorflow_addons as tfa
+from tensorflow.keras.applications import xception, inception_v3, efficientnet
+from config import DATA_MAP, BEN_MAL_MAP, NEV_MEL_MAP, NP_RNG
 
 
 class MelData:
     def __init__(self, args: dict):
         self.args = args
-        self.TF_RNG = tf.random.Generator.from_seed(1312)  #.from_non_deterministic_state()
+        self.TF_RNG = tf.random.Generator.from_seed(1312)  # .from_non_deterministic_state()
         self.seeds = self.TF_RNG.make_seeds(5)
         self.batch_size = self.args['batch_size'] * self.args['replicas']
         self.data_df = {'train': pd.read_csv(self.args['dir_dict']['data_csv']['train']).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator),
@@ -35,14 +35,14 @@ class MelData:
         if self.args['image_type'] != 'both':  # Keep derm or clinic, samples.
             df.drop(df[df['image_type'] != DATA_MAP['image_type'][self.args['image_type']]].index, errors='ignore', inplace=True)
         if mode != 'isic20_test':
-            if self.args['mode'] == 'nev_mel':
+            if self.args['mode'] == 'nev_mel':  # Drop : NNV, NMC, SUS, unknown
                 df.drop(df[df['class'] == 2].index, errors='ignore', inplace=True)
-            if self.args['mode'] == '5cls':
+            if self.args['mode'] == '5cls':  # Drop: unknown
                 df.drop(df[df['class'] == 5].index, errors='ignore', inplace=True)
         ohe_features = {'image_path': tf.convert_to_tensor(df['image'])}
-        if not self.args['no_image_type']:
-            ohe_features['image_type'] = tf.keras.backend.one_hot(indices=df['image_type'], num_classes=2)
         if not self.args['only_image']:
+            if not self.args['no_image_type']:
+                ohe_features['image_type'] = tf.keras.backend.one_hot(indices=df['image_type'], num_classes=2)
             ohe_features['sex'] = tf.keras.backend.one_hot(indices=df['sex'], num_classes=2)
             ohe_features['age_approx'] = tf.keras.backend.one_hot(indices=df['age_approx'], num_classes=10)
             ohe_features['location'] = tf.keras.backend.one_hot(indices=df['location'], num_classes=6)

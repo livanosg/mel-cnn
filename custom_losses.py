@@ -37,11 +37,11 @@ class PerClassWeightedCategoricalCrossentropy(CategoricalCrossentropy):
                                                           [3.502, 0.734, 0.316, 1.33, 2.095],
                                                           [4.197, 0.670, 0.289, 0.913, 3.214]]), dtype=tf.float32)
         elif self.mode == 'ben_mal':
-            self.weights = tf.convert_to_tensor([[1., 5.],
-                                                 [2., 6.]])
+            self.weights = tf.convert_to_tensor(np.array([[1., 5.],
+                                                          [2., 6.]]), dtype=tf.float32)
         else:
-            self.weights = tf.convert_to_tensor([[1., 10.],
-                                                 [4., 7.]])
+            self.weights = tf.convert_to_tensor(np.array([[1., 10.],
+                                                          [4., 7.]]), dtype=tf.float32)
 
     def call(self, y_true, y_pred):
         weights = tf.gather_nd(self.weights, tf.concat([K.expand_dims(K.argmax(y_true, axis=-1)),

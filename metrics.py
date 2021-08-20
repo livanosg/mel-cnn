@@ -21,9 +21,10 @@ def calc_metrics(args, model, dataset, dataset_type):
             if args['mode'] == 'ben_mal':
                 results.append(np.vstack(y_prob[..., 1]))
             else:  # Test 5cls performance in Benign-Malignant Task
-                # 0: Nevus |  2: Non - Nevus benign | 4: Suspicious
-                # | 1: Melanoma | 3: Non - Melanocytic Carcinoma
-                malignant = np.sum((y_prob[..., 1], y_prob[..., 3]), axis=0)
+                #  0: Nevus | 1: Non-Nevus benign | 2: Suspicious |
+                #  3: Non-Melanocytic Carcinoma | 4: Melanoma
+                malignant = np.sum(y_prob[..., 3:], axis=-1)
+                print(malignant)
                 results.append(np.vstack(malignant))
             paths.append(np.vstack(x[1]))
         results = np.vstack(results).reshape((-1))
