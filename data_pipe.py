@@ -14,7 +14,7 @@ class MelData:
         self.seeds = self.TF_RNG.make_seeds(5)
         self.batch_size = self.args['batch_size'] * self.args['replicas']
         self.data_df = {'train': pd.read_csv(self.args['dir_dict']['data_csv']['train']).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator),
-                        'val': pd.read_csv(self.args['dir_dict']['data_csv']['val']).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator),
+                        'val': pd.read_csv(self.args['dir_dict']['data_csv']['val']).sample(frac=1., random_state=NP_RNG.bit_generator),
                         'test': pd.read_csv(self.args['dir_dict']['data_csv']['test']),
                         'isic20_test': pd.read_csv(self.args['dir_dict']['data_csv']['isic20_test'])}
         self.class_counts = dict(self.data_df['train']['class'].value_counts())

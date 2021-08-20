@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 import tensorflow.keras.backend as K
 from tensorflow.keras.losses import CategoricalCrossentropy, Reduction
@@ -11,7 +12,7 @@ class WeightedCategoricalCrossentropy(CategoricalCrossentropy):
         self.num_classes = args['num_classes']
         if self.mode == '5cls':
             #  0: Nevus | 1: Non-Nevus benign | 2: Suspicious | 3: Non-Melanocytic Carcinoma | 4: Melanoma
-            self.weights = tf.expand_dims(tf.convert_to_tensor([1., 1.5, 1., 5., 20.]), axis=0)
+            self.weights = tf.expand_dims(tf.convert_to_tensor([1., 3.811, 5.203, 1.33, 3.214]), axis=0)
         elif self.mode == 'ben_mal':
             self.weights = tf.expand_dims(tf.convert_to_tensor([1., 5.]), axis=0)
         else:
@@ -30,25 +31,17 @@ class PerClassWeightedCategoricalCrossentropy(CategoricalCrossentropy):
         self.num_classes = args['num_classes']
         if self.mode == '5cls':
             #  0: Nevus | 1: Non-Nevus benign | 2: Suspicious | 3: Non-Melanocytic Carcinoma | 4: Melanoma
-            self.weights = tf.convert_to_tensor([[1., 1., 1., 2., 2.],
-                                                 [3., 6., 1., 2., 3.],
-                                                 [1., 1., 7., 4., 2.],
-                                                 [5., 1., 1., 3., 2.],
-                                                 [7., 1., 1., 2., 3.]])
-            # [1., 1.5, 1., 5., 20.]
-            # [10., 3., 2., 7., 10.]
-            # [10., 5., 3., 8., 10.]
-            # [10., 6., 5., 3., 10.]
-            # [20., 6., 2., 4., 5.]]
-            #
-            #
-
+            self.weights = tf.convert_to_tensor(np.array([[1., 1.21, 0.38, 1.286, 2.313],
+                                                          [4.771, 3.811, 1.431, 1.362, 1.492],
+                                                          [4.071, 2.321, 5.203, 5.161, 3.463],
+                                                          [3.502, 0.734, 0.316, 1.33, 2.095],
+                                                          [4.197, 0.670, 0.289, 0.913, 3.214]]), dtype=tf.float32)
         elif self.mode == 'ben_mal':
             self.weights = tf.convert_to_tensor([[1., 5.],
-                                                 [10., 5.]])
+                                                 [2., 6.]])
         else:
-            self.weights = tf.convert_to_tensor([[1., 4.],
-                                                 [10., 5.]])
+            self.weights = tf.convert_to_tensor([[1., 10.],
+                                                 [4., 7.]])
 
     def call(self, y_true, y_pred):
         weights = tf.gather_nd(self.weights, tf.concat([K.expand_dims(K.argmax(y_true, axis=-1)),

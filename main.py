@@ -1,7 +1,6 @@
 import os
 import argparse
 from config import directories, CLASS_NAMES
-from custom_losses import WeightedCategoricalCrossentropy
 from data_pipe import MelData
 from data_prep import check_create_dataset
 from metrics import calc_metrics
@@ -12,7 +11,7 @@ import tensorflow as tf
 def parser():
     args_parser = argparse.ArgumentParser()
     args_parser.add_argument('--model', '-m', default='effnet1', choices=['incept', 'xept', 'effnet0', 'effnet1'], help='Select pretrained model.')
-    args_parser.add_argument('--optimizer', '-opt', default='adamax', choices=['adam', 'ftrl', 'sgd', 'rmsprop', 'adadelta', 'adagrad', 'adamax', 'nadam'], type=str, help='Select optimizer.')
+    args_parser.add_argument('--optimizer', '-opt', default='adam', choices=['adam', 'ftrl', 'sgd', 'rmsprop', 'adadelta', 'adagrad', 'adamax', 'nadam'], type=str, help='Select optimizer.')
     args_parser.add_argument('--image_size', '-is', default=500, type=int, help='Select image size.')
     args_parser.add_argument('--image_type', '-it', required=True, type=str, choices=['derm', 'clinic', 'both'], help='Select image type to use during training.')
     args_parser.add_argument('--only-image', '-io', action='store_true', help='Test to isic2020.')
@@ -26,7 +25,7 @@ def parser():
     args_parser.add_argument('--strategy', '-strg', default='mirrored', type=str, choices=['multiworker', 'mirrored'], help='Select training nodes.')
     args_parser.add_argument('--mode', '-mod', required=True, type=str, choices=['5cls', 'ben_mal', 'nev_mel'], help='Select the type of outputs.')
     args_parser.add_argument('--verbose', '-v', default=0, action='count', help='Set verbosity.')
-    args_parser.add_argument('--layers', '-lrs', default=2, type=int, help='Select set of layers.')
+    args_parser.add_argument('--layers', '-lrs', default=1, type=int, help='Select set of layers.')
     args_parser.add_argument('--no_image_weights', '-niw', action='store_true', help='Set to not weight per image type.')
     args_parser.add_argument('--no_image_type', '-nit', action='store_true', help='Set to remove image type from training.')
 
@@ -67,7 +66,7 @@ if __name__ == '__main__':
     if args['test'] or args['validate']:
         args['dir_dict']["save_path"] = args['test_model']
         args['dir_dict']['trial'] = os.path.dirname(os.path.dirname(args['dir_dict']["save_path"]))
-        model = tf.keras.models.load_model(args["dir_dict"]["save_path"])
+        model = tf.keras.models.load_model(args["dir_dict"]["save_path"], compile=False)
         if args['test']:
             calc_metrics(args=args, model=model, dataset=args['isic20_test'], dataset_type='isic20_test')
         else:
@@ -83,5 +82,4 @@ if __name__ == '__main__':
                                                                                                                            'train_data', 'val_data',
                                                                                                                            'test_data', 'isic20_test')]
         training(args=args, strategy=strategy)
-        model = tf.keras.models.load_model(args['dir_dict']['save_path'], custom_objects={'WeightedCategoricalCrossentropy': WeightedCategoricalCrossentropy(args)})
     exit()
