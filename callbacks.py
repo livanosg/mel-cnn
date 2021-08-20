@@ -155,7 +155,7 @@ class TestCallback(Callback):
         model = tf.keras.models.load_model(self.args['dir_dict']['model_path'], compile=False)
         calc_metrics(args=self.args, model=model, dataset=self.args['val_data'], dataset_type='val')
         calc_metrics(args=self.args, model=model, dataset=self.args['test_data'], dataset_type='test')
-        if self.args['mode'] in ('ben_mal', '5cls'):
+        if self.args['task'] in ('ben_mal', '5cls'):
             calc_metrics(args=self.args, model=model, dataset=self.args['isic20_test'], dataset_type='isic20_test')
 
 

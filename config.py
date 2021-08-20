@@ -65,8 +65,8 @@ def directories(args):
                              'val': VAL_CSV_PATH,
                              'test': TEST_CSV_PATH,
                              'isic20_test': ISIC_ORIG_TEST_PATH},
-                'logs': os.path.join(LOGS_DIR, args['mode'], args['image_type'], trial_id),
-                'trial': os.path.join(TRIALS_DIR, args['mode'], args['image_type'], trial_id)}
+                'logs': os.path.join(LOGS_DIR, args['task'], args['image_type'], trial_id),
+                'trial': os.path.join(TRIALS_DIR, args['task'], args['image_type'], trial_id)}
     try:
         dir_dict['logs'] = dir_dict['logs'] + f"-{os.environ['SLURMD_NODENAME']}"
         dir_dict['trial'] = dir_dict['trial'] + f"-{os.environ['SLURMD_NODENAME']}"

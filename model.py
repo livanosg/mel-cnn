@@ -19,7 +19,7 @@ def model_fn(args):
     base_model = {'xept': xception.Xception,
                   'incept': inception_v3.InceptionV3,
                   'effnet0': efficientnet.EfficientNetB0,
-                  'effnet1': efficientnet.EfficientNetB1}[args['model']](include_top=False, input_shape=args['input_shape'])
+                  'effnet1': efficientnet.EfficientNetB1}[args['pretrained']](include_top=False, input_shape=args['input_shape'])
     base_model.trainable = False
     image_input = Input(shape=args['input_shape'], name='image')
     inputs_list.append(image_input)

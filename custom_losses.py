@@ -8,12 +8,12 @@ class WeightedCategoricalCrossentropy(CategoricalCrossentropy):
     def __init__(self, args, from_logits=False, label_smoothing=0, reduction=Reduction.AUTO,
                  name='categorical_crossentropy'):
         super().__init__(from_logits, label_smoothing, reduction, name=f"weighted_{name}")
-        self.mode = args['mode']
+        self.task = args['task']
         self.num_classes = args['num_classes']
-        if self.mode == '5cls':
+        if self.task == '5cls':
             #  0: Nevus | 1: Non-Nevus benign | 2: Suspicious | 3: Non-Melanocytic Carcinoma | 4: Melanoma
             self.weights = tf.expand_dims(tf.convert_to_tensor([1., 3.811, 5.203, 1.33, 3.214]), axis=0)
-        elif self.mode == 'ben_mal':
+        elif self.task == 'ben_mal':
             self.weights = tf.expand_dims(tf.convert_to_tensor([1., 5.]), axis=0)
         else:
             self.weights = tf.expand_dims(tf.convert_to_tensor([1., 5.]), axis=0)
@@ -27,16 +27,16 @@ class PerClassWeightedCategoricalCrossentropy(CategoricalCrossentropy):
     def __init__(self, args, from_logits=False, label_smoothing=0, reduction=Reduction.AUTO,
                  name='categorical_crossentropy'):
         super().__init__(from_logits, label_smoothing, reduction, name=f"weighted_{name}")
-        self.mode = args['mode']
+        self.task = args['task']
         self.num_classes = args['num_classes']
-        if self.mode == '5cls':
+        if self.task == '5cls':
             #  0: Nevus | 1: Non-Nevus benign | 2: Suspicious | 3: Non-Melanocytic Carcinoma | 4: Melanoma
             self.weights = tf.convert_to_tensor(np.array([[1., 1.21, 0.38, 1.286, 2.313],
                                                           [4.771, 3.811, 1.431, 1.362, 1.492],
                                                           [4.071, 2.321, 5.203, 5.161, 3.463],
                                                           [3.502, 0.734, 0.316, 1.33, 2.095],
                                                           [4.197, 0.670, 0.289, 0.913, 3.214]]), dtype=tf.float32)
-        elif self.mode == 'ben_mal':
+        elif self.task == 'ben_mal':
             self.weights = tf.convert_to_tensor(np.array([[1., 5.],
                                                           [2., 6.]]), dtype=tf.float32)
         else:

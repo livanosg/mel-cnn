@@ -25,9 +25,9 @@ class MelData:
 
     def prepare_df(self, df, mode):
         df['image'] = df['image'].apply(lambda x: os.path.join(self.args['dir_dict']['image_folder'], x))
-        if self.args['mode'] == 'ben_mal':
+        if self.args['task'] == 'ben_mal':
             mapper = BEN_MAL_MAP
-        elif self.args['mode'] == 'nev_mel':
+        elif self.args['task'] == 'nev_mel':
             mapper = NEV_MEL_MAP
         else:
             mapper = None
@@ -35,9 +35,9 @@ class MelData:
         if self.args['image_type'] != 'both':  # Keep derm or clinic, samples.
             df.drop(df[df['image_type'] != DATA_MAP['image_type'][self.args['image_type']]].index, errors='ignore', inplace=True)
         if mode != 'isic20_test':
-            if self.args['mode'] == 'nev_mel':  # Drop : NNV, NMC, SUS, unknown
+            if self.args['task'] == 'nev_mel':  # Drop : NNV, NMC, SUS, unknown
                 df.drop(df[df['class'] == 2].index, errors='ignore', inplace=True)
-            if self.args['mode'] == '5cls':  # Drop: unknown
+            if self.args['task'] == '5cls':  # Drop: unknown
                 df.drop(df[df['class'] == 5].index, errors='ignore', inplace=True)
         ohe_features = {'image_path': tf.convert_to_tensor(df['image'])}
         if not self.args['only_image']:
@@ -46,7 +46,8 @@ class MelData:
             ohe_features['sex'] = tf.keras.backend.one_hot(indices=df['sex'], num_classes=2)
             ohe_features['age_approx'] = tf.keras.backend.one_hot(indices=df['age_approx'], num_classes=10)
             ohe_features['location'] = tf.keras.backend.one_hot(indices=df['location'], num_classes=6)
-        labels, sample_weights = None, None
+        labels = None
+        df['sample_weights'] = 1.
         if mode != 'isic20_test':
             if not self.args['no_image_weights']:
                 for idx1, _class in enumerate(sorted(self.class_counts)):
@@ -54,7 +55,7 @@ class MelData:
                         df.loc[(df['image_type'] == image_type) & (df['class'] == _class), 'sample_weights'] = self.weights_per_image_type[idx2]  # + self.weights_per_class[idx1]
                 df['sample_weights'] /= df['sample_weights'].min()
             labels = {'class': tf.keras.backend.one_hot(indices=df['class'], num_classes=self.args['num_classes'])}
-            sample_weights = tf.convert_to_tensor(df['sample_weights'].astype(float))
+        sample_weights = tf.convert_to_tensor(df['sample_weights'].astype(float))
         return ohe_features, labels, sample_weights
 
     def get_dataset(self, pick_dataset=None, repeat=1):
@@ -83,7 +84,7 @@ class MelData:
 
                 sample['image'] = {'xept': xception.preprocess_input, 'incept': inception_v3.preprocess_input,
                                    'effnet0': efficientnet.preprocess_input,
-                                   'effnet1': efficientnet.preprocess_input}[self.args['model']](sample['image'])
+                                   'effnet1': efficientnet.preprocess_input}[self.args['pretrained']](sample['image'])
 
             if pick_dataset == 'isic20_test':
                 image_path = sample.pop('image_path')

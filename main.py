@@ -10,21 +10,21 @@ import tensorflow as tf
 
 def parser():
     args_parser = argparse.ArgumentParser()
-    args_parser.add_argument('--model', '-m', default='effnet1', choices=['incept', 'xept', 'effnet0', 'effnet1'], help='Select pretrained model.')
-    args_parser.add_argument('--mode', '-mod', required=True, type=str, choices=['5cls', 'ben_mal', 'nev_mel'], help='Select the type of model.')
-    args_parser.add_argument('--image_type', '-it', required=True, type=str, choices=['derm', 'clinic', 'both'], help='Select image type to use during training.')
-    args_parser.add_argument('--image_size', '-is', default=500, type=int, help='Select image size.')
+    args_parser.add_argument('--pretrained', '-pt', default='effnet1', choices=['incept', 'xept', 'effnet0', 'effnet1'], help='Select pretrained model.')
+    args_parser.add_argument('--task', '-task', required=True, type=str, choices=['5cls', 'ben_mal', 'nev_mel'], help='Select the type of model.')
+    args_parser.add_argument('--image-type', '-it', required=True, type=str, choices=['derm', 'clinic', 'both'], help='Select image type to use during training.')
+    args_parser.add_argument('--image-size', '-is', default=500, type=int, help='Select image size.')
     args_parser.add_argument('--only-image', '-io', action='store_true', help='Train model only with images.')
     args_parser.add_argument('--colour', '-clr', default='rgb', type=str, help='Select image size.')
     args_parser.add_argument('--batch-size', '-btch', default=8, type=int, help='Select batch size.')
-    args_parser.add_argument('--learning-rate', '-lr', default=1e-5, type=float, help='Select learning rate.')
+    args_parser.add_argument('--learning-rate', '-lr', default=2e-5, type=float, help='Select learning rate.')
     args_parser.add_argument('--optimizer', '-opt', default='adam', choices=['adam', 'ftrl', 'sgd', 'rmsprop', 'adadelta', 'adagrad', 'adamax', 'nadam'], type=str, help='Select optimizer.')
     args_parser.add_argument('--activation', '-act', default='swish', choices=['relu', 'swish'], type=str, help='Select leaky relu gradient.')
     args_parser.add_argument('--dropout', '-dor', default=0.2, type=float, help='Select dropout ratio.')
     args_parser.add_argument('--epochs', '-e', default=500, type=int, help='Number of epochs epochs.')
     args_parser.add_argument('--layers', '-lrs', default=1, type=int, help='Select multiplier for inception layers\' nodes.')
-    args_parser.add_argument('--no_image_weights', '-niw', action='store_true', help='Set to not weight per image type.')
-    args_parser.add_argument('--no_image_type', '-nit', action='store_true', help='Set to remove image type from training.')
+    args_parser.add_argument('--no-image-weights', '-niw', action='store_true', help='Set to not weight per image type.')
+    args_parser.add_argument('--no-image-type', '-nit', action='store_true', help='Set to remove image type from training.')
     args_parser.add_argument('--dataset-frac', '-frac', default=1., type=float, help='Dataset fraction.')
     args_parser.add_argument('--strategy', '-strg', default='mirrored', type=str, choices=['multiworker', 'mirrored'], help='Select parallelization strategy.')
     args_parser.add_argument('--validate', '-val', action='store_true', help='Validate model')
@@ -37,7 +37,7 @@ def parser():
 if __name__ == '__main__':
     args = parser().parse_args().__dict__
     args['dir_dict'] = directories(args=args)
-    args['class_names'] = CLASS_NAMES[args["mode"]]
+    args['class_names'] = CLASS_NAMES[args['task']]
     args['num_classes'] = len(args['class_names'])
     args['input_shape'] = (args['image_size'], args['image_size'], 3)
 
@@ -71,7 +71,7 @@ if __name__ == '__main__':
         else:
             calc_metrics(args=args, model=model, dataset=args['val_data'], dataset_type='validation')
             calc_metrics(args=args, model=model, dataset=args['test_data'], dataset_type='test')
-            if args['mode'] in ('ben_mal', '5cls'):
+            if args['task'] in ('ben_mal', '5cls'):
                 calc_metrics(args=args, model=model, dataset=args['isic20_test'], dataset_type='isic20_test')
     else:
         with open(args['dir_dict']['hparams_logs'], 'a') as f:

@@ -18,7 +18,7 @@ def calc_metrics(args, model, dataset, dataset_type):
         paths = []
         for x in dataset.as_numpy_iterator():
             y_prob = model.predict(x[0])
-            if args['mode'] == 'ben_mal':
+            if args['task'] == 'ben_mal':
                 results.append(np.vstack(y_prob[..., 1]))
             else:  # Test 5cls performance in Benign-Malignant Task
                 #  0: Nevus | 1: Non-Nevus benign | 2: Suspicious |
@@ -66,10 +66,10 @@ def calc_metrics(args, model, dataset, dataset_type):
                 class_auc = auc(fpr_roc, tpr_roc)
                 with open(os.path.join(save_dir, "report.txt"), "a") as f:
                     if (args['num_classes'] == 2 and _class == 1) or (args['num_classes'] != 2 and _class == 0):
-                        col_1 = len(max(CLASS_NAMES[args['mode']], key=len))
+                        col_1 = len(max(CLASS_NAMES[args['task']], key=len))
                         f.write(f"{''.rjust(col_1, ' ')} {'AUC'.rjust(10)}\n")
                     f.write(
-                        f"{CLASS_NAMES[args['mode']][_class].rjust(col_1)} {str(np.round(class_auc, 3)).rjust(10)}\n")
+                        f"{CLASS_NAMES[args['task']][_class].rjust(col_1)} {str(np.round(class_auc, 3)).rjust(10)}\n")
                 plt.figure(1)
                 plt.plot([0, 1], [0, 1], "k--")
                 plt.plot(fpr_roc, tpr_roc, label=f"{args['class_names'][_class]} (area = {class_auc:.3f})")
