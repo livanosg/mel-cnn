@@ -22,7 +22,7 @@ def training(args, strategy):
                              loss=PerClassWeightedCategoricalCrossentropy(args=args),  # WeightedCategoricalCrossentropy
                              metrics=[AUC(multi_label=True)])
         # --------------------------------------------------- Callbacks ---------------------------------------------- #
-        callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["model_path"], save_best_only=True, start_at=0),
+        callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["model_path"], save_best_only=True, start_at=20),
                      EnrTensorboard(log_dir=args["dir_dict"]["logs"], val_data=args['val_data'], class_names=args['class_names']),
                      ReduceLROnPlateau(factor=0.75, patience=10),
                      EarlyStopping(verbose=args["verbose"], patience=20),
