@@ -1,11 +1,9 @@
 import os
 import argparse
-from config import directories, CLASS_NAMES
-from data_pipe import MelData
-from data_prep import check_create_dataset
-from metrics import calc_metrics
-from train_script import training
 import tensorflow as tf
+from train_script import training
+from config import directories, CLASS_NAMES
+
 
 
 def parser():
@@ -40,42 +38,18 @@ if __name__ == '__main__':
     args['class_names'] = CLASS_NAMES[args['task']]
     args['num_classes'] = len(args['class_names'])
     args['input_shape'] = (args['image_size'], args['image_size'], 3)
-
-    check_create_dataset(args=args, force=True)
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
+
     os.environ['AUTOGRAPH_VERBOSITY'] = '1'
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = f"{max(0,(3 - args['verbose']))}"  # 0 log all, 1:noINFO, 2:noWARNING, 3:noERROR
+    os.environ['CUDA_VISIBLE_DEVICES '] = '0,1'
+
     if args['verbose'] >= 2:  # Set verbosity for keras 0 = silent, 1 = progress bar, 2 = one line per epoch.
         args['verbose'] = 1
     else:
         args['verbose'] = 2
-
-    if args["strategy"] == 'multiworker':
-        slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver()
-        args["dir_dict"]["model_path"] += f"-{slurm_resolver.task_id}-{slurm_resolver.task_type}"
-        strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver)
-    else:
-        strategy = tf.distribute.MirroredStrategy()
+    strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.NcclAllReduce)
     args['replicas'] = strategy.num_replicas_in_sync
-    datasets = MelData(args=args)
-    args['train_data'] = datasets.get_dataset(pick_dataset='train')
-    args['val_data'] = datasets.get_dataset(pick_dataset='val')
-    args['test_data'] = datasets.get_dataset(pick_dataset='test')
-    args['isic20_test'] = datasets.get_dataset(pick_dataset='isic20_test')
-    if args['test'] or args['validate']:
-        args['dir_dict']["model_path"] = args['test_model']
-        args['dir_dict']['trial'] = os.path.dirname(args['dir_dict']["model_path"])
-        model = tf.keras.models.load_model(args["dir_dict"]["model_path"], compile=False)
-        if args['test']:
-            calc_metrics(args=args, model=model, dataset=args['isic20_test'], dataset_type='isic20_test')
-        else:
-            calc_metrics(args=args, model=model, dataset=args['val_data'], dataset_type='validation')
-            calc_metrics(args=args, model=model, dataset=args['test_data'], dataset_type='test')
-            if args['task'] in ('ben_mal', '5cls'):
-                calc_metrics(args=args, model=model, dataset=args['isic20_test'], dataset_type='isic20_test')
-    else:
-        with open(args['dir_dict']['hparams_logs'], 'a') as f:
-            [f.write(f"{': '.join([key.capitalize().rjust(len(max(args.keys(), key=len))), str(args[key])])}\n")
-             for key in args.keys() if key not in ('dir_dict', 'hparams', 'train_data', 'val_data', 'test_data', 'isic20_test')]
-        training(args=args, strategy=strategy)
+
+    training(args=args, strategy=strategy)
     exit()

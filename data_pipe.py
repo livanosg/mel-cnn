@@ -1,5 +1,7 @@
 import os
+import multiprocessing as mp
 import numpy as np
+import cv2
 import pandas as pd
 import tensorflow as tf
 import tensorflow_addons as tfa
@@ -23,7 +25,48 @@ class MelData:
         self.weights_per_image_type = len(self.data_df['train']) / np.asarray(len(self.image_type_counts) * [self.image_type_counts[k] for k in sorted(self.image_type_counts)])
         self.weights_per_image_type = np.sqrt(self.weights_per_image_type)  # Through sqrt
 
-    def prepare_df(self, df, mode):
+    def resize_cvt_color(self, image_name):
+        new_path = os.path.join(self.args['dir_dict']['image_folder'], image_name)
+        init_path = os.path.join(self.args['dir_dict']['data'],  image_name)
+        def resize(image, size):
+            resize = int(size) / max(image.shape)
+            return cv2.resize(src=image, dsize=None, fx=resize, fy=resize, interpolation=cv2.INTER_NEAREST_EXACT)
+
+        if not os.path.isfile(new_path):
+            image = cv2.imread(init_path)
+            image = resize(image, 500)  # Resize to 500pxl
+            # ------------------====================== Remove hair ========================----------------------------#
+            grayScale = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+            kernel = cv2.getStructuringElement(1, (9, 9))
+            blackhat = cv2.morphologyEx(grayScale, cv2.MORPH_BLACKHAT, kernel)  # Black hat filter
+            bhg = cv2.GaussianBlur(blackhat, (3, 3), cv2.BORDER_DEFAULT)  # Gaussian filter
+            ret, mask = cv2.threshold(bhg, 10, 255, cv2.THRESH_BINARY)  # Binary thresholding (MASK)
+            image = cv2.inpaint(image, mask, 6, cv2.INPAINT_NS)  # Replace pixels of the mask
+            # ------------------======================== Resize ===========================----------------------------#
+            if int(self.args['image_size']) != 500:
+                image = resize(image, self.args['image_size'])
+            dx = (image.shape[0] - image.shape[1]) / 2  # Compare height-width
+            tblr = [np.ceil(abs(dx)), np.floor(abs(dx)), 0, 0]  # Pad top-bottom
+            if dx > 0:  # If height > width
+                tblr = tblr[2:] + tblr[:2]  # Pad left-right
+            image = cv2.copyMakeBorder(image, *tblr, borderType=cv2.BORDER_CONSTANT)
+            if self.args['colour'] == 'grey':
+                image = cv2.cvtColor(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2BGR)
+            os.makedirs(os.path.dirname(new_path), exist_ok=True)
+            if not cv2.imwrite(new_path, image):  # 3-channel gray
+                with open("failed_to_covert.txt", "a") as f:
+                    f.write(f"{init_path} 'to '{new_path}'\n'")
+
+    def check_create_dataset(self, image_df):
+        os.environ['OMP_NUM_THREADS'] = '1'
+        print(f"Checking dataset in {self.args['dir_dict']['image_folder']}\nDataset Specs: img_size: {self.args['image_size']}, colour: {self.args['colour']}")
+        pool = mp.Pool(mp.cpu_count())
+        pool.starmap(self.resize_cvt_color, [(image_name, self.args) for image_name in image_df])
+        pool.close()
+        print('Done!')
+
+    def prep_data(self, df: pd.DataFrame, mode):
+        self.check_create_dataset(df['image'])
         df['image'] = df['image'].apply(lambda x: os.path.join(self.args['dir_dict']['image_folder'], x))
         if self.args['task'] == 'ben_mal':
             mapper = BEN_MAL_MAP
@@ -61,7 +104,7 @@ class MelData:
     def get_dataset(self, pick_dataset=None, repeat=1):
         data_dict = {}
         for data_name in ['train', 'val', 'test', 'isic20_test']:
-            data_dict[data_name] = self.prepare_df(self.data_df[data_name], mode=data_name)
+            data_dict[data_name] = self.prep_data(self.data_df[data_name], mode=data_name)
         data = data_dict[pick_dataset]
 
         def tf_imread(sample, label=None, sample_weight=None):
