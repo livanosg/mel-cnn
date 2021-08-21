@@ -1,9 +1,7 @@
 import os
 import argparse
-import tensorflow as tf
 from train_script import training
 from config import directories, CLASS_NAMES
-
 
 
 def parser():
@@ -48,8 +46,5 @@ if __name__ == '__main__':
         args['verbose'] = 1
     else:
         args['verbose'] = 2
-    strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.NcclAllReduce)
-    args['replicas'] = strategy.num_replicas_in_sync
-
-    training(args=args, strategy=strategy)
+    training(args=args)
     exit()

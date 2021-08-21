@@ -11,7 +11,9 @@ from custom_losses import PerClassWeightedCategoricalCrossentropy
 from callbacks import LaterCheckpoint, EnrTensorboard, TestCallback
 
 
-def training(args, strategy):
+def training(args):
+    strategy = tf.distribute.MirroredStrategy()
+    args['replicas'] = strategy.num_replicas_in_sync
     datasets = MelData(args=args)
     args['train_data'] = datasets.get_dataset(pick_dataset='train')
     args['val_data'] = datasets.get_dataset(pick_dataset='val')
@@ -43,7 +45,7 @@ def training(args, strategy):
                 custom_model.summary(print_fn=lambda x: f.write(x + '\n'))
 
             custom_model.compile(optimizer=optimizer,
-                                 loss=PerClassWeightedCategoricalCrossentropy(args=args),  # WeightedCategoricalCrossentropy
+                                 loss=PerClassWeightedCategoricalCrossentropy(args=args),  # WeightedCategoricalCrossentropy(args=args),  # WeightedCategoricalCrossentropy
                                  metrics=[AUC(multi_label=True)])
         # --------------------------------------------------- Callbacks ---------------------------------------------- #
         callbacks = [LaterCheckpoint(filepath=args["dir_dict"]["model_path"], save_best_only=True, start_at=20),

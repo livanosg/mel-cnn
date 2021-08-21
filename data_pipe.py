@@ -19,6 +19,8 @@ class MelData:
                         'val': pd.read_csv(self.args['dir_dict']['data_csv']['val']).sample(frac=1., random_state=NP_RNG.bit_generator),
                         'test': pd.read_csv(self.args['dir_dict']['data_csv']['test']),
                         'isic20_test': pd.read_csv(self.args['dir_dict']['data_csv']['isic20_test'])}
+        [self.check_create_dataset(df['image']) for key, df in self.data_df.items()]
+
         self.class_counts = dict(self.data_df['train']['class'].value_counts())
         self.image_type_counts = dict(self.data_df['train']['image_type'].value_counts())
         self.weights_per_class = len(self.data_df['train']) / np.asarray(self.args['num_classes'] * [self.class_counts[k] for k in sorted(self.class_counts)])
@@ -28,6 +30,7 @@ class MelData:
     def resize_cvt_color(self, image_name):
         new_path = os.path.join(self.args['dir_dict']['image_folder'], image_name)
         init_path = os.path.join(self.args['dir_dict']['data'],  image_name)
+
         def resize(image, size):
             resize = int(size) / max(image.shape)
             return cv2.resize(src=image, dsize=None, fx=resize, fy=resize, interpolation=cv2.INTER_NEAREST_EXACT)
@@ -61,12 +64,11 @@ class MelData:
         os.environ['OMP_NUM_THREADS'] = '1'
         print(f"Checking dataset in {self.args['dir_dict']['image_folder']}\nDataset Specs: img_size: {self.args['image_size']}, colour: {self.args['colour']}")
         pool = mp.Pool(mp.cpu_count())
-        pool.starmap(self.resize_cvt_color, [(image_name, self.args) for image_name in image_df])
+        pool.starmap(self.resize_cvt_color, [(image_name,) for image_name in image_df])
         pool.close()
         print('Done!')
 
     def prep_data(self, df: pd.DataFrame, mode):
-        self.check_create_dataset(df['image'])
         df['image'] = df['image'].apply(lambda x: os.path.join(self.args['dir_dict']['image_folder'], x))
         if self.args['task'] == 'ben_mal':
             mapper = BEN_MAL_MAP
@@ -98,7 +100,7 @@ class MelData:
                         df.loc[(df['image_type'] == image_type) & (df['class'] == _class), 'sample_weights'] = self.weights_per_image_type[idx2]  # + self.weights_per_class[idx1]
                 df['sample_weights'] /= df['sample_weights'].min()
             labels = {'class': tf.keras.backend.one_hot(indices=df['class'], num_classes=self.args['num_classes'])}
-        sample_weights = tf.convert_to_tensor(df['sample_weights'].astype(float))
+        sample_weights = tf.convert_to_tensor(df['sample_weights'], dtype=tf.float32)
         return ohe_features, labels, sample_weights
 
     def get_dataset(self, pick_dataset=None, repeat=1):
