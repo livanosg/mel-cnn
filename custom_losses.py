@@ -34,7 +34,7 @@ class PerClassWeightedCategoricalCrossentropy(CategoricalCrossentropy):
             self.weights = tf.convert_to_tensor(np.array([[1., 1.21, 0.38, 1.286, 2.313],
                                                           [4.771, 3.811, 1.431, 1.362, 1.492],
                                                           [4.071, 2.321, 5.203, 5.161, 3.463],
-                                                          [3.502, 0.734, 0.316, 1.33, 2.095],
+                                                          [3.502, 0.734, 1.516, 1.33, 2.095],
                                                           [4.197, 0.670, 0.289, 0.913, 3.214]]), dtype=tf.float32)
         elif self.task == 'ben_mal':
             self.weights = tf.convert_to_tensor(np.array([[1., 5.],
