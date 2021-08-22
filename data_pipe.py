@@ -81,7 +81,7 @@ class MelData:
                 sample['image'] = tfa.image.rotate(images=sample['image'], angles=NP_RNG.integers(size=[1], low=0, high=360, dtype=np.int32).astype(np.float32), name='Rotation')
                 if NP_RNG.uniform() < 0.5:
                     sample['image'] = tf.cond(np.less(NP_RNG.uniform(), 0.5),
-                                              lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=float(NP_RNG.random(size=1) * 2.), filter_shape=5, name='Gaussian_filter'),
+                                              lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=float(NP_RNG.uniform(size=1, high=2.)), filter_shape=5, name='Gaussian_filter'),
                                               lambda: sample['image'])
                 sample['image'] = {'xept': xception.preprocess_input, 'incept': inception_v3.preprocess_input,
                                    'effnet0': efficientnet.preprocess_input,

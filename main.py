@@ -1,6 +1,6 @@
 import os
 import argparse
-
+from absl import logging
 from data_check import check_create_dataset
 from train_script import training
 from config import directories, CLASS_NAMES
@@ -34,17 +34,19 @@ def parser():
 
 if __name__ == '__main__':
     args = parser().parse_args().__dict__
+    os.environ['AUTOGRAPH_VERBOSITY'] = '0'
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = str(max(0, (3 - args['verbose'])))  # 0 log all, 1:noINFO, 2:noWARNING, 3:noERROR
     if args['verbose'] >= 2:  # Set verbosity for keras 0 = silent, 1 = progress bar, 2 = one line per epoch.
         args['verbose'] = 1
     else:
+        logging.set_verbosity(logging.INFO)  # Suppress > values
         args['verbose'] = 2
+
     args['dir_dict'] = directories(args=args)
     args['class_names'] = CLASS_NAMES[args['task']]
     args['num_classes'] = len(args['class_names'])
     args['input_shape'] = (args['image_size'], args['image_size'], 3)
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
-    os.environ['AUTOGRAPH_VERBOSITY'] = '1'
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = str(max(0, (3 - args['verbose'])))  # 0 log all, 1:noINFO, 2:noWARNING, 3:noERROR
     os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
     os.environ['OMP_NUM_THREADS'] = '1'
     for key, path in args['dir_dict']['data_csv'].items():
