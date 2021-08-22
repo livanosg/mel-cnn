@@ -78,11 +78,11 @@ class MelData:
                 sample['image'] = tf.image.stateless_random_saturation(image=sample['image'], lower=0.8, upper=1.2, seed=self.seeds[:, 4])
                 sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=self.TF_RNG.uniform(shape=[1], maxval=2., dtype=tf.float32), name='Sharpness')
                 sample['image'] = tfa.image.translate(images=sample['image'], translations=self.TF_RNG.uniform(shape=[2], minval=-self.args['image_size'] * 0.05, maxval=self.args['image_size'] * 0.05, dtype=tf.float32), name='Translation')
-                sample['image'] = tfa.image.rotate(images=sample['image'], angles=tf.cast(self.TF_RNG.uniform(shape=[1], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32), name='Rotation')
-                sample['image'] = tf.cond(tf.math.less_equal(self.TF_RNG.uniform(shape=[1], maxval=1., dtype=tf.float32), 0.5),
-                                          lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=float(NP_RNG.random(size=1)) * 2, filter_shape=5, name='Gaussian_filter'),
-                                          lambda: sample['image'])
-
+                sample['image'] = tfa.image.rotate(images=sample['image'], angles=NP_RNG.integers(size=[1], low=0, high=360, dtype=np.int32).astype(np.float32), name='Rotation')
+                if NP_RNG.uniform() < 0.5:
+                    sample['image'] = tf.cond(np.less(NP_RNG.uniform(), 0.5),
+                                              lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=float(NP_RNG.random(size=1) * 2.), filter_shape=5, name='Gaussian_filter'),
+                                              lambda: sample['image'])
                 sample['image'] = {'xept': xception.preprocess_input, 'incept': inception_v3.preprocess_input,
                                    'effnet0': efficientnet.preprocess_input,
                                    'effnet1': efficientnet.preprocess_input}[self.args['pretrained']](sample['image'])
