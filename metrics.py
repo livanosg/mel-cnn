@@ -65,8 +65,8 @@ def calc_metrics(args, model, dataset, dataset_type):
                 with open(os.path.join(save_dir, "report.txt"), "a") as f:
                     if (args['num_classes'] == 2 and _class == 1) or (args['num_classes'] != 2 and _class == 0):
                         col_1 = len(max(CLASS_NAMES[args['task']], key=len))
-                        f.write("{} {}\n".format(''.rjust(col_1, ' '),'AUC'.rjust(10)))
-                    f.write(' '.join([CLASS_NAMES[args['task']][_class].rjust(col_1), np.round(class_auc, 3).rjust(10) + '\n']))
+                        f.write("{} {}\n".format(''.rjust(col_1, ' '), 'AUC'.rjust(10)))
+                    f.write(' '.join([CLASS_NAMES[args['task']][_class].rjust(col_1), str(np.round(class_auc, 3)).rjust(10) + '\n']))
                 plt.figure(1)
                 plt.plot([0, 1], [0, 1], 'k--')
                 plt.plot(fpr_roc, tpr_roc, label=' '.join([args['class_names'][_class], '(area = {}:.3f)'.format(class_auc)]))

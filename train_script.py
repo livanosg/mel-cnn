@@ -12,7 +12,10 @@ from callbacks import LaterCheckpoint, EnrTensorboard, TestCallback
 
 
 def training(args):
-    strategy = tf.distribute.MirroredStrategy()
+    if args['strategy'] == 'mirrored':
+        strategy = tf.distribute.MirroredStrategy()
+    else:
+        strategy = tf.distribute.OneDeviceStrategy('gpu')
     args['replicas'] = strategy.num_replicas_in_sync
     datasets = MelData(args=args)
     args['train_data'] = datasets.get_dataset(pick_dataset='train')
@@ -48,7 +51,7 @@ def training(args):
                                  loss=PerClassWeightedCategoricalCrossentropy(args=args),
                                  metrics=[AUC(multi_label=True)])
         # --------------------------------------------------- Callbacks ---------------------------------------------- #
-        callbacks = [LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=20),
+        callbacks = [LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=0),
                      EnrTensorboard(log_dir=args['dir_dict']['logs'], val_data=args['val_data'], class_names=args['class_names']),
                      ReduceLROnPlateau(factor=0.75, patience=10),
                      EarlyStopping(verbose=args['verbose'], patience=20),
