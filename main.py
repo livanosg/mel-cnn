@@ -1,7 +1,8 @@
+import sklearn
 import os
 import argparse
 from absl import logging
-# from data_check import check_create_dataset
+from data_check import check_create_dataset
 from train_script import training
 from config import directories, CLASS_NAMES
 
@@ -49,7 +50,7 @@ if __name__ == '__main__':
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
     os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
     os.environ['OMP_NUM_THREADS'] = '1'
-    # for key, path in args['dir_dict']['data_csv'].items():
-        # check_create_dataset(key=key, datasplit_path=path, args=args)
+    for key, path in args['dir_dict']['data_csv'].items():
+        check_create_dataset(key=key, datasplit_path=path, args=args)
     training(args=args)
     exit()

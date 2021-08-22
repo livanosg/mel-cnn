@@ -3,9 +3,9 @@ import io
 import itertools
 import numpy as np
 import pandas as pd
-from sklearn.metrics import roc_curve, precision_recall_curve, auc, classification_report, confusion_matrix
 from matplotlib import pyplot as plt, use as plt_use
 from config import CLASS_NAMES
+from sklearn.metrics import roc_curve, precision_recall_curve, auc, classification_report, confusion_matrix
 
 plt_use('cairo')
 
