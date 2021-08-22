@@ -6,8 +6,7 @@ import pandas as pd
 from matplotlib import pyplot as plt, use as plt_use
 from config import CLASS_NAMES
 from sklearn.metrics import roc_curve, precision_recall_curve, auc, classification_report, confusion_matrix
-
-plt_use('cairo')
+plt_use('Agg')
 
 
 def calc_metrics(args, model, dataset, dataset_type):
@@ -83,9 +82,9 @@ def calc_metrics(args, model, dataset, dataset_type):
                 plt.legend(loc='best')
 
         plt.figure(1)
-        plt.savefig(os.path.join(save_dir, 'roc.jpg'))
+        plt.savefig(os.path.join(save_dir, 'roc.png'))
         plt.figure(2)
-        plt.savefig(os.path.join(save_dir, 'pr.jpg'))
+        plt.savefig(os.path.join(save_dir, 'pr.png'))
         plt.close('all')
 
 
