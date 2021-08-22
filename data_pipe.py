@@ -70,7 +70,6 @@ class MelData:
             sample['image'] = tf.reshape(tensor=sample['image'], shape=self.args['input_shape'])
 
             if pick_dataset == 'train':
-                sample['image'] = image_augm(sample['image'])
                 sample['image'] = tf.image.stateless_random_flip_up_down(image=sample['image'], seed=self.seeds[:, 0])
                 sample['image'] = tf.image.stateless_random_flip_left_right(image=sample['image'], seed=self.seeds[:, 1])
                 sample['image'] = tf.image.stateless_random_brightness(image=sample['image'], max_delta=0.1, seed=self.seeds[:, 2])
@@ -79,10 +78,9 @@ class MelData:
                 sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=self.TF_RNG.uniform(shape=[1], maxval=2., dtype=tf.float32), name='Sharpness')
                 sample['image'] = tfa.image.translate(images=sample['image'], translations=self.TF_RNG.uniform(shape=[2], minval=-self.args['image_size'] * 0.05, maxval=self.args['image_size'] * 0.05, dtype=tf.float32), name='Translation')
                 sample['image'] = tfa.image.rotate(images=sample['image'], angles=NP_RNG.integers(size=[1], low=0, high=360, dtype=np.int32).astype(np.float32), name='Rotation')
-                if NP_RNG.uniform() < 0.5:
-                    sample['image'] = tf.cond(np.less(NP_RNG.uniform(), 0.5),
-                                              lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=float(NP_RNG.uniform(size=1, high=2.)), filter_shape=5, name='Gaussian_filter'),
-                                              lambda: sample['image'])
+                sample['image'] = tf.cond(tf.less(self.TF_RNG.uniform(shape=[1]), 0.6),
+                                          lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=1.5, filter_shape=5, name='Gaussian_filter'),
+                                          lambda: sample['image'])
                 sample['image'] = {'xept': xception.preprocess_input, 'incept': inception_v3.preprocess_input,
                                    'effnet0': efficientnet.preprocess_input,
                                    'effnet1': efficientnet.preprocess_input}[self.args['pretrained']](sample['image'])
@@ -92,9 +90,6 @@ class MelData:
                 return sample, image_path
             else:
                 return sample, label, sample_weight
-
-        def image_augm(image):
-            return image
 
         dataset = tf.data.Dataset.from_tensor_slices(data)
         dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
