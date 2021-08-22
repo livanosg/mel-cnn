@@ -7,7 +7,7 @@ from tensorflow.keras.losses import CategoricalCrossentropy, Reduction
 class WeightedCategoricalCrossentropy(CategoricalCrossentropy):
     def __init__(self, args, from_logits=False, label_smoothing=0, reduction=Reduction.AUTO,
                  name='categorical_crossentropy'):
-        super().__init__(from_logits, label_smoothing, reduction, name=f"weighted_{name}")
+        super().__init__(from_logits, label_smoothing, reduction, name="weighted_{}".format(name))
         self.task = args['task']
         self.num_classes = args['num_classes']
         if self.task == '5cls':

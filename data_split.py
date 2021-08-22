@@ -71,9 +71,12 @@ for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (t
     df = df.sample(frac=1., random_state=NP_RNG.bit_generator)
     columns = ['dataset_id', 'location', 'sex', 'image', 'age_approx', 'image_type', 'class']
     df['age_approx'] -= (df['age_approx'] % 10)
-    df['image'] = df['dataset_id'] + f"{os.sep}data{os.sep}" + df['image']
+
+    df['image'] = df['dataset_id'] + df['image'].apply(lambda x: os.path.join('data', x))
+    print(df['image'])
+    exit()
     df.replace(to_replace=DATA_MAP, inplace=True)
-    print(f"{os.path.split(save_to)[-1].rjust(15)}| Count:{str(len(df)).rjust(6)} Ratio:{str(round(len(df) / total_data_len, 3)).rjust(6)}")
+    print("{}| Count:{} Ratio:{}".format(os.path.split(save_to)[-1].rjust(15), str(len(df)).rjust(6), str(round(len(df) / total_data_len, 3)).rjust(6)))
     if os.path.basename(save_to).split('.')[0] == 'isic20_test':
         columns.remove('class')
     df.to_csv(save_to, index=False, columns=columns)

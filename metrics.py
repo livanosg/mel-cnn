@@ -65,29 +65,28 @@ def calc_metrics(args, model, dataset, dataset_type):
                 with open(os.path.join(save_dir, "report.txt"), "a") as f:
                     if (args['num_classes'] == 2 and _class == 1) or (args['num_classes'] != 2 and _class == 0):
                         col_1 = len(max(CLASS_NAMES[args['task']], key=len))
-                        f.write(f"{''.rjust(col_1, ' ')} {'AUC'.rjust(10)}\n")
-                    f.write(
-                        f"{CLASS_NAMES[args['task']][_class].rjust(col_1)} {str(np.round(class_auc, 3)).rjust(10)}\n")
+                        f.write("{} {}\n".format(''.rjust(col_1, ' '),'AUC'.rjust(10)))
+                    f.write(' '.join([CLASS_NAMES[args['task']][_class].rjust(col_1), np.round(class_auc, 3).rjust(10) + '\n']))
                 plt.figure(1)
-                plt.plot([0, 1], [0, 1], "k--")
-                plt.plot(fpr_roc, tpr_roc, label=f"{args['class_names'][_class]} (area = {class_auc:.3f})")
-                plt.xlabel("False positive rate")
-                plt.ylabel("True positive rate")
-                plt.title(f"ROC curve {args['image_type']}-{dataset_type}")
-                plt.legend(loc="best")
+                plt.plot([0, 1], [0, 1], 'k--')
+                plt.plot(fpr_roc, tpr_roc, label=' '.join([args['class_names'][_class], '(area = {}:.3f)'.format(class_auc)]))
+                plt.xlabel('False positive rate')
+                plt.ylabel('True positive rate')
+                plt.title('ROC curve {}-{}'.format(args['image_type'], dataset_type))
+                plt.legend(loc='best')
 
                 plt.figure(2)
-                plt.plot(recall, precision, label=f"{args['class_names'][_class]}")
-                plt.xlabel("Precision")
-                plt.ylabel("Recall")
-                plt.title(f"PR curve {args['image_type']}-{dataset_type}")
-                plt.legend(loc="best")
+                plt.plot(recall, precision, label=args['class_names'][_class])
+                plt.xlabel('Precision')
+                plt.ylabel('Recall')
+                plt.title('PR curve {}-{}'.format(args['image_type'], dataset_type))
+                plt.legend(loc='best')
 
         plt.figure(1)
-        plt.savefig(os.path.join(save_dir, "roc.jpg"))
+        plt.savefig(os.path.join(save_dir, 'roc.jpg'))
         plt.figure(2)
-        plt.savefig(os.path.join(save_dir, "pr.jpg"))
-        plt.close("all")
+        plt.savefig(os.path.join(save_dir, 'pr.jpg'))
+        plt.close('all')
 
 
 def plot_confusion_matrix(cm, class_names):
