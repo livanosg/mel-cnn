@@ -19,7 +19,7 @@ def parser():
     args_parser.add_argument('--learning-rate', '-lr', default=1e-5, type=float, help='Select learning rate.')
     args_parser.add_argument('--optimizer', '-opt', default='adam', choices=['adam', 'ftrl', 'sgd', 'rmsprop', 'adadelta', 'adagrad', 'adamax', 'nadam'], type=str, help='Select optimizer.')
     args_parser.add_argument('--activation', '-act', default='swish', choices=['relu', 'swish'], type=str, help='Select leaky relu gradient.')
-    args_parser.add_argument('--dropout', '-dor', default=0.2, type=float, help='Select dropout ratio.')
+    args_parser.add_argument('--dropout', '-dor', default=0.3, type=float, help='Select dropout ratio.')
     args_parser.add_argument('--epochs', '-e', default=500, type=int, help='Number of epochs epochs.')
     args_parser.add_argument('--layers', '-lrs', default=1, type=int, help='Select multiplier for inception layers\' nodes.')
     args_parser.add_argument('--no-image-weights', '-niw', action='store_true', help='Set to not weight per image type.')
