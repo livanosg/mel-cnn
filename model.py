@@ -9,7 +9,7 @@ from tensorflow.keras.regularizers import l1_l2
 
 
 def model_fn(args):
-    main_conf = np.asarray([16, 32]) * args['layers']
+    main_conf = np.asarray([8, 16]) * args['layers']
     activation = {'swish': swish, 'relu': relu}[args['activation']]
     rglzr = l1_l2(l1=0., l2=0.0002)
     normalization = LayerNormalization
