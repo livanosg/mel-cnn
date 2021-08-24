@@ -7,7 +7,7 @@ from tensorboard.plugins.hparams import api as hp
 from data_pipe import MelData
 from metrics import calc_metrics
 from model import model_fn
-from custom_losses import WeightedCategoricalCrossentropy, PerClassWeightedCategoricalCrossentropy
+from custom_losses import WeightedCategoricalCrossentropy
 from callbacks import LaterCheckpoint, EnrTensorboard, TestCallback
 
 
