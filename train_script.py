@@ -6,7 +6,7 @@ from tensorflow.keras.metrics import AUC
 from data_pipe import MelData
 from metrics import calc_metrics
 from model import model_fn
-from custom_losses import PerClassWeightedCategoricalCrossentropy
+from custom_losses import WeightedCategoricalCrossentropy
 from callbacks import LaterCheckpoint, EnrTensorboard, TestCallback
 
 
@@ -16,11 +16,12 @@ def training(args):
     else:
         strategy = tf.distribute.OneDeviceStrategy('gpu')
     args['replicas'] = strategy.num_replicas_in_sync
-    datasets = MelData(args=args)
-    args['train_data'] = datasets.get_dataset(pick_dataset='train')
-    args['val_data'] = datasets.get_dataset(pick_dataset='val')
-    args['test_data'] = datasets.get_dataset(pick_dataset='test')
-    args['isic20_test'] = datasets.get_dataset(pick_dataset='isic20_test')
+    data = MelData(args=args)
+    weights_per_class, _, _, _ = data.weights()
+    args['train_data'] = data.get_dataset(mode='train')
+    args['val_data'] = data.get_dataset(mode='val')
+    args['test_data'] = data.get_dataset(mode='test')
+    args['isic20_test'] = data.get_dataset(mode='isic20_test')
     if args['test'] or args['validate']:
         args['dir_dict']['model_path'] = args['test_model']
         args['dir_dict']['trial'] = os.path.dirname(args['dir_dict']['model_path'])
@@ -47,7 +48,7 @@ def training(args):
                 custom_model.summary(print_fn=lambda x: f.write(x + '\n'))
 
             custom_model.compile(optimizer=optimizer,
-                                 loss=PerClassWeightedCategoricalCrossentropy(args=args),
+                                 loss=WeightedCategoricalCrossentropy(args=args, weights=weights_per_class),
                                  metrics=[AUC(multi_label=True)])
         # --------------------------------------------------- Callbacks ---------------------------------------------- #
         callbacks = [LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=20),
