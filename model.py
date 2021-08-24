@@ -78,13 +78,14 @@ def model_fn(args):
         age = LSTM(4, activation=activation, return_sequences=True)(age)
         age = normalization()(age)
 
-        inputs_list.append([sex_input, anatom_site_input, age_input])
-        concat_list.append([sex, anatom_site, age])
-        concat_inputs = Concatenate(-2)(concat_list)
+        inputs_list.extend([sex_input, anatom_site_input, age_input])
+        concat_list.extend([sex, anatom_site, age])
+        concat_inputs = Concatenate(1)(concat_list)
+        print(concat_inputs)
         lstm = LSTM(16, activation=activation, dropout=args['dropout'])(concat_inputs)
         common_2 = normalization()(lstm)
         # -------------------------------================== Concat part ==================---------------------------------#
-        common = Concatenate(axis=1)([common, common_2])
+        common = Concatenate(axis=-1)([common, common_2])
     common = Dense(32, activation=activation, kernel_regularizer=rglzr)(common)
     common = normalization()(common)
     common = Dropout(args['dropout'])(common)
