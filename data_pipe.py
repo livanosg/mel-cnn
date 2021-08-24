@@ -4,17 +4,18 @@ import pandas as pd
 import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
-from config import DATA_MAP, BEN_MAL_MAP, NEV_MEL_MAP, NP_RNG
+from config import DATA_MAP, BEN_MAL_MAP, NEV_MEL_MAP
 
 
 class MelData:
     def __init__(self, args: dict):
         self.args = args
         self.TF_RNG = tf.random.Generator.from_seed(1312)  # .from_non_deterministic_state()
+
         self.seeds = self.TF_RNG.make_seeds(5)
         self.batch_size = self.args['batch_size'] * self.args['replicas']
-        self.data_df = {'train': pd.read_csv(self.args['dir_dict']['data_csv']['train']).sample(frac=self.args['dataset_frac'], random_state=NP_RNG.bit_generator),
-                        'val': pd.read_csv(self.args['dir_dict']['data_csv']['val']).sample(frac=1., random_state=NP_RNG.bit_generator),
+        self.data_df = {'train': pd.read_csv(self.args['dir_dict']['data_csv']['train']).sample(frac=self.args['dataset_frac'], random_state=1312),
+                        'val': pd.read_csv(self.args['dir_dict']['data_csv']['val']).sample(frac=1., random_state=1312),
                         'test': pd.read_csv(self.args['dir_dict']['data_csv']['test']),
                         'isic20_test': pd.read_csv(self.args['dir_dict']['data_csv']['isic20_test'])}
 
@@ -65,19 +66,21 @@ class MelData:
             data_dict[data_name] = self.prep_data(self.data_df[data_name], mode=data_name)
         data = data_dict[pick_dataset]
 
-        def tf_imread(sample, label=None, sample_weight=None):
+        def prep_input(sample, label=None, sample_weight=None):
             sample['image'] = tf.image.decode_image(tf.io.read_file(sample['image_path']), channels=3, dtype=tf.uint8)
             sample['image'] = tf.reshape(tensor=sample['image'], shape=self.args['input_shape'])
-
+            for key in sample.keys():
+                if key not in ('image', 'image_path'):
+                    sample[key] = tf.expand_dims(input=sample[key], axis=-1)
             if pick_dataset == 'train':
                 sample['image'] = tf.image.stateless_random_flip_up_down(image=sample['image'], seed=self.seeds[:, 0])
                 sample['image'] = tf.image.stateless_random_flip_left_right(image=sample['image'], seed=self.seeds[:, 1])
                 sample['image'] = tf.image.stateless_random_brightness(image=sample['image'], max_delta=0.1, seed=self.seeds[:, 2])
                 sample['image'] = tf.image.stateless_random_contrast(image=sample['image'], lower=0.8, upper=1.2, seed=self.seeds[:, 3])
                 sample['image'] = tf.image.stateless_random_saturation(image=sample['image'], lower=0.8, upper=1.2, seed=self.seeds[:, 4])
-                # sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=NP_RNG.uniform(size=[1], high=2.).astype(np.float32), name='Sharpness')
+                sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=self.TF_RNG.uniform(shape=[1], maxval=2.), name='Sharpness')
                 sample['image'] = tfa.image.translate(images=sample['image'], translations=self.TF_RNG.uniform(shape=[2], minval=-self.args['image_size'] * 0.05, maxval=self.args['image_size'] * 0.05, dtype=tf.float32), name='Translation')
-                sample['image'] = tfa.image.rotate(images=sample['image'], angles=NP_RNG.integers(size=[1], low=0, high=360, dtype=np.int32).astype(np.float32), name='Rotation')
+                sample['image'] = tfa.image.rotate(images=sample['image'], angles=tf.cast(self.TF_RNG.uniform(shape=[1], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32), name='Rotation')
                 sample['image'] = tf.cond(tf.less(self.TF_RNG.uniform(shape=[1]), 0.6),
                                           lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=1.5, filter_shape=5, name='Gaussian_filter'),
                                           lambda: sample['image'])
@@ -92,7 +95,7 @@ class MelData:
                 return sample, label, sample_weight
 
         dataset = tf.data.Dataset.from_tensor_slices(data)
-        dataset = dataset.map(tf_imread, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        dataset = dataset.map(prep_input, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.batch(self.batch_size)
         options = tf.data.Options()
         options.experimental_threading.max_intra_op_parallelism = 1

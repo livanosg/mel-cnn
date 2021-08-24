@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model, Input
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
-from tensorflow.keras.layers import Reshape, Concatenate, AveragePooling2D, GlobalAvgPool2D
+from tensorflow.keras.layers import Concatenate, AveragePooling2D, GlobalAvgPool2D
 from tensorflow.keras.layers import Dense, Conv2D, LSTM, Dropout, LayerNormalization
 from tensorflow.keras.activations import swish, relu
 from tensorflow.keras.regularizers import l1_l2
@@ -11,7 +11,7 @@ from tensorflow.keras.regularizers import l1_l2
 def model_fn(args):
     main_conf = np.asarray([8, 16]) * args['layers']
     activation = {'swish': swish, 'relu': relu}[args['activation']]
-    rglzr = l1_l2(l1=0., l2=0.0003)
+    rglzr = l1_l2(l1=0., l2=0.0001)
     normalization = LayerNormalization
     inputs_list = []
     # -------------------------------================= Image data =================----------------------------------- #
@@ -55,42 +55,35 @@ def model_fn(args):
     concat_list = []
     if not args['only_image']:
         if not args['no_image_type']:
-            image_type_input = Input(shape=(2,), name='image_type', dtype=tf.float32)
-            image_type = Reshape(target_shape=(2, 1))(image_type_input)
-            image_type = LSTM(4, activation=activation, return_sequences=True)(image_type)
+            image_type_input = Input(shape=(2, 1), name='image_type', dtype=tf.float32)
+            image_type = LSTM(4, activation=activation, return_sequences=True)(image_type_input)
             image_type = normalization()(image_type)
 
             inputs_list.append(image_type_input)
             concat_list.append(image_type)
 
-        sex_input = Input(shape=(2,), name='sex', dtype=tf.float32)
-        sex = Reshape(target_shape=(2, 1))(sex_input)
-        sex = LSTM(4, activation=activation, return_sequences=True)(sex)
+        sex_input = Input(shape=(2, 1), name='sex', dtype=tf.float32)
+        sex = LSTM(4, activation=activation, return_sequences=True)(sex_input)
         sex = normalization()(sex)
 
-        anatom_site_input = Input(shape=(6,), name='location', dtype=tf.float32)
-        anatom_site = Reshape(target_shape=(6, 1))(anatom_site_input)
-        anatom_site = LSTM(4, activation=activation, return_sequences=True)(anatom_site)
+        anatom_site_input = Input(shape=(6, 1), name='location', dtype=tf.float32)
+        anatom_site = LSTM(4, activation=activation, return_sequences=True)(anatom_site_input)
         anatom_site = normalization()(anatom_site)
 
-        age_input = Input(shape=(10,), name='age_approx', dtype=tf.float32)
-        age = Reshape(target_shape=(10, 1))(age_input)
-        age = LSTM(4, activation=activation, return_sequences=True)(age)
+        age_input = Input(shape=(10, 1), name='age_approx', dtype=tf.float32)
+        age = LSTM(4, activation=activation, return_sequences=True)(age_input)
         age = normalization()(age)
 
         inputs_list.extend([sex_input, anatom_site_input, age_input])
         concat_list.extend([sex, anatom_site, age])
         concat_inputs = Concatenate(1)(concat_list)
-        print(concat_inputs)
-        lstm = LSTM(16, activation=activation, dropout=args['dropout'])(concat_inputs)
+        lstm = LSTM(16, activation=activation)(concat_inputs)
         common_2 = normalization()(lstm)
         # -------------------------------================== Concat part ==================---------------------------------#
         common = Concatenate(axis=-1)([common, common_2])
     common = Dense(32, activation=activation, kernel_regularizer=rglzr)(common)
     common = normalization()(common)
-    common = Dropout(args['dropout'])(common)
     common = Dense(32, activation=activation, kernel_regularizer=rglzr)(common)
     common = normalization()(common)
-    common = Dropout(args['dropout'])(common)
     output = Dense(args['num_classes'], activation='softmax', kernel_regularizer=rglzr, name='class')(common)
     return Model(inputs_list, [output])
