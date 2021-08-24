@@ -2,11 +2,12 @@ import os
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.metrics import AUC
+from tensorboard.plugins.hparams import api as hp
 
 from data_pipe import MelData
 from metrics import calc_metrics
 from model import model_fn
-from custom_losses import WeightedCategoricalCrossentropy
+from custom_losses import WeightedCategoricalCrossentropy, PerClassWeightedCategoricalCrossentropy
 from callbacks import LaterCheckpoint, EnrTensorboard, TestCallback
 
 
@@ -55,6 +56,15 @@ def training(args):
                      EnrTensorboard(log_dir=args['dir_dict']['logs'], val_data=args['val_data'], class_names=args['class_names']),
                      ReduceLROnPlateau(factor=0.75, patience=10),
                      EarlyStopping(verbose=args['verbose'], patience=20),
+                     hp.KerasCallback(args['dir_dict']['logs'], hparams={'pretrained': args['pretrained'], 'task':args['task'],
+                                                                         'image_type':args['image_type'], 'image_size':args['image_size'],
+                                                                         'only_image':args['only_image'], 'colour':args['colour'],
+                                                                         'batch_size':args['batch_size'], 'learning_rate':args['learning_rate'],
+                                                                         'optimizer':args['optimizer'], 'activation':args['activation'],
+                                                                         'dropout':args['dropout'], 'epochs':args['epochs'],
+                                                                         'layers':args['layers'], 'no_image_weights':args['no_image_weights'],
+                                                                         'no_image_type':args['no_image_type']
+                                                                         }, trial_id=os.path.basename(args["dir_dict"]["trial"])),
                      TestCallback(args=args)]
         # ------------------------------------------------- Train model ---------------------------------------------- #
         custom_model.fit(x=args['train_data'], epochs=args['epochs'],

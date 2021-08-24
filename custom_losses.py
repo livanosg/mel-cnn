@@ -27,7 +27,7 @@ class WeightedCategoricalCrossentropy(CategoricalCrossentropy):
 
 
 class PerClassWeightedCategoricalCrossentropy(CategoricalCrossentropy):
-    def __init__(self, args, from_logits=False, label_smoothing=0, reduction=Reduction.AUTO,
+    def __init__(self, args, from_logits=False, weights=None, label_smoothing=0, reduction=Reduction.AUTO,
                  name='categorical_crossentropy'):
         super().__init__(from_logits, label_smoothing, reduction, name=f"weighted_{name}")
         self.task = args['task']
@@ -41,10 +41,10 @@ class PerClassWeightedCategoricalCrossentropy(CategoricalCrossentropy):
                                                  [4.197, 0.670, 0.289, 0.913, 3.214]], dtype=tf.float32)
         elif self.task == 'ben_mal':
             self.weights = tf.convert_to_tensor(np.array([[1., 3.],
-                                                          [2., 5.]]), dtype=tf.float32)
+                                                          [5., 4.]]), dtype=tf.float32)
         else:
             self.weights = tf.convert_to_tensor(np.array([[1., 3.],
-                                                          [2., 4.]]), dtype=tf.float32)
+                                                          [5., 4.]]), dtype=tf.float32)
 
     def call(self, y_true, y_pred):
         weights = tf.gather_nd(self.weights, tf.concat([K.expand_dims(K.argmax(y_true, axis=-1)),
