@@ -11,7 +11,6 @@ class MelData:
     def __init__(self, args: dict):
         self.args = args
         self.TF_RNG = tf.random.Generator.from_seed(1312)  # .from_non_deterministic_state()
-
         self.seeds = self.TF_RNG.make_seeds(5)
         self.batch_size = self.args['batch_size'] * self.args['replicas']
         self.data_df = {}
@@ -54,8 +53,8 @@ class MelData:
             weights_per_class *= [1., 2.]
         if not self.args['no_image_weights']:
             for idx1, _class in enumerate(sorted(class_counts)):
-                for idx2, image_type in enumerate(sorted(image_type_counts)):
-                    df.loc[(df['image_type'] == image_type) & (df['class'] == _class), 'sample_weights'] = weights_per_image_type[idx2]  # + self.weights_per_class[idx1]
+                for idx2, _image_type in enumerate(sorted(image_type_counts)):
+                    df.loc[(df['image_type'] == _image_type) & (df['class'] == _class), 'sample_weights'] = weights_per_image_type[idx2]  # + self.weights_per_class[idx1]
             df['sample_weights'] /= df['sample_weights'].min()
         else:
             df['sample_weights'] = 1.
