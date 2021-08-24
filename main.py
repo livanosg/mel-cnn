@@ -28,7 +28,7 @@ def parser():
     args_parser.add_argument('--strategy', '-strg', default='mirrored', type=str, choices=['multiworker', 'mirrored'], help='Select parallelization strategy.')
     args_parser.add_argument('--validate', '-val', action='store_true', help='Validate model')
     args_parser.add_argument('--test', '-test', action='store_true', help='Test to isic2020.')
-    args_parser.add_argument('--test-model', '-testmodel', type=str, help='Test to isic2020.')
+    args_parser.add_argument('--test-model', '-testmodel', type=str, help='Path to load model.')
     args_parser.add_argument('--verbose', '-v', default=0, action='count', help='Set verbosity.')
     return args_parser
 
