@@ -68,7 +68,7 @@ def calc_metrics(args, model, dataset, dataset_type):
                     f.write(' '.join([CLASS_NAMES[args['task']][_class].rjust(col_1), str(np.round(class_auc, 3)).rjust(10) + '\n']))
                 plt.figure(1)
                 plt.plot([0, 1], [0, 1], 'k--')
-                plt.plot(fpr_roc, tpr_roc, label=' '.join([args['class_names'][_class], '(area = {}:.3f)'.format(class_auc)]))
+                plt.plot(fpr_roc, tpr_roc, label=' '.join([args['class_names'][_class], '(area = {:.3f})'.format(class_auc)]))
                 plt.xlabel('False positive rate')
                 plt.ylabel('True positive rate')
                 plt.title('ROC curve {}-{}'.format(args['image_type'], dataset_type))
