@@ -45,11 +45,11 @@ class MelData:
         weights_per_image_type = {k: np.sqrt(len(self.data_df['train']) / (len(image_type_counts) * image_type_counts[k])) for k in self.image_types}
         weights_per_class = {k: len(self.data_df['train']) / (self.args['num_classes'] * class_counts[k]) for k in self.classes}
         if self.args['task'] == '5cls':
-            class_multipl = {key: [1.5, 1., 1., 1., 2.5][idx] for idx, key in enumerate(self.classes)}
+            class_multipliers = {key: [1.5, 1., 1., 1., 2.5][idx] for idx, key in enumerate(self.classes)}
         else:
-            class_multipl = {key: [1., 2.5][idx] for idx, key in enumerate(self.classes)}
+            class_multipliers = {key: [1., 2.5][idx] for idx, key in enumerate(self.classes)}
         for key in self.classes:
-            weights_per_class[key] = weights_per_class[key] * class_multipl[key]
+            weights_per_class[key] = weights_per_class[key] * class_multipliers[key]
         return weights_per_class, weights_per_image_type, image_type_counts, class_counts
 
     def set_sample_weights_to_df(self, df):
