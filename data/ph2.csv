@@ -5,203 +5,203 @@ dataset_id,image,image_type,class,"Asymmetry
 (A/P)","Regression Areas
 (A/P)","Blue-Whitish Veil
 (A/P)",White,Red,Light-Brown,Dark-Brown,Blue-Gray,Black
-ph2,IMD003/IMD003_Dermoscopic_Image/IMD003.bmp,1,Common Nevus,0,T,A,A,A,A,,,,X,,
-ph2,IMD009/IMD009_Dermoscopic_Image/IMD009.bmp,1,Common Nevus,0,T,A,A,A,A,,,X,,,
-ph2,IMD016/IMD016_Dermoscopic_Image/IMD016.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD022/IMD022_Dermoscopic_Image/IMD022.bmp,1,Common Nevus,0,T,A,A,A,A,,,X,,,
-ph2,IMD024/IMD024_Dermoscopic_Image/IMD024.bmp,1,Common Nevus,0,T,A,A,A,A,,,X,X,,
-ph2,IMD025/IMD025_Dermoscopic_Image/IMD025.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,,,
-ph2,IMD035/IMD035_Dermoscopic_Image/IMD035.bmp,1,Common Nevus,2,T,A,A,A,A,,X,X,,,
-ph2,IMD038/IMD038_Dermoscopic_Image/IMD038.bmp,1,Common Nevus,0,T,T,A,A,A,,,,X,,X
-ph2,IMD042/IMD042_Dermoscopic_Image/IMD042.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD044/IMD044_Dermoscopic_Image/IMD044.bmp,1,Common Nevus,0,T,T,A,A,A,,,,X,X,
-ph2,IMD045/IMD045_Dermoscopic_Image/IMD045.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,,,
-ph2,IMD050/IMD050_Dermoscopic_Image/IMD050.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,,,
-ph2,IMD092/IMD092_Dermoscopic_Image/IMD092.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD101/IMD101_Dermoscopic_Image/IMD101.bmp,1,Common Nevus,0,T,A,A,A,A,,,X,,,
-ph2,IMD103/IMD103_Dermoscopic_Image/IMD103.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD112/IMD112_Dermoscopic_Image/IMD112.bmp,1,Common Nevus,0,T,T,A,A,A,,X,X,X,,
-ph2,IMD118/IMD118_Dermoscopic_Image/IMD118.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD125/IMD125_Dermoscopic_Image/IMD125.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD132/IMD132_Dermoscopic_Image/IMD132.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD134/IMD134_Dermoscopic_Image/IMD134.bmp,1,Common Nevus,0,T,T,A,A,A,,X,X,X,,
-ph2,IMD135/IMD135_Dermoscopic_Image/IMD135.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD144/IMD144_Dermoscopic_Image/IMD144.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD146/IMD146_Dermoscopic_Image/IMD146.bmp,1,Common Nevus,1,T,A,P,A,A,,X,X,X,,
-ph2,IMD147/IMD147_Dermoscopic_Image/IMD147.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,,,
-ph2,IMD150/IMD150_Dermoscopic_Image/IMD150.bmp,1,Common Nevus,0,T,A,A,A,A,X,,,,X,
-ph2,IMD152/IMD152_Dermoscopic_Image/IMD152.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD156/IMD156_Dermoscopic_Image/IMD156.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,,,
-ph2,IMD159/IMD159_Dermoscopic_Image/IMD159.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,,,
-ph2,IMD161/IMD161_Dermoscopic_Image/IMD161.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD162/IMD162_Dermoscopic_Image/IMD162.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD175/IMD175_Dermoscopic_Image/IMD175.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD177/IMD177_Dermoscopic_Image/IMD177.bmp,1,Common Nevus,0,T,A,A,A,A,,,X,X,,
-ph2,IMD182/IMD182_Dermoscopic_Image/IMD182.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD198/IMD198_Dermoscopic_Image/IMD198.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,,,
-ph2,IMD200/IMD200_Dermoscopic_Image/IMD200.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,,,
-ph2,IMD010/IMD010_Dermoscopic_Image/IMD010.bmp,1,Common Nevus,0,T,A,A,A,A,,,X,,,
-ph2,IMD017/IMD017_Dermoscopic_Image/IMD017.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD020/IMD020_Dermoscopic_Image/IMD020.bmp,1,Common Nevus,0,T,T,A,A,A,,,,X,,X
-ph2,IMD039/IMD039_Dermoscopic_Image/IMD039.bmp,1,Common Nevus,0,T,T,A,A,A,,,,X,,
-ph2,IMD041/IMD041_Dermoscopic_Image/IMD041.bmp,1,Common Nevus,0,T,T,A,A,A,,,,X,,X
-ph2,IMD105/IMD105_Dermoscopic_Image/IMD105.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD107/IMD107_Dermoscopic_Image/IMD107.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD108/IMD108_Dermoscopic_Image/IMD108.bmp,1,Common Nevus,1,T,T,A,A,A,,,X,X,,
-ph2,IMD133/IMD133_Dermoscopic_Image/IMD133.bmp,1,Common Nevus,0,T,A,A,A,A,,,X,,,
-ph2,IMD142/IMD142_Dermoscopic_Image/IMD142.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD143/IMD143_Dermoscopic_Image/IMD143.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD160/IMD160_Dermoscopic_Image/IMD160.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD173/IMD173_Dermoscopic_Image/IMD173.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,,,
-ph2,IMD176/IMD176_Dermoscopic_Image/IMD176.bmp,1,Common Nevus,0,T,AT,A,A,A,,,X,X,,
-ph2,IMD196/IMD196_Dermoscopic_Image/IMD196.bmp,1,Common Nevus,0,T,A,A,A,A,,,X,,,
-ph2,IMD197/IMD197_Dermoscopic_Image/IMD197.bmp,1,Common Nevus,0,T,AT,A,A,A,,,,X,,X
-ph2,IMD199/IMD199_Dermoscopic_Image/IMD199.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,,,
-ph2,IMD203/IMD203_Dermoscopic_Image/IMD203.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD204/IMD204_Dermoscopic_Image/IMD204.bmp,1,Common Nevus,0,T,AT,A,A,A,,,X,X,,
-ph2,IMD206/IMD206_Dermoscopic_Image/IMD206.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD207/IMD207_Dermoscopic_Image/IMD207.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD208/IMD208_Dermoscopic_Image/IMD208.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD364/IMD364_Dermoscopic_Image/IMD364.bmp,1,Common Nevus,0,T,A,A,A,A,,,X,X,,
-ph2,IMD365/IMD365_Dermoscopic_Image/IMD365.bmp,1,Common Nevus,0,T,A,A,A,A,,,X,X,,
-ph2,IMD367/IMD367_Dermoscopic_Image/IMD367.bmp,1,Common Nevus,0,T,A,A,A,A,,,,X,,
-ph2,IMD371/IMD371_Dermoscopic_Image/IMD371.bmp,1,Common Nevus,0,T,A,A,A,A,,,,X,,
-ph2,IMD372/IMD372_Dermoscopic_Image/IMD372.bmp,1,Common Nevus,0,T,A,A,A,A,,,X,,,
-ph2,IMD374/IMD374_Dermoscopic_Image/IMD374.bmp,1,Common Nevus,0,T,A,A,A,A,,,X,X,,
-ph2,IMD375/IMD375_Dermoscopic_Image/IMD375.bmp,1,Common Nevus,0,T,A,A,A,A,,,,X,,
-ph2,IMD378/IMD378_Dermoscopic_Image/IMD378.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD379/IMD379_Dermoscopic_Image/IMD379.bmp,1,Common Nevus,0,T,A,A,A,A,,,X,X,,
-ph2,IMD380/IMD380_Dermoscopic_Image/IMD380.bmp,1,Common Nevus,0,T,A,A,A,A,,,,X,,
-ph2,IMD381/IMD381_Dermoscopic_Image/IMD381.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,,,
-ph2,IMD383/IMD383_Dermoscopic_Image/IMD383.bmp,1,Common Nevus,0,T,A,A,A,A,,,X,,,
-ph2,IMD384/IMD384_Dermoscopic_Image/IMD384.bmp,1,Common Nevus,0,T,A,A,A,A,,,,X,,
-ph2,IMD385/IMD385_Dermoscopic_Image/IMD385.bmp,1,Common Nevus,0,T,T,A,A,A,,,X,X,,
-ph2,IMD389/IMD389_Dermoscopic_Image/IMD389.bmp,1,Common Nevus,0,T,T,A,A,A,,,,X,,
-ph2,IMD390/IMD390_Dermoscopic_Image/IMD390.bmp,1,Common Nevus,0,T,A,A,A,A,,,X,,,
-ph2,IMD392/IMD392_Dermoscopic_Image/IMD392.bmp,1,Common Nevus,0,T,AT,A,A,A,,,,X,,
-ph2,IMD394/IMD394_Dermoscopic_Image/IMD394.bmp,1,Common Nevus,0,T,A,A,A,A,,,,X,,
-ph2,IMD395/IMD395_Dermoscopic_Image/IMD395.bmp,1,Common Nevus,0,T,A,A,A,A,,,,X,,
-ph2,IMD397/IMD397_Dermoscopic_Image/IMD397.bmp,1,Common Nevus,0,T,AT,A,A,A,,,,X,,
-ph2,IMD399/IMD399_Dermoscopic_Image/IMD399.bmp,1,Common Nevus,0,T,A,A,A,A,,,X,X,,
-ph2,IMD400/IMD400_Dermoscopic_Image/IMD400.bmp,1,Common Nevus,0,T,A,A,A,A,,,,X,,
-ph2,IMD402/IMD402_Dermoscopic_Image/IMD402.bmp,1,Common Nevus,0,T,A,A,A,A,,,,X,,
-ph2,IMD002/IMD002_Dermoscopic_Image/IMD002.bmp,1,Atypical Nevus,1,AT,A,A,A,A,,,X,X,,
-ph2,IMD004/IMD004_Dermoscopic_Image/IMD004.bmp,1,Atypical Nevus,1,AT,A,A,A,A,,,X,X,,
-ph2,IMD013/IMD013_Dermoscopic_Image/IMD013.bmp,1,Atypical Nevus,1,AT,A,A,A,A,,,X,,,
-ph2,IMD015/IMD015_Dermoscopic_Image/IMD015.bmp,1,Atypical Nevus,0,AT,A,A,A,A,,X,,,X,
-ph2,IMD019/IMD019_Dermoscopic_Image/IMD019.bmp,1,Atypical Nevus,0,AT,T,A,A,A,,,,X,,
-ph2,IMD021/IMD021_Dermoscopic_Image/IMD021.bmp,1,Atypical Nevus,0,AT,T,A,A,A,,,,X,,X
-ph2,IMD027/IMD027_Dermoscopic_Image/IMD027.bmp,1,Atypical Nevus,0,AT,T,A,A,A,,,X,X,,
-ph2,IMD030/IMD030_Dermoscopic_Image/IMD030.bmp,1,Atypical Nevus,0,AT,A,A,A,A,,,X,X,,
-ph2,IMD032/IMD032_Dermoscopic_Image/IMD032.bmp,1,Atypical Nevus,1,AT,A,A,A,A,,,X,X,,
-ph2,IMD033/IMD033_Dermoscopic_Image/IMD033.bmp,1,Atypical Nevus,2,AT,T,A,A,A,,,X,,,X
-ph2,IMD037/IMD037_Dermoscopic_Image/IMD037.bmp,1,Atypical Nevus,1,AT,AT,A,A,A,,,X,X,,
-ph2,IMD040/IMD040_Dermoscopic_Image/IMD040.bmp,1,Atypical Nevus,1,AT,T,A,A,A,,,X,X,,
-ph2,IMD043/IMD043_Dermoscopic_Image/IMD043.bmp,1,Atypical Nevus,1,AT,T,A,A,A,,,,X,,X
-ph2,IMD047/IMD047_Dermoscopic_Image/IMD047.bmp,1,Atypical Nevus,0,AT,A,A,A,A,,,X,X,,
-ph2,IMD048/IMD048_Dermoscopic_Image/IMD048.bmp,1,Atypical Nevus,1,AT,AT,A,A,A,,,X,,,
-ph2,IMD049/IMD049_Dermoscopic_Image/IMD049.bmp,1,Atypical Nevus,1,AT,A,A,A,P,,,,X,X,
-ph2,IMD057/IMD057_Dermoscopic_Image/IMD057.bmp,1,Atypical Nevus,0,AT,A,A,A,A,,,,X,,X
-ph2,IMD075/IMD075_Dermoscopic_Image/IMD075.bmp,1,Atypical Nevus,2,AT,AT,A,A,A,,,,X,,X
-ph2,IMD076/IMD076_Dermoscopic_Image/IMD076.bmp,1,Atypical Nevus,2,AT,A,A,A,A,,,,,X,
-ph2,IMD078/IMD078_Dermoscopic_Image/IMD078.bmp,1,Atypical Nevus,2,AT,AT,A,A,A,,,,,,X
-ph2,IMD120/IMD120_Dermoscopic_Image/IMD120.bmp,1,Atypical Nevus,0,AT,A,A,A,A,,,X,X,,
-ph2,IMD126/IMD126_Dermoscopic_Image/IMD126.bmp,1,Atypical Nevus,1,AT,A,A,A,A,,,X,,,X
-ph2,IMD137/IMD137_Dermoscopic_Image/IMD137.bmp,1,Atypical Nevus,1,AT,AT,A,A,A,,,X,X,,
-ph2,IMD138/IMD138_Dermoscopic_Image/IMD138.bmp,1,Atypical Nevus,1,AT,AT,A,A,A,,,X,X,,
-ph2,IMD139/IMD139_Dermoscopic_Image/IMD139.bmp,1,Atypical Nevus,0,AT,AT,P,A,A,,,,X,,X
-ph2,IMD140/IMD140_Dermoscopic_Image/IMD140.bmp,1,Atypical Nevus,0,AT,A,P,A,A,,,,X,,X
-ph2,IMD149/IMD149_Dermoscopic_Image/IMD149.bmp,1,Atypical Nevus,0,AT,T,A,A,A,X,,,X,X,
-ph2,IMD153/IMD153_Dermoscopic_Image/IMD153.bmp,1,Atypical Nevus,1,AT,A,A,A,A,X,,X,,,
-ph2,IMD157/IMD157_Dermoscopic_Image/IMD157.bmp,1,Atypical Nevus,2,AT,A,A,A,A,,,X,,X,
-ph2,IMD164/IMD164_Dermoscopic_Image/IMD164.bmp,1,Atypical Nevus,0,AT,AT,A,A,A,,,X,X,,
-ph2,IMD166/IMD166_Dermoscopic_Image/IMD166.bmp,1,Atypical Nevus,0,AT,AT,A,A,A,,,X,X,,
-ph2,IMD169/IMD169_Dermoscopic_Image/IMD169.bmp,1,Atypical Nevus,0,AT,AT,P,A,P,,,,X,X,X
-ph2,IMD171/IMD171_Dermoscopic_Image/IMD171.bmp,1,Atypical Nevus,0,AT,A,P,A,A,,X,,X,,X
-ph2,IMD210/IMD210_Dermoscopic_Image/IMD210.bmp,1,Atypical Nevus,2,AT,A,P,A,P,,,,X,X,X
-ph2,IMD347/IMD347_Dermoscopic_Image/IMD347.bmp,1,Atypical Nevus,0,AT,AT,A,A,P,,,,X,X,
-ph2,IMD155/IMD155_Dermoscopic_Image/IMD155.bmp,1,Atypical Nevus,0,T,AT,A,A,A,,,X,X,,
-ph2,IMD376/IMD376_Dermoscopic_Image/IMD376.bmp,1,Atypical Nevus,0,T,A,P,A,A,,,,X,,
-ph2,IMD006/IMD006_Dermoscopic_Image/IMD006.bmp,1,Atypical Nevus,2,AT,AT,A,A,A,,,X,X,,
-ph2,IMD008/IMD008_Dermoscopic_Image/IMD008.bmp,1,Atypical Nevus,0,T,A,A,A,A,,,X,,,
-ph2,IMD014/IMD014_Dermoscopic_Image/IMD014.bmp,1,Atypical Nevus,1,AT,AT,A,P,A,X,,X,X,,
-ph2,IMD018/IMD018_Dermoscopic_Image/IMD018.bmp,1,Atypical Nevus,0,AT,AT,A,A,A,,,,X,,
-ph2,IMD023/IMD023_Dermoscopic_Image/IMD023.bmp,1,Atypical Nevus,0,AT,A,A,A,A,,,X,,,
-ph2,IMD031/IMD031_Dermoscopic_Image/IMD031.bmp,1,Atypical Nevus,0,AT,A,P,A,P,,,,X,X,
-ph2,IMD036/IMD036_Dermoscopic_Image/IMD036.bmp,1,Atypical Nevus,0,AT,T,A,A,A,,,X,,,
-ph2,IMD154/IMD154_Dermoscopic_Image/IMD154.bmp,1,Atypical Nevus,0,AT,A,A,P,A,X,,X,,,
-ph2,IMD170/IMD170_Dermoscopic_Image/IMD170.bmp,1,Atypical Nevus,1,AT,AT,A,A,A,,,X,X,,
-ph2,IMD226/IMD226_Dermoscopic_Image/IMD226.bmp,1,Atypical Nevus,1,AT,AT,A,A,A,,,X,X,,
-ph2,IMD243/IMD243_Dermoscopic_Image/IMD243.bmp,1,Atypical Nevus,0,AT,AT,P,A,A,,X,,X,,
-ph2,IMD251/IMD251_Dermoscopic_Image/IMD251.bmp,1,Atypical Nevus,1,AT,A,A,A,A,,,X,X,,
-ph2,IMD254/IMD254_Dermoscopic_Image/IMD254.bmp,1,Atypical Nevus,2,AT,A,A,A,A,,,X,,,
-ph2,IMD256/IMD256_Dermoscopic_Image/IMD256.bmp,1,Atypical Nevus,1,AT,A,P,A,A,,,,X,,
-ph2,IMD278/IMD278_Dermoscopic_Image/IMD278.bmp,1,Atypical Nevus,1,AT,A,A,A,A,,,X,X,,
-ph2,IMD279/IMD279_Dermoscopic_Image/IMD279.bmp,1,Atypical Nevus,1,AT,A,A,A,A,,,X,X,,
-ph2,IMD280/IMD280_Dermoscopic_Image/IMD280.bmp,1,Atypical Nevus,1,AT,A,A,A,A,,,X,X,,
-ph2,IMD304/IMD304_Dermoscopic_Image/IMD304.bmp,1,Atypical Nevus,2,AT,AT,A,A,A,,,X,X,,
-ph2,IMD305/IMD305_Dermoscopic_Image/IMD305.bmp,1,Atypical Nevus,2,AT,AT,A,A,A,,,X,X,,
-ph2,IMD306/IMD306_Dermoscopic_Image/IMD306.bmp,1,Atypical Nevus,0,AT,A,P,A,A,,,,X,,
-ph2,IMD312/IMD312_Dermoscopic_Image/IMD312.bmp,1,Atypical Nevus,2,AT,A,A,A,A,,,X,X,,
-ph2,IMD328/IMD328_Dermoscopic_Image/IMD328.bmp,1,Atypical Nevus,0,AT,AT,A,A,A,,,,X,,
-ph2,IMD331/IMD331_Dermoscopic_Image/IMD331.bmp,1,Atypical Nevus,0,AT,AT,A,A,A,,,,X,,
-ph2,IMD339/IMD339_Dermoscopic_Image/IMD339.bmp,1,Atypical Nevus,2,AT,AT,A,A,A,,,X,X,,
-ph2,IMD356/IMD356_Dermoscopic_Image/IMD356.bmp,1,Atypical Nevus,0,AT,A,A,A,A,,,X,X,,
-ph2,IMD360/IMD360_Dermoscopic_Image/IMD360.bmp,1,Atypical Nevus,0,AT,A,A,A,A,,,,X,,
-ph2,IMD368/IMD368_Dermoscopic_Image/IMD368.bmp,1,Atypical Nevus,2,AT,A,A,A,A,,,X,X,,
-ph2,IMD369/IMD369_Dermoscopic_Image/IMD369.bmp,1,Atypical Nevus,0,AT,AT,A,A,A,,,X,X,,X
-ph2,IMD370/IMD370_Dermoscopic_Image/IMD370.bmp,1,Atypical Nevus,2,AT,AT,A,A,A,,,X,,,
-ph2,IMD382/IMD382_Dermoscopic_Image/IMD382.bmp,1,Atypical Nevus,1,AT,AT,A,A,A,,,X,X,,
-ph2,IMD386/IMD386_Dermoscopic_Image/IMD386.bmp,1,Atypical Nevus,0,AT,A,P,A,A,,,,X,,
-ph2,IMD388/IMD388_Dermoscopic_Image/IMD388.bmp,1,Atypical Nevus,2,AT,AT,A,A,A,,,X,X,,
-ph2,IMD393/IMD393_Dermoscopic_Image/IMD393.bmp,1,Atypical Nevus,0,AT,A,P,A,A,,X,X,,,
-ph2,IMD396/IMD396_Dermoscopic_Image/IMD396.bmp,1,Atypical Nevus,1,AT,A,A,A,A,,,,X,,
-ph2,IMD398/IMD398_Dermoscopic_Image/IMD398.bmp,1,Atypical Nevus,1,AT,A,A,A,A,,,,X,,
-ph2,IMD427/IMD427_Dermoscopic_Image/IMD427.bmp,1,Atypical Nevus,0,AT,AT,A,A,A,,,X,X,,X
-ph2,IMD430/IMD430_Dermoscopic_Image/IMD430.bmp,1,Atypical Nevus,0,AT,A,P,P,A,X,,X,X,,
-ph2,IMD431/IMD431_Dermoscopic_Image/IMD431.bmp,1,Atypical Nevus,1,AT,AT,A,A,A,,,X,X,,
-ph2,IMD432/IMD432_Dermoscopic_Image/IMD432.bmp,1,Atypical Nevus,2,AT,AT,P,A,A,,,X,X,,
-ph2,IMD433/IMD433_Dermoscopic_Image/IMD433.bmp,1,Atypical Nevus,1,AT,A,P,A,A,,,X,X,,
-ph2,IMD434/IMD434_Dermoscopic_Image/IMD434.bmp,1,Atypical Nevus,2,AT,AT,P,A,P,,,X,X,X,
-ph2,IMD436/IMD436_Dermoscopic_Image/IMD436.bmp,1,Atypical Nevus,1,AT,A,A,A,A,,,X,X,,
-ph2,IMD437/IMD437_Dermoscopic_Image/IMD437.bmp,1,Atypical Nevus,2,AT,AT,A,P,A,,,,X,,X
-ph2,IMD058/IMD058_Dermoscopic_Image/IMD058.bmp,1,Melanoma,0,AT,A,A,P,P,X,X,,X,X,
-ph2,IMD061/IMD061_Dermoscopic_Image/IMD061.bmp,1,Melanoma,2,AT,A,A,P,P,,,X,,X,
-ph2,IMD063/IMD063_Dermoscopic_Image/IMD063.bmp,1,Melanoma,2,AT,AT,A,A,P,,,X,X,,
-ph2,IMD064/IMD064_Dermoscopic_Image/IMD064.bmp,1,Melanoma,2,AT,A,P,P,P,X,,X,,X,
-ph2,IMD065/IMD065_Dermoscopic_Image/IMD065.bmp,1,Melanoma,2,AT,A,A,P,P,,,,X,,X
-ph2,IMD080/IMD080_Dermoscopic_Image/IMD080.bmp,1,Melanoma,2,AT,A,P,P,P,,X,,X,,X
-ph2,IMD085/IMD085_Dermoscopic_Image/IMD085.bmp,1,Melanoma,2,AT,A,A,A,P,,,,,X,X
-ph2,IMD088/IMD088_Dermoscopic_Image/IMD088.bmp,1,Melanoma,2,AT,AT,P,P,P,X,,,X,X,X
-ph2,IMD090/IMD090_Dermoscopic_Image/IMD090.bmp,1,Melanoma,2,AT,AT,P,P,P,,,,X,X,X
-ph2,IMD091/IMD091_Dermoscopic_Image/IMD091.bmp,1,Melanoma,0,T,AT,A,A,P,,,,,X,X
-ph2,IMD168/IMD168_Dermoscopic_Image/IMD168.bmp,1,Melanoma,2,AT,A,P,P,P,X,,,X,X,X
-ph2,IMD211/IMD211_Dermoscopic_Image/IMD211.bmp,1,Melanoma,1,AT,A,A,A,P,,,,,X,X
-ph2,IMD219/IMD219_Dermoscopic_Image/IMD219.bmp,1,Melanoma,2,AT,AT,A,P,P,,,X,X,X,X
-ph2,IMD240/IMD240_Dermoscopic_Image/IMD240.bmp,1,Melanoma,2,AT,A,P,P,P,,,,,X,X
-ph2,IMD242/IMD242_Dermoscopic_Image/IMD242.bmp,1,Melanoma,2,AT,A,A,A,A,,,X,X,,X
-ph2,IMD284/IMD284_Dermoscopic_Image/IMD284.bmp,1,Melanoma,2,AT,AT,A,A,P,,,,X,X,
-ph2,IMD285/IMD285_Dermoscopic_Image/IMD285.bmp,1,Melanoma,0,AT,A,A,A,P,,,X,X,X,
-ph2,IMD348/IMD348_Dermoscopic_Image/IMD348.bmp,1,Melanoma,2,AT,AT,P,P,P,X,,,X,X,X
-ph2,IMD349/IMD349_Dermoscopic_Image/IMD349.bmp,1,Melanoma,2,AT,AT,A,P,P,,,X,X,,
-ph2,IMD403/IMD403_Dermoscopic_Image/IMD403.bmp,1,Melanoma,2,AT,A,A,P,A,X,,X,X,,
-ph2,IMD404/IMD404_Dermoscopic_Image/IMD404.bmp,1,Melanoma,2,AT,AT,A,A,A,X,,X,X,,
-ph2,IMD405/IMD405_Dermoscopic_Image/IMD405.bmp,1,Melanoma,2,AT,AT,A,A,P,,,X,X,X,X
-ph2,IMD407/IMD407_Dermoscopic_Image/IMD407.bmp,1,Melanoma,2,AT,AT,P,A,A,,,X,X,,X
-ph2,IMD408/IMD408_Dermoscopic_Image/IMD408.bmp,1,Melanoma,2,AT,AT,P,P,P,X,,X,X,X,X
-ph2,IMD409/IMD409_Dermoscopic_Image/IMD409.bmp,1,Melanoma,2,AT,A,P,P,P,X,,X,X,X,X
-ph2,IMD410/IMD410_Dermoscopic_Image/IMD410.bmp,1,Melanoma,1,AT,AT,A,A,A,,,X,X,,
-ph2,IMD413/IMD413_Dermoscopic_Image/IMD413.bmp,1,Melanoma,2,AT,AT,A,A,A,,,X,X,,
-ph2,IMD417/IMD417_Dermoscopic_Image/IMD417.bmp,1,Melanoma,2,AT,AT,A,P,P,X,,X,X,X,X
-ph2,IMD418/IMD418_Dermoscopic_Image/IMD418.bmp,1,Melanoma,2,AT,A,A,A,A,,,X,X,,X
-ph2,IMD419/IMD419_Dermoscopic_Image/IMD419.bmp,1,Melanoma,2,AT,A,A,A,P,,,X,X,X,X
-ph2,IMD406/IMD406_Dermoscopic_Image/IMD406.bmp,1,Melanoma,2,AT,AT,A,P,A,X,,X,X,,
-ph2,IMD411/IMD411_Dermoscopic_Image/IMD411.bmp,1,Melanoma,2,AT,AT,A,A,A,,,X,X,,
-ph2,IMD420/IMD420_Dermoscopic_Image/IMD420.bmp,1,Melanoma,2,AT,AT,P,P,P,X,,X,X,X,
-ph2,IMD421/IMD421_Dermoscopic_Image/IMD421.bmp,1,Melanoma,2,AT,AT,A,P,P,X,,X,X,X,
-ph2,IMD423/IMD423_Dermoscopic_Image/IMD423.bmp,1,Melanoma,0,AT,AT,A,A,P,,,X,X,X,
-ph2,IMD424/IMD424_Dermoscopic_Image/IMD424.bmp,1,Melanoma,2,AT,AT,P,A,P,,,X,X,X,X
-ph2,IMD425/IMD425_Dermoscopic_Image/IMD425.bmp,1,Melanoma,2,AT,AT,A,P,P,,,X,X,X,X
-ph2,IMD426/IMD426_Dermoscopic_Image/IMD426.bmp,1,Melanoma,2,AT,A,A,P,A,,,X,X,,
-ph2,IMD429/IMD429_Dermoscopic_Image/IMD429.bmp,1,Melanoma,0,AT,A,P,A,P,,,X,X,X,X
-ph2,IMD435/IMD435_Dermoscopic_Image/IMD435.bmp,1,Melanoma,2,AT,A,A,A,P,,,X,X,X,X
+ph2,IMD003/IMD003_Dermoscopic_Image/IMD003.bmp,derm,Common Nevus,0,T,A,A,A,A,,,,X,,
+ph2,IMD009/IMD009_Dermoscopic_Image/IMD009.bmp,derm,Common Nevus,0,T,A,A,A,A,,,X,,,
+ph2,IMD016/IMD016_Dermoscopic_Image/IMD016.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD022/IMD022_Dermoscopic_Image/IMD022.bmp,derm,Common Nevus,0,T,A,A,A,A,,,X,,,
+ph2,IMD024/IMD024_Dermoscopic_Image/IMD024.bmp,derm,Common Nevus,0,T,A,A,A,A,,,X,X,,
+ph2,IMD025/IMD025_Dermoscopic_Image/IMD025.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,,,
+ph2,IMD035/IMD035_Dermoscopic_Image/IMD035.bmp,derm,Common Nevus,2,T,A,A,A,A,,X,X,,,
+ph2,IMD038/IMD038_Dermoscopic_Image/IMD038.bmp,derm,Common Nevus,0,T,T,A,A,A,,,,X,,X
+ph2,IMD042/IMD042_Dermoscopic_Image/IMD042.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD044/IMD044_Dermoscopic_Image/IMD044.bmp,derm,Common Nevus,0,T,T,A,A,A,,,,X,X,
+ph2,IMD045/IMD045_Dermoscopic_Image/IMD045.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,,,
+ph2,IMD050/IMD050_Dermoscopic_Image/IMD050.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,,,
+ph2,IMD092/IMD092_Dermoscopic_Image/IMD092.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD101/IMD101_Dermoscopic_Image/IMD101.bmp,derm,Common Nevus,0,T,A,A,A,A,,,X,,,
+ph2,IMD103/IMD103_Dermoscopic_Image/IMD103.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD112/IMD112_Dermoscopic_Image/IMD112.bmp,derm,Common Nevus,0,T,T,A,A,A,,X,X,X,,
+ph2,IMD118/IMD118_Dermoscopic_Image/IMD118.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD125/IMD125_Dermoscopic_Image/IMD125.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD132/IMD132_Dermoscopic_Image/IMD132.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD134/IMD134_Dermoscopic_Image/IMD134.bmp,derm,Common Nevus,0,T,T,A,A,A,,X,X,X,,
+ph2,IMD135/IMD135_Dermoscopic_Image/IMD135.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD144/IMD144_Dermoscopic_Image/IMD144.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD146/IMD146_Dermoscopic_Image/IMD146.bmp,derm,Common Nevus,1,T,A,P,A,A,,X,X,X,,
+ph2,IMD147/IMD147_Dermoscopic_Image/IMD147.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,,,
+ph2,IMD150/IMD150_Dermoscopic_Image/IMD150.bmp,derm,Common Nevus,0,T,A,A,A,A,X,,,,X,
+ph2,IMD152/IMD152_Dermoscopic_Image/IMD152.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD156/IMD156_Dermoscopic_Image/IMD156.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,,,
+ph2,IMD159/IMD159_Dermoscopic_Image/IMD159.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,,,
+ph2,IMD161/IMD161_Dermoscopic_Image/IMD161.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD162/IMD162_Dermoscopic_Image/IMD162.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD175/IMD175_Dermoscopic_Image/IMD175.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD177/IMD177_Dermoscopic_Image/IMD177.bmp,derm,Common Nevus,0,T,A,A,A,A,,,X,X,,
+ph2,IMD182/IMD182_Dermoscopic_Image/IMD182.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD198/IMD198_Dermoscopic_Image/IMD198.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,,,
+ph2,IMD200/IMD200_Dermoscopic_Image/IMD200.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,,,
+ph2,IMD010/IMD010_Dermoscopic_Image/IMD010.bmp,derm,Common Nevus,0,T,A,A,A,A,,,X,,,
+ph2,IMD017/IMD017_Dermoscopic_Image/IMD017.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD020/IMD020_Dermoscopic_Image/IMD020.bmp,derm,Common Nevus,0,T,T,A,A,A,,,,X,,X
+ph2,IMD039/IMD039_Dermoscopic_Image/IMD039.bmp,derm,Common Nevus,0,T,T,A,A,A,,,,X,,
+ph2,IMD041/IMD041_Dermoscopic_Image/IMD041.bmp,derm,Common Nevus,0,T,T,A,A,A,,,,X,,X
+ph2,IMD105/IMD105_Dermoscopic_Image/IMD105.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD107/IMD107_Dermoscopic_Image/IMD107.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD108/IMD108_Dermoscopic_Image/IMD108.bmp,derm,Common Nevus,1,T,T,A,A,A,,,X,X,,
+ph2,IMD133/IMD133_Dermoscopic_Image/IMD133.bmp,derm,Common Nevus,0,T,A,A,A,A,,,X,,,
+ph2,IMD142/IMD142_Dermoscopic_Image/IMD142.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD143/IMD143_Dermoscopic_Image/IMD143.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD160/IMD160_Dermoscopic_Image/IMD160.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD173/IMD173_Dermoscopic_Image/IMD173.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,,,
+ph2,IMD176/IMD176_Dermoscopic_Image/IMD176.bmp,derm,Common Nevus,0,T,AT,A,A,A,,,X,X,,
+ph2,IMD196/IMD196_Dermoscopic_Image/IMD196.bmp,derm,Common Nevus,0,T,A,A,A,A,,,X,,,
+ph2,IMD197/IMD197_Dermoscopic_Image/IMD197.bmp,derm,Common Nevus,0,T,AT,A,A,A,,,,X,,X
+ph2,IMD199/IMD199_Dermoscopic_Image/IMD199.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,,,
+ph2,IMD203/IMD203_Dermoscopic_Image/IMD203.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD204/IMD204_Dermoscopic_Image/IMD204.bmp,derm,Common Nevus,0,T,AT,A,A,A,,,X,X,,
+ph2,IMD206/IMD206_Dermoscopic_Image/IMD206.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD207/IMD207_Dermoscopic_Image/IMD207.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD208/IMD208_Dermoscopic_Image/IMD208.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD364/IMD364_Dermoscopic_Image/IMD364.bmp,derm,Common Nevus,0,T,A,A,A,A,,,X,X,,
+ph2,IMD365/IMD365_Dermoscopic_Image/IMD365.bmp,derm,Common Nevus,0,T,A,A,A,A,,,X,X,,
+ph2,IMD367/IMD367_Dermoscopic_Image/IMD367.bmp,derm,Common Nevus,0,T,A,A,A,A,,,,X,,
+ph2,IMD371/IMD371_Dermoscopic_Image/IMD371.bmp,derm,Common Nevus,0,T,A,A,A,A,,,,X,,
+ph2,IMD372/IMD372_Dermoscopic_Image/IMD372.bmp,derm,Common Nevus,0,T,A,A,A,A,,,X,,,
+ph2,IMD374/IMD374_Dermoscopic_Image/IMD374.bmp,derm,Common Nevus,0,T,A,A,A,A,,,X,X,,
+ph2,IMD375/IMD375_Dermoscopic_Image/IMD375.bmp,derm,Common Nevus,0,T,A,A,A,A,,,,X,,
+ph2,IMD378/IMD378_Dermoscopic_Image/IMD378.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD379/IMD379_Dermoscopic_Image/IMD379.bmp,derm,Common Nevus,0,T,A,A,A,A,,,X,X,,
+ph2,IMD380/IMD380_Dermoscopic_Image/IMD380.bmp,derm,Common Nevus,0,T,A,A,A,A,,,,X,,
+ph2,IMD381/IMD381_Dermoscopic_Image/IMD381.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,,,
+ph2,IMD383/IMD383_Dermoscopic_Image/IMD383.bmp,derm,Common Nevus,0,T,A,A,A,A,,,X,,,
+ph2,IMD384/IMD384_Dermoscopic_Image/IMD384.bmp,derm,Common Nevus,0,T,A,A,A,A,,,,X,,
+ph2,IMD385/IMD385_Dermoscopic_Image/IMD385.bmp,derm,Common Nevus,0,T,T,A,A,A,,,X,X,,
+ph2,IMD389/IMD389_Dermoscopic_Image/IMD389.bmp,derm,Common Nevus,0,T,T,A,A,A,,,,X,,
+ph2,IMD390/IMD390_Dermoscopic_Image/IMD390.bmp,derm,Common Nevus,0,T,A,A,A,A,,,X,,,
+ph2,IMD392/IMD392_Dermoscopic_Image/IMD392.bmp,derm,Common Nevus,0,T,AT,A,A,A,,,,X,,
+ph2,IMD394/IMD394_Dermoscopic_Image/IMD394.bmp,derm,Common Nevus,0,T,A,A,A,A,,,,X,,
+ph2,IMD395/IMD395_Dermoscopic_Image/IMD395.bmp,derm,Common Nevus,0,T,A,A,A,A,,,,X,,
+ph2,IMD397/IMD397_Dermoscopic_Image/IMD397.bmp,derm,Common Nevus,0,T,AT,A,A,A,,,,X,,
+ph2,IMD399/IMD399_Dermoscopic_Image/IMD399.bmp,derm,Common Nevus,0,T,A,A,A,A,,,X,X,,
+ph2,IMD400/IMD400_Dermoscopic_Image/IMD400.bmp,derm,Common Nevus,0,T,A,A,A,A,,,,X,,
+ph2,IMD402/IMD402_Dermoscopic_Image/IMD402.bmp,derm,Common Nevus,0,T,A,A,A,A,,,,X,,
+ph2,IMD002/IMD002_Dermoscopic_Image/IMD002.bmp,derm,Atypical Nevus,1,AT,A,A,A,A,,,X,X,,
+ph2,IMD004/IMD004_Dermoscopic_Image/IMD004.bmp,derm,Atypical Nevus,1,AT,A,A,A,A,,,X,X,,
+ph2,IMD013/IMD013_Dermoscopic_Image/IMD013.bmp,derm,Atypical Nevus,1,AT,A,A,A,A,,,X,,,
+ph2,IMD015/IMD015_Dermoscopic_Image/IMD015.bmp,derm,Atypical Nevus,0,AT,A,A,A,A,,X,,,X,
+ph2,IMD019/IMD019_Dermoscopic_Image/IMD019.bmp,derm,Atypical Nevus,0,AT,T,A,A,A,,,,X,,
+ph2,IMD021/IMD021_Dermoscopic_Image/IMD021.bmp,derm,Atypical Nevus,0,AT,T,A,A,A,,,,X,,X
+ph2,IMD027/IMD027_Dermoscopic_Image/IMD027.bmp,derm,Atypical Nevus,0,AT,T,A,A,A,,,X,X,,
+ph2,IMD030/IMD030_Dermoscopic_Image/IMD030.bmp,derm,Atypical Nevus,0,AT,A,A,A,A,,,X,X,,
+ph2,IMD032/IMD032_Dermoscopic_Image/IMD032.bmp,derm,Atypical Nevus,1,AT,A,A,A,A,,,X,X,,
+ph2,IMD033/IMD033_Dermoscopic_Image/IMD033.bmp,derm,Atypical Nevus,2,AT,T,A,A,A,,,X,,,X
+ph2,IMD037/IMD037_Dermoscopic_Image/IMD037.bmp,derm,Atypical Nevus,1,AT,AT,A,A,A,,,X,X,,
+ph2,IMD040/IMD040_Dermoscopic_Image/IMD040.bmp,derm,Atypical Nevus,1,AT,T,A,A,A,,,X,X,,
+ph2,IMD043/IMD043_Dermoscopic_Image/IMD043.bmp,derm,Atypical Nevus,1,AT,T,A,A,A,,,,X,,X
+ph2,IMD047/IMD047_Dermoscopic_Image/IMD047.bmp,derm,Atypical Nevus,0,AT,A,A,A,A,,,X,X,,
+ph2,IMD048/IMD048_Dermoscopic_Image/IMD048.bmp,derm,Atypical Nevus,1,AT,AT,A,A,A,,,X,,,
+ph2,IMD049/IMD049_Dermoscopic_Image/IMD049.bmp,derm,Atypical Nevus,1,AT,A,A,A,P,,,,X,X,
+ph2,IMD057/IMD057_Dermoscopic_Image/IMD057.bmp,derm,Atypical Nevus,0,AT,A,A,A,A,,,,X,,X
+ph2,IMD075/IMD075_Dermoscopic_Image/IMD075.bmp,derm,Atypical Nevus,2,AT,AT,A,A,A,,,,X,,X
+ph2,IMD076/IMD076_Dermoscopic_Image/IMD076.bmp,derm,Atypical Nevus,2,AT,A,A,A,A,,,,,X,
+ph2,IMD078/IMD078_Dermoscopic_Image/IMD078.bmp,derm,Atypical Nevus,2,AT,AT,A,A,A,,,,,,X
+ph2,IMD120/IMD120_Dermoscopic_Image/IMD120.bmp,derm,Atypical Nevus,0,AT,A,A,A,A,,,X,X,,
+ph2,IMD126/IMD126_Dermoscopic_Image/IMD126.bmp,derm,Atypical Nevus,1,AT,A,A,A,A,,,X,,,X
+ph2,IMD137/IMD137_Dermoscopic_Image/IMD137.bmp,derm,Atypical Nevus,1,AT,AT,A,A,A,,,X,X,,
+ph2,IMD138/IMD138_Dermoscopic_Image/IMD138.bmp,derm,Atypical Nevus,1,AT,AT,A,A,A,,,X,X,,
+ph2,IMD139/IMD139_Dermoscopic_Image/IMD139.bmp,derm,Atypical Nevus,0,AT,AT,P,A,A,,,,X,,X
+ph2,IMD140/IMD140_Dermoscopic_Image/IMD140.bmp,derm,Atypical Nevus,0,AT,A,P,A,A,,,,X,,X
+ph2,IMD149/IMD149_Dermoscopic_Image/IMD149.bmp,derm,Atypical Nevus,0,AT,T,A,A,A,X,,,X,X,
+ph2,IMD153/IMD153_Dermoscopic_Image/IMD153.bmp,derm,Atypical Nevus,1,AT,A,A,A,A,X,,X,,,
+ph2,IMD157/IMD157_Dermoscopic_Image/IMD157.bmp,derm,Atypical Nevus,2,AT,A,A,A,A,,,X,,X,
+ph2,IMD164/IMD164_Dermoscopic_Image/IMD164.bmp,derm,Atypical Nevus,0,AT,AT,A,A,A,,,X,X,,
+ph2,IMD166/IMD166_Dermoscopic_Image/IMD166.bmp,derm,Atypical Nevus,0,AT,AT,A,A,A,,,X,X,,
+ph2,IMD169/IMD169_Dermoscopic_Image/IMD169.bmp,derm,Atypical Nevus,0,AT,AT,P,A,P,,,,X,X,X
+ph2,IMD171/IMD171_Dermoscopic_Image/IMD171.bmp,derm,Atypical Nevus,0,AT,A,P,A,A,,X,,X,,X
+ph2,IMD210/IMD210_Dermoscopic_Image/IMD210.bmp,derm,Atypical Nevus,2,AT,A,P,A,P,,,,X,X,X
+ph2,IMD347/IMD347_Dermoscopic_Image/IMD347.bmp,derm,Atypical Nevus,0,AT,AT,A,A,P,,,,X,X,
+ph2,IMD155/IMD155_Dermoscopic_Image/IMD155.bmp,derm,Atypical Nevus,0,T,AT,A,A,A,,,X,X,,
+ph2,IMD376/IMD376_Dermoscopic_Image/IMD376.bmp,derm,Atypical Nevus,0,T,A,P,A,A,,,,X,,
+ph2,IMD006/IMD006_Dermoscopic_Image/IMD006.bmp,derm,Atypical Nevus,2,AT,AT,A,A,A,,,X,X,,
+ph2,IMD008/IMD008_Dermoscopic_Image/IMD008.bmp,derm,Atypical Nevus,0,T,A,A,A,A,,,X,,,
+ph2,IMD014/IMD014_Dermoscopic_Image/IMD014.bmp,derm,Atypical Nevus,1,AT,AT,A,P,A,X,,X,X,,
+ph2,IMD018/IMD018_Dermoscopic_Image/IMD018.bmp,derm,Atypical Nevus,0,AT,AT,A,A,A,,,,X,,
+ph2,IMD023/IMD023_Dermoscopic_Image/IMD023.bmp,derm,Atypical Nevus,0,AT,A,A,A,A,,,X,,,
+ph2,IMD031/IMD031_Dermoscopic_Image/IMD031.bmp,derm,Atypical Nevus,0,AT,A,P,A,P,,,,X,X,
+ph2,IMD036/IMD036_Dermoscopic_Image/IMD036.bmp,derm,Atypical Nevus,0,AT,T,A,A,A,,,X,,,
+ph2,IMD154/IMD154_Dermoscopic_Image/IMD154.bmp,derm,Atypical Nevus,0,AT,A,A,P,A,X,,X,,,
+ph2,IMD170/IMD170_Dermoscopic_Image/IMD170.bmp,derm,Atypical Nevus,1,AT,AT,A,A,A,,,X,X,,
+ph2,IMD226/IMD226_Dermoscopic_Image/IMD226.bmp,derm,Atypical Nevus,1,AT,AT,A,A,A,,,X,X,,
+ph2,IMD243/IMD243_Dermoscopic_Image/IMD243.bmp,derm,Atypical Nevus,0,AT,AT,P,A,A,,X,,X,,
+ph2,IMD251/IMD251_Dermoscopic_Image/IMD251.bmp,derm,Atypical Nevus,1,AT,A,A,A,A,,,X,X,,
+ph2,IMD254/IMD254_Dermoscopic_Image/IMD254.bmp,derm,Atypical Nevus,2,AT,A,A,A,A,,,X,,,
+ph2,IMD256/IMD256_Dermoscopic_Image/IMD256.bmp,derm,Atypical Nevus,1,AT,A,P,A,A,,,,X,,
+ph2,IMD278/IMD278_Dermoscopic_Image/IMD278.bmp,derm,Atypical Nevus,1,AT,A,A,A,A,,,X,X,,
+ph2,IMD279/IMD279_Dermoscopic_Image/IMD279.bmp,derm,Atypical Nevus,1,AT,A,A,A,A,,,X,X,,
+ph2,IMD280/IMD280_Dermoscopic_Image/IMD280.bmp,derm,Atypical Nevus,1,AT,A,A,A,A,,,X,X,,
+ph2,IMD304/IMD304_Dermoscopic_Image/IMD304.bmp,derm,Atypical Nevus,2,AT,AT,A,A,A,,,X,X,,
+ph2,IMD305/IMD305_Dermoscopic_Image/IMD305.bmp,derm,Atypical Nevus,2,AT,AT,A,A,A,,,X,X,,
+ph2,IMD306/IMD306_Dermoscopic_Image/IMD306.bmp,derm,Atypical Nevus,0,AT,A,P,A,A,,,,X,,
+ph2,IMD312/IMD312_Dermoscopic_Image/IMD312.bmp,derm,Atypical Nevus,2,AT,A,A,A,A,,,X,X,,
+ph2,IMD328/IMD328_Dermoscopic_Image/IMD328.bmp,derm,Atypical Nevus,0,AT,AT,A,A,A,,,,X,,
+ph2,IMD331/IMD331_Dermoscopic_Image/IMD331.bmp,derm,Atypical Nevus,0,AT,AT,A,A,A,,,,X,,
+ph2,IMD339/IMD339_Dermoscopic_Image/IMD339.bmp,derm,Atypical Nevus,2,AT,AT,A,A,A,,,X,X,,
+ph2,IMD356/IMD356_Dermoscopic_Image/IMD356.bmp,derm,Atypical Nevus,0,AT,A,A,A,A,,,X,X,,
+ph2,IMD360/IMD360_Dermoscopic_Image/IMD360.bmp,derm,Atypical Nevus,0,AT,A,A,A,A,,,,X,,
+ph2,IMD368/IMD368_Dermoscopic_Image/IMD368.bmp,derm,Atypical Nevus,2,AT,A,A,A,A,,,X,X,,
+ph2,IMD369/IMD369_Dermoscopic_Image/IMD369.bmp,derm,Atypical Nevus,0,AT,AT,A,A,A,,,X,X,,X
+ph2,IMD370/IMD370_Dermoscopic_Image/IMD370.bmp,derm,Atypical Nevus,2,AT,AT,A,A,A,,,X,,,
+ph2,IMD382/IMD382_Dermoscopic_Image/IMD382.bmp,derm,Atypical Nevus,1,AT,AT,A,A,A,,,X,X,,
+ph2,IMD386/IMD386_Dermoscopic_Image/IMD386.bmp,derm,Atypical Nevus,0,AT,A,P,A,A,,,,X,,
+ph2,IMD388/IMD388_Dermoscopic_Image/IMD388.bmp,derm,Atypical Nevus,2,AT,AT,A,A,A,,,X,X,,
+ph2,IMD393/IMD393_Dermoscopic_Image/IMD393.bmp,derm,Atypical Nevus,0,AT,A,P,A,A,,X,X,,,
+ph2,IMD396/IMD396_Dermoscopic_Image/IMD396.bmp,derm,Atypical Nevus,1,AT,A,A,A,A,,,,X,,
+ph2,IMD398/IMD398_Dermoscopic_Image/IMD398.bmp,derm,Atypical Nevus,1,AT,A,A,A,A,,,,X,,
+ph2,IMD427/IMD427_Dermoscopic_Image/IMD427.bmp,derm,Atypical Nevus,0,AT,AT,A,A,A,,,X,X,,X
+ph2,IMD430/IMD430_Dermoscopic_Image/IMD430.bmp,derm,Atypical Nevus,0,AT,A,P,P,A,X,,X,X,,
+ph2,IMD431/IMD431_Dermoscopic_Image/IMD431.bmp,derm,Atypical Nevus,1,AT,AT,A,A,A,,,X,X,,
+ph2,IMD432/IMD432_Dermoscopic_Image/IMD432.bmp,derm,Atypical Nevus,2,AT,AT,P,A,A,,,X,X,,
+ph2,IMD433/IMD433_Dermoscopic_Image/IMD433.bmp,derm,Atypical Nevus,1,AT,A,P,A,A,,,X,X,,
+ph2,IMD434/IMD434_Dermoscopic_Image/IMD434.bmp,derm,Atypical Nevus,2,AT,AT,P,A,P,,,X,X,X,
+ph2,IMD436/IMD436_Dermoscopic_Image/IMD436.bmp,derm,Atypical Nevus,1,AT,A,A,A,A,,,X,X,,
+ph2,IMD437/IMD437_Dermoscopic_Image/IMD437.bmp,derm,Atypical Nevus,2,AT,AT,A,P,A,,,,X,,X
+ph2,IMD058/IMD058_Dermoscopic_Image/IMD058.bmp,derm,Melanoma,0,AT,A,A,P,P,X,X,,X,X,
+ph2,IMD061/IMD061_Dermoscopic_Image/IMD061.bmp,derm,Melanoma,2,AT,A,A,P,P,,,X,,X,
+ph2,IMD063/IMD063_Dermoscopic_Image/IMD063.bmp,derm,Melanoma,2,AT,AT,A,A,P,,,X,X,,
+ph2,IMD064/IMD064_Dermoscopic_Image/IMD064.bmp,derm,Melanoma,2,AT,A,P,P,P,X,,X,,X,
+ph2,IMD065/IMD065_Dermoscopic_Image/IMD065.bmp,derm,Melanoma,2,AT,A,A,P,P,,,,X,,X
+ph2,IMD080/IMD080_Dermoscopic_Image/IMD080.bmp,derm,Melanoma,2,AT,A,P,P,P,,X,,X,,X
+ph2,IMD085/IMD085_Dermoscopic_Image/IMD085.bmp,derm,Melanoma,2,AT,A,A,A,P,,,,,X,X
+ph2,IMD088/IMD088_Dermoscopic_Image/IMD088.bmp,derm,Melanoma,2,AT,AT,P,P,P,X,,,X,X,X
+ph2,IMD090/IMD090_Dermoscopic_Image/IMD090.bmp,derm,Melanoma,2,AT,AT,P,P,P,,,,X,X,X
+ph2,IMD091/IMD091_Dermoscopic_Image/IMD091.bmp,derm,Melanoma,0,T,AT,A,A,P,,,,,X,X
+ph2,IMD168/IMD168_Dermoscopic_Image/IMD168.bmp,derm,Melanoma,2,AT,A,P,P,P,X,,,X,X,X
+ph2,IMD211/IMD211_Dermoscopic_Image/IMD211.bmp,derm,Melanoma,1,AT,A,A,A,P,,,,,X,X
+ph2,IMD219/IMD219_Dermoscopic_Image/IMD219.bmp,derm,Melanoma,2,AT,AT,A,P,P,,,X,X,X,X
+ph2,IMD240/IMD240_Dermoscopic_Image/IMD240.bmp,derm,Melanoma,2,AT,A,P,P,P,,,,,X,X
+ph2,IMD242/IMD242_Dermoscopic_Image/IMD242.bmp,derm,Melanoma,2,AT,A,A,A,A,,,X,X,,X
+ph2,IMD284/IMD284_Dermoscopic_Image/IMD284.bmp,derm,Melanoma,2,AT,AT,A,A,P,,,,X,X,
+ph2,IMD285/IMD285_Dermoscopic_Image/IMD285.bmp,derm,Melanoma,0,AT,A,A,A,P,,,X,X,X,
+ph2,IMD348/IMD348_Dermoscopic_Image/IMD348.bmp,derm,Melanoma,2,AT,AT,P,P,P,X,,,X,X,X
+ph2,IMD349/IMD349_Dermoscopic_Image/IMD349.bmp,derm,Melanoma,2,AT,AT,A,P,P,,,X,X,,
+ph2,IMD403/IMD403_Dermoscopic_Image/IMD403.bmp,derm,Melanoma,2,AT,A,A,P,A,X,,X,X,,
+ph2,IMD404/IMD404_Dermoscopic_Image/IMD404.bmp,derm,Melanoma,2,AT,AT,A,A,A,X,,X,X,,
+ph2,IMD405/IMD405_Dermoscopic_Image/IMD405.bmp,derm,Melanoma,2,AT,AT,A,A,P,,,X,X,X,X
+ph2,IMD407/IMD407_Dermoscopic_Image/IMD407.bmp,derm,Melanoma,2,AT,AT,P,A,A,,,X,X,,X
+ph2,IMD408/IMD408_Dermoscopic_Image/IMD408.bmp,derm,Melanoma,2,AT,AT,P,P,P,X,,X,X,X,X
+ph2,IMD409/IMD409_Dermoscopic_Image/IMD409.bmp,derm,Melanoma,2,AT,A,P,P,P,X,,X,X,X,X
+ph2,IMD410/IMD410_Dermoscopic_Image/IMD410.bmp,derm,Melanoma,1,AT,AT,A,A,A,,,X,X,,
+ph2,IMD413/IMD413_Dermoscopic_Image/IMD413.bmp,derm,Melanoma,2,AT,AT,A,A,A,,,X,X,,
+ph2,IMD417/IMD417_Dermoscopic_Image/IMD417.bmp,derm,Melanoma,2,AT,AT,A,P,P,X,,X,X,X,X
+ph2,IMD418/IMD418_Dermoscopic_Image/IMD418.bmp,derm,Melanoma,2,AT,A,A,A,A,,,X,X,,X
+ph2,IMD419/IMD419_Dermoscopic_Image/IMD419.bmp,derm,Melanoma,2,AT,A,A,A,P,,,X,X,X,X
+ph2,IMD406/IMD406_Dermoscopic_Image/IMD406.bmp,derm,Melanoma,2,AT,AT,A,P,A,X,,X,X,,
+ph2,IMD411/IMD411_Dermoscopic_Image/IMD411.bmp,derm,Melanoma,2,AT,AT,A,A,A,,,X,X,,
+ph2,IMD420/IMD420_Dermoscopic_Image/IMD420.bmp,derm,Melanoma,2,AT,AT,P,P,P,X,,X,X,X,
+ph2,IMD421/IMD421_Dermoscopic_Image/IMD421.bmp,derm,Melanoma,2,AT,AT,A,P,P,X,,X,X,X,
+ph2,IMD423/IMD423_Dermoscopic_Image/IMD423.bmp,derm,Melanoma,0,AT,AT,A,A,P,,,X,X,X,
+ph2,IMD424/IMD424_Dermoscopic_Image/IMD424.bmp,derm,Melanoma,2,AT,AT,P,A,P,,,X,X,X,X
+ph2,IMD425/IMD425_Dermoscopic_Image/IMD425.bmp,derm,Melanoma,2,AT,AT,A,P,P,,,X,X,X,X
+ph2,IMD426/IMD426_Dermoscopic_Image/IMD426.bmp,derm,Melanoma,2,AT,A,A,P,A,,,X,X,,
+ph2,IMD429/IMD429_Dermoscopic_Image/IMD429.bmp,derm,Melanoma,0,AT,A,P,A,P,,,X,X,X,X
+ph2,IMD435/IMD435_Dermoscopic_Image/IMD435.bmp,derm,Melanoma,2,AT,A,A,A,P,,,X,X,X,X

@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from config import NP_RNG, DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH, ISIC_ORIG_TEST_PATH, \
-    DATA_MAP, CLASS_NAMES, MAIN_DIR
+    DATA_MAP, MAIN_DIR
 
 isic18_val = pd.read_csv(os.path.join(DATA_DIR, 'isic18.csv'))
 [isic18_val.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in isic18_val.columns]
@@ -72,9 +72,7 @@ for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (t
     columns = ['dataset_id', 'location', 'sex', 'image', 'age_approx', 'image_type', 'class']
     df['age_approx'] -= (df['age_approx'] % 10)
 
-    df['image'] = df['dataset_id'] + df['image'].apply(lambda x: os.path.join('data', x))
-    print(df['image'])
-    exit()
+    df['image'] = df[['dataset_id', 'image']].apply(lambda id_img: os.path.join(id_img[0], 'data', id_img[1]), axis=1)
     df.replace(to_replace=DATA_MAP, inplace=True)
     print("{}| Count:{} Ratio:{}".format(os.path.split(save_to)[-1].rjust(15), str(len(df)).rjust(6), str(round(len(df) / total_data_len, 3)).rjust(6)))
     if os.path.basename(save_to).split('.')[0] == 'isic20_test':
@@ -84,8 +82,6 @@ for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (t
     dataset_info_dict = {}
     image_type_inv = {}
     if not os.path.basename(save_to).split('.')[0] == 'isic20_test':
-        for (key, value) in DATA_MAP['image_type'].items():
-            image_type_inv[value] = key
         for dataset_id in df['dataset_id'].unique():
             dataset_part = df[df.loc[:, 'dataset_id'] == dataset_id]  # fraction per class
             dataset_img_type_dict = {}
@@ -94,8 +90,9 @@ for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (t
                 dataset_image_part = dataset_image_part.drop(dataset_image_part[dataset_image_part['class'] == 5].index, errors='ignore')
                 dataset_class_dict = {}
                 for k, v in dataset_image_part['class'].value_counts().items():
-                    dataset_class_dict[CLASS_NAMES['5cls'][k]] = v
-                dataset_img_type_dict[image_type_inv[image_type]] = dataset_class_dict
+                    dataset_class_dict[k] = v
+                dataset_img_type_dict[image_type] = dataset_class_dict
+
             dataset_info_dict[dataset_id] = dataset_img_type_dict
         info = pd.DataFrame(dataset_info_dict).stack().apply(pd.Series)
         info = info[sorted(info.columns)]

@@ -163,12 +163,12 @@ class LaterCheckpoint(ModelCheckpoint):
     def __init__(self, filepath, start_at, **kwargs):
         super().__init__(filepath, **kwargs)
         self.start_at = start_at
-        print('Start saving at {}'.format(self.start_at))
+        print('Start saving after {} epochs.'.format(self.start_at))
 
     def on_epoch_end(self, epoch, logs=None):
-        if self.start_at > epoch:
+        if self.start_at > epoch + 1:
             pass
         else:
-            if self.start_at == epoch:
-                print('Epoch reached {}. Start saving'.format(self.start_at))
+            if self.start_at == epoch + 1:
+                print('Epoch {} reached. Start saving'.format(self.start_at))
             super().on_epoch_end(epoch=epoch, logs=logs)

@@ -14,48 +14,59 @@ TEST_CSV_PATH = os.path.join(MAIN_DIR, 'data_test.csv')
 ISIC_ORIG_TEST_PATH = os.path.join(MAIN_DIR, 'isic20_test.csv')
 
 COLUMNS = ['dataset_id', 'patient_id', 'lesion_id', 'image', 'image_type', 'sex', 'age_approx', 'location', 'class']
-DATA_MAP = {'image_type': {'clinic': 0,
-                           'derm': 1,
-                           },
-            'sex': {'m': 0, 'male': 0,
-                    'f': 1, 'female': 1,
-                    np.nan: -1},
-            'age_approx': {np.nan: -1, 0: 0, 10: 1, 20: 2, 30: 3, 40: 4, 50: 5, 60: 6, 70: 7, 80: 8, 90: 9},
-            #  0: Torso | 1: Upper extremity | 2: Head and Neck | 3: Lower Extremity | 4: palms/soles | 5: Genital and oral
-            'location': {'abdomen': 0, 'back': 0, 'chest': 0, 'anterior torso': 0, 'CHEST': 0, 'BACK': 0,
-                         'posterior torso': 0, 'lateral_torso': 0, 'torso': 0, 'ABDOMEN': 0,
-                         'upper extremity': 1, 'upper_extremity': 1, 'upper limbs': 1, 'ARM': 1, 'HAND': 1, 'FOREARM': 1,
-                         'head/neck': 2, 'head neck': 2, 'NECK': 2, 'FACE': 2, 'NOSE': 2, 'SCALP': 2, 'EAR': 2,
-                         'lower extremity': 3, 'lower_extremity': 3, 'lower limbs': 3, 'buttocks': 3, 'THIGH': 3, 'FOOT': 3,
-                         'acral': 4, 'palms/soles': 4,
-                         'genital areas': 5, 'oral/genital': 5, 'LIP': 5,
-                         np.nan: -1},
-            #  0: Nevus | 1: Non-Nevus benign | 2: Suspicious | 3: Non-Melanocytic Carcinoma | 4: Melanoma
-            'class':
-                {'NV': 0, 'nevus': 0, 'clark nevus': 0, 'reed or spitz nevus': 0, 'naevus': 0, 'Common Nevus': 0,
-                 'dermal nevus': 0, 'blue nevus': 0, 'congenital nevus': 0, 'recurrent nevus': 0, 'combined nevus': 0,
-                 'ML': 0, 'NEV': 0,
-                 'BKL': 1, 'DF': 1, 'VASC': 1, 'seborrheic keratosis': 1, 'lentigo NOS': 1, 'lichenoid keratosis': 1,
-                 'solar lentigo': 1, 'cafe-au-lait macule': 1, 'dermatofibroma': 1, 'lentigo': 1, 'melanosis': 1,
-                 'vascular lesion': 1, 'miscellaneous': 1, 'SK': 1, 'PYO': 1, 'SEK': 1, 'NNV': 1,
-                 'AKIEC': 2, 'AK': 2, 'SUS': 2, 'ANV': 2, 'atypical melanocytic proliferation': 2,
-                 'Atypical Nevus': 2, 'ACK': 2,
-                 'BCC': 3, 'SCC': 3, 'basal cell carcinoma': 3, 'IEC': 3, 'NMC': 3,
-                 'MEL': 4, 'melanoma': 4, 'melanoma (less than 0.76 mm)': 4, 'melanoma (0.76 to 1.5 mm)': 4,
-                 'melanoma (more than 1.5 mm)': 4, 'melanoma (in situ)': 4, 'melanoma metastasis': 4, 'Melanoma': 4,
-                 'unknown': 5
-                 }
-            }
 
-BEN_MAL_MAP = {'class': {0: 0, 1: 0, 2: 0, 5: 0,  # Group 0: NV, NNV, SUS, unknown | 1: MEL, NMC
-                         3: 1, 4: 1}
+IMAGE_TYPE = ['clinic', 'derm']
+SEX = ['male', 'female']
+AGE_APPROX = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+LOCATIONS = ['torso', 'upper_extr', 'head_neck', 'lower_extr', 'palms_soles', 'genit_oral']
+CLASS_NAMES = ['NEV', 'NNV', 'SUS', 'NMC', 'MEL', 'UNK']
+TASK_CLASSES = {'ben_mal': ['BEN', 'MAL'],
+                '5cls': CLASS_NAMES[:-1],
+                'nev_mel': [CLASS_NAMES[idx] for idx in [0, 4]]}
+
+#  0: Torso | 1: Upper extremity | 2: Head and Neck | 3: Lower Extremity | 4: palms/soles | 5: Genital and oral
+DATA_MAP = {'location': {'abdomen': LOCATIONS[0], 'back': LOCATIONS[0], 'chest': LOCATIONS[0], 'anterior torso': LOCATIONS[0],
+                         'CHEST': LOCATIONS[0], 'BACK': LOCATIONS[0],  # 0: torso
+                         'posterior torso': 'torso', 'lateral_torso': 'torso', 'torso': 'torso', 'ABDOMEN': 'torso',
+                         # 1: Upper extremity
+                         'upper extremity': LOCATIONS[1], 'upper_extremity': LOCATIONS[1], 'upper limbs': LOCATIONS[1],
+                         'ARM': LOCATIONS[1], 'HAND': LOCATIONS[1], 'FOREARM': LOCATIONS[1],
+                         # 2: Head and Neck
+                         'head/neck': LOCATIONS[2], 'head neck': LOCATIONS[2], 'NECK': LOCATIONS[2], 'FACE': LOCATIONS[2],
+                         'NOSE': LOCATIONS[2], 'SCALP': LOCATIONS[2], 'EAR': LOCATIONS[2],
+                         # 3: Lower Extremity
+                         'lower extremity': LOCATIONS[3], 'lower_extremity': LOCATIONS[3], 'lower limbs': LOCATIONS[3],
+                         'buttocks': LOCATIONS[3], 'THIGH': LOCATIONS[3], 'FOOT': LOCATIONS[3],
+                         # 4: palms/soles
+                         'acral': LOCATIONS[4], 'palms/soles': LOCATIONS[4],
+                         # 5: Genital and oral
+                         'genital areas': LOCATIONS[5], 'oral/genital': LOCATIONS[5], 'LIP': LOCATIONS[5]},
+            #  0: Nevus
+            'class': {'NV': CLASS_NAMES[0], 'nevus': CLASS_NAMES[0], 'clark nevus': CLASS_NAMES[0], 'reed or spitz nevus': CLASS_NAMES[0],
+                      'naevus': CLASS_NAMES[0], 'Common Nevus': CLASS_NAMES[0], 'dermal nevus': CLASS_NAMES[0],
+                      'blue nevus': CLASS_NAMES[0], 'congenital nevus': CLASS_NAMES[0], 'recurrent nevus': CLASS_NAMES[0],
+                      'combined nevus': CLASS_NAMES[0], 'ML': CLASS_NAMES[0], 'NEV': CLASS_NAMES[0],
+                      # 1: Non-Nevus benign
+                      'BKL': CLASS_NAMES[1], 'DF': CLASS_NAMES[1], 'VASC': CLASS_NAMES[1], 'seborrheic keratosis': CLASS_NAMES[1], 'lentigo NOS': CLASS_NAMES[1],
+                      'lichenoid keratosis': CLASS_NAMES[1], 'solar lentigo': CLASS_NAMES[1], 'cafe-au-lait macule': CLASS_NAMES[1],
+                      'dermatofibroma': CLASS_NAMES[1], 'lentigo': CLASS_NAMES[1], 'melanosis': CLASS_NAMES[1], 'vascular lesion': CLASS_NAMES[1],
+                      'miscellaneous': CLASS_NAMES[1], 'SK': CLASS_NAMES[1], 'PYO': CLASS_NAMES[1], 'SEK': CLASS_NAMES[1], 'NNV': CLASS_NAMES[1],
+                      # 2: Suspicious
+                      'AKIEC': CLASS_NAMES[2], 'AK': CLASS_NAMES[2], 'SUS': CLASS_NAMES[2], 'ANV': CLASS_NAMES[2],
+                      'atypical melanocytic proliferation': CLASS_NAMES[2], 'Atypical Nevus': CLASS_NAMES[2], 'ACK': CLASS_NAMES[2],
+                      # 3: Non-Melanocytic Carcinoma
+                      'BCC': CLASS_NAMES[3], 'SCC': CLASS_NAMES[3], 'basal cell carcinoma': CLASS_NAMES[3], 'IEC': CLASS_NAMES[3], 'NMC': CLASS_NAMES[3],
+                      # 4: Melanoma
+                      'MEL': CLASS_NAMES[4], 'melanoma': CLASS_NAMES[4], 'melanoma (less than 0.76 mm)': CLASS_NAMES[4],
+                      'melanoma (0.76 to 1.5 mm)': CLASS_NAMES[4], 'melanoma (more than 1.5 mm)': CLASS_NAMES[4],
+                      'melanoma (in situ)': CLASS_NAMES[4], 'melanoma metastasis': CLASS_NAMES[4], 'Melanoma': CLASS_NAMES[4],
+                      # 5: Unknown
+                      'unknown': CLASS_NAMES[5]}
+}
+
+BEN_MAL_MAP = {'class': {CLASS_NAMES[0]: 'BEN', CLASS_NAMES[1]: 'BEN', CLASS_NAMES[2]: 'BEN', CLASS_NAMES[5]: 'BEN',  # Group 0: NV, NNV, SUS, UNK
+                         CLASS_NAMES[3]: 'MAL', CLASS_NAMES[4]: 'MAL'}  # | 1: MEL, NMC
                }
-NEV_MEL_MAP = {'class': {0: 0,  # Group 0: NV, | 1: MEL | 2: NNV, NMC, SUS, unknown
-                         4: 1,
-                         1: 2, 2: 2, 3: 2, 5: 2}}
-CLASS_NAMES = {'ben_mal': ['BEN', 'MAL'],
-               'nev_mel': ['NEV', 'MEL'],
-               '5cls': ['NEV', 'NNV', 'SUS', 'NMC', 'MEL']}
 
 
 def dir_dict(args):

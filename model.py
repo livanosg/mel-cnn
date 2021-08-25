@@ -52,33 +52,17 @@ def model_fn(args):
     inc_mod = Concatenate()([inc_avrg, inc_conv1, inc_conv2_1, inc_conv2_2, inc_conv3_1, inc_conv3_2])
     common = GlobalAvgPool2D()(inc_mod)
     # --------------------------------================ Tabular data =================--------------------------------- #
-    concat_list = []
     if not args['only_image']:
-        if not args['no_image_type']:
-            image_type_input = Input(shape=(2, 1), name='image_type', dtype=tf.float32)
-            image_type = LSTM(4, return_sequences=True)(image_type_input)
-            image_type = normalization()(image_type)
-
-            inputs_list.append(image_type_input)
-            concat_list.append(image_type)
-
-        sex_input = Input(shape=(2, 1), name='sex', dtype=tf.float32)
-        sex = LSTM(4, return_sequences=True)(sex_input)
-        sex = normalization()(sex)
-
-        anatom_site_input = Input(shape=(6, 1), name='location', dtype=tf.float32)
-        anatom_site = LSTM(4, return_sequences=True)(anatom_site_input)
-        anatom_site = normalization()(anatom_site)
-
-        age_input = Input(shape=(10, 1), name='age_approx', dtype=tf.float32)
-        age = LSTM(4, return_sequences=True)(age_input)
-        age = normalization()(age)
+        shape = (20, 1)
+        if args['no_image_type']:
+            shape = (18, 1)
+        clinical_data_input = Input(shape=shape, name='clinical_data', dtype=tf.float32)
+        lstm_1 = LSTM(32, return_sequences=True)(clinical_data_input)
+        lstm_1 = normalization()(lstm_1)
+        inputs_list.append(clinical_data_input)
         # 1834/1834 [==============================] - 77s 42ms/step - loss: 0.6042 - auc: 0.8626 - val_loss: 0.6479 - val_auc: 0.8535
-        inputs_list.extend([sex_input, anatom_site_input, age_input])
-        concat_list.extend([sex, anatom_site, age])
-        concat_inputs = Concatenate(1)(concat_list)
-        lstm = LSTM(16)(concat_inputs)
-        common_2 = normalization()(lstm)
+        lstm_2 = LSTM(16)(lstm_1)
+        common_2 = normalization()(lstm_2)
         # -------------------------------================== Concat part ==================---------------------------------#
         common = Concatenate(axis=-1)([common, common_2])
     common = Dense(32, activation=activation, kernel_regularizer=rglzr)(common)

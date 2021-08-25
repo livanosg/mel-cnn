@@ -4,7 +4,7 @@ import itertools
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt, use as plt_use
-from config import CLASS_NAMES
+from config import TASK_CLASSES
 from sklearn.metrics import roc_curve, precision_recall_curve, auc, classification_report, confusion_matrix
 plt_use('Agg')
 
@@ -51,6 +51,9 @@ def calc_metrics(args, model, dataset, dataset_type):
             # Micro average (averaging the total true positives, false negatives and false positives)
             # is only shown for multi-label or multi-class with a subset of classes,
             # because it corresponds to accuracy otherwise and would be the same for all metrics.
+        with open(os.path.join(save_dir, "report.txt"), "a") as f:
+            col_1 = len(max(TASK_CLASSES[args['task']], key=len))
+            f.write("{} {}\n".format(''.rjust(col_1, ' '), 'AUC'.rjust(10)))
 
         for _class in range(args['num_classes']):
             if args['num_classes'] == 2 and _class == 0:
@@ -62,10 +65,7 @@ def calc_metrics(args, model, dataset, dataset_type):
                                                                        pos_label=_class)
                 class_auc = auc(fpr_roc, tpr_roc)
                 with open(os.path.join(save_dir, "report.txt"), "a") as f:
-                    if (args['num_classes'] == 2 and _class == 1) or (args['num_classes'] != 2 and _class == 0):
-                        col_1 = len(max(CLASS_NAMES[args['task']], key=len))
-                        f.write("{} {}\n".format(''.rjust(col_1, ' '), 'AUC'.rjust(10)))
-                    f.write(' '.join([CLASS_NAMES[args['task']][_class].rjust(col_1), str(np.round(class_auc, 3)).rjust(10) + '\n']))
+                    f.write(' '.join([TASK_CLASSES[args['task']][_class].rjust(col_1), str(np.round(class_auc, 3)).rjust(10) + '\n']))
                 plt.figure(1)
                 plt.plot([0, 1], [0, 1], 'k--')
                 plt.plot(fpr_roc, tpr_roc, label=' '.join([args['class_names'][_class], '(area = {:.3f})'.format(class_auc)]))

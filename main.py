@@ -4,7 +4,7 @@ import argparse
 from absl import logging
 from data_check import check_create_dataset
 from train_script import train_val_test
-from config import dir_dict, CLASS_NAMES
+from config import dir_dict, TASK_CLASSES
 
 
 def parser():
@@ -44,7 +44,7 @@ if __name__ == '__main__':
         args['verbose'] = 2
 
     args['dir_dict'] = dir_dict(args=args)
-    args['class_names'] = CLASS_NAMES[args['task']]
+    args['class_names'] = TASK_CLASSES[args['task']]
     args['num_classes'] = len(args['class_names'])
     args['input_shape'] = (args['image_size'], args['image_size'], 3)
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
