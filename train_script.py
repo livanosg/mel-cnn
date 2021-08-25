@@ -11,7 +11,7 @@ from custom_losses import WeightedCategoricalCrossentropy
 from callbacks import LaterCheckpoint, EnrTensorboard, TestCallback
 
 
-def training(args):
+def train_val_test(args):
     if args['strategy'] == 'mirrored':
         strategy = tf.distribute.MirroredStrategy()
     else:
@@ -35,6 +35,8 @@ def training(args):
             if args['task'] in ('ben_mal', '5cls'):
                 calc_metrics(args=args, model=model, dataset=args['isic20_test'], dataset_type='isic20_test')
     else:
+        os.makedirs(args['dir_dict']['logs'], exist_ok=True)
+        os.makedirs(args['dir_dict']['trial'], exist_ok=True)
         with open(args['dir_dict']['hparams_logs'], 'a') as f:
             [f.write(': '.join([key.capitalize().rjust(len(max(args.keys(), key=len))), str(args[key])]) + '\n')
              for key in args.keys() if key not in ('dir_dict', 'hparams', 'train_data', 'val_data', 'test_data', 'isic20_test')]
@@ -45,7 +47,7 @@ def training(args):
                      'adamax': tf.keras.optimizers.Adamax, 'nadam': tf.keras.optimizers.Nadam}[args['optimizer']](learning_rate=args['learning_rate'] * args['replicas'])
         with strategy.scope():
             custom_model = model_fn(args=args)
-            with open(args['dir_dict']['trial'] + '/model_summary.txt', 'w') as f:
+            with open(os.path.join(args['dir_dict']['trial'], 'model_summary.txt'), 'w') as f:
                 custom_model.summary(print_fn=lambda x: f.write(x + '\n'))
 
             custom_model.compile(optimizer=optimizer,

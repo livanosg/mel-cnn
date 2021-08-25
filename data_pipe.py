@@ -5,14 +5,13 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
 
-from config import DATA_MAP, BEN_MAL_MAP, NEV_MEL_MAP
+from config import DATA_MAP, BEN_MAL_MAP, NEV_MEL_MAP, NP_RNG
 
 
 class MelData:
     def __init__(self, args: dict):
         self.args = args
         self.TF_RNG = tf.random.Generator.from_seed(1312)  # .from_non_deterministic_state()
-        self.seeds = self.TF_RNG.make_seeds(5)
         self.batch_size = self.args['batch_size'] * self.args['replicas']
         self.data_df = {}
         for key in ('train', 'val', 'test', 'isic20_test'):
@@ -83,27 +82,27 @@ class MelData:
         data = self.make_onehot(df=data, mode=mode)
 
         def prep_input(sample, label=None, sample_weight=None):
-            sample['image'] = tf.image.decode_image(tf.io.read_file(sample['image_path']), channels=3, dtype=tf.uint8)
+            sample['image'] = tf.cast(tf.image.decode_image(tf.io.read_file(sample['image_path']), channels=3, dtype=tf.uint8), tf.float32)
             sample['image'] = tf.reshape(tensor=sample['image'], shape=self.args['input_shape'])
             for key in sample.keys():
                 if key not in ('image', 'image_path'):
                     sample[key] = tf.expand_dims(input=sample[key], axis=-1)
             if mode == 'train':
-                sample['image'] = tf.image.stateless_random_flip_up_down(image=sample['image'], seed=self.seeds[:, 0])
-                sample['image'] = tf.image.stateless_random_flip_left_right(image=sample['image'], seed=self.seeds[:, 1])
-                sample['image'] = tf.image.stateless_random_brightness(image=sample['image'], max_delta=0.1, seed=self.seeds[:, 2])
-                sample['image'] = tf.image.stateless_random_contrast(image=sample['image'], lower=0.8, upper=1.2, seed=self.seeds[:, 3])
-                sample['image'] = tf.image.stateless_random_saturation(image=sample['image'], lower=0.8, upper=1.2, seed=self.seeds[:, 4])
-                # sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=self.TF_RNG.uniform(shape=[1], maxval=2.), name='Sharpness')
-                sample['image'] = tfa.image.translate(images=sample['image'], translations=self.TF_RNG.uniform(shape=[2], minval=-self.args['image_size'] * 0.05, maxval=self.args['image_size'] * 0.05, dtype=tf.float32), name='Translation')
-                sample['image'] = tfa.image.rotate(images=sample['image'], angles=tf.cast(self.TF_RNG.uniform(shape=[1], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32), name='Rotation')
-                sample['image'] = tf.cond(tf.less(self.TF_RNG.uniform(shape=[1]), 0.6),
-                                          lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=1.5, filter_shape=5, name='Gaussian_filter'),
+                sample['image'] = tf.image.random_flip_up_down(image=sample['image'])
+                sample['image'] = tf.image.random_flip_left_right(image=sample['image'])
+                sample['image'] = tf.image.random_brightness(image=sample['image'], max_delta=60.)
+                sample['image'] = tf.image.random_contrast(image=sample['image'], lower=.5, upper=1.5)
+                sample['image'] = tf.clip_by_value(sample['image'], clip_value_min=0., clip_value_max=255.)
+                sample['image'] = tf.image.random_saturation(image=sample['image'], lower=0.8, upper=1.2)
+                sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=self.TF_RNG.uniform(shape=[1], minval=0.5, maxval=1.5), name='Sharpness')
+                sample['image'] = tfa.image.translate(images=sample['image'], translations=self.TF_RNG.uniform(shape=[2], minval=-self.args['image_size'] * 0.2, maxval=self.args['image_size'] * 0.2, dtype=tf.float32), name='Translation')
+                sample['image'] = tfa.image.rotate(images=sample['image'], angles=tf.cast(self.TF_RNG.uniform(shape=[1], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32), interpolation='bilinear', name='Rotation')
+                sample['image'] = tf.cond(tf.less(self.TF_RNG.uniform(shape=[1]), 0.5),
+                                          lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=1.5, filter_shape=3, name='Gaussian_filter'),
                                           lambda: sample['image'])
                 sample['image'] = {'xept': xception.preprocess_input, 'incept': inception_v3.preprocess_input,
                                    'effnet0': efficientnet.preprocess_input,
                                    'effnet1': efficientnet.preprocess_input}[self.args['pretrained']](sample['image'])
-
             if mode == 'isic20_test':
                 image_path = sample.pop('image_path')
                 return sample, image_path

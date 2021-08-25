@@ -58,24 +58,22 @@ CLASS_NAMES = {'ben_mal': ['BEN', 'MAL'],
                '5cls': ['NEV', 'NNV', 'SUS', 'NMC', 'MEL']}
 
 
-def directories(args):
+def dir_dict(args):
     trial_id = datetime.now().strftime('%d%m%y%H%M%S')
-    dir_dict = {'data': DATA_DIR,
-                'data_csv': {'train': TRAIN_CSV_PATH,
-                             'val': VAL_CSV_PATH,
-                             'test': TEST_CSV_PATH,
-                             'isic20_test': ISIC_ORIG_TEST_PATH},
-                'logs': os.path.join(LOGS_DIR, args['task'], args['image_type'], trial_id),
-                'trial': os.path.join(TRIALS_DIR, args['task'], args['image_type'], trial_id)}
+    directories = {'data': DATA_DIR,
+                   'data_csv': {'train': TRAIN_CSV_PATH,
+                                'val': VAL_CSV_PATH,
+                                'test': TEST_CSV_PATH,
+                                'isic20_test': ISIC_ORIG_TEST_PATH},
+                   'logs': os.path.join(LOGS_DIR, args['task'], args['image_type'], trial_id),
+                   'trial': os.path.join(TRIALS_DIR, args['task'], args['image_type'], trial_id)}
     try:
-        dir_dict['logs'] = dir_dict['logs'] + f"-{os.environ['SLURMD_NODENAME']}"
-        dir_dict['trial'] = dir_dict['trial'] + f"-{os.environ['SLURMD_NODENAME']}"
+        directories['logs'] = directories['logs'] + f"-{os.environ['SLURMD_NODENAME']}"
+        directories['trial'] = directories['trial'] + f"-{os.environ['SLURMD_NODENAME']}"
     except KeyError:
         pass
-    os.makedirs(dir_dict['logs'], exist_ok=True)
-    os.makedirs(dir_dict['trial'], exist_ok=True)
-    dir_dict['hparams_logs'] = os.path.join(dir_dict['trial'], 'hparams_log.txt')
-    dir_dict['model_path'] = os.path.join(dir_dict['trial'], 'model')  # + "{epoch:03d}"
-    dir_dict['backup'] = os.path.join(dir_dict['trial'], 'backup')
-    dir_dict['image_folder'] = os.path.join(MAIN_DIR, f"proc_{args['image_size']}_{args['colour']}", 'data')
-    return dir_dict
+    directories['hparams_logs'] = os.path.join(directories['trial'], 'hparams_log.txt')
+    directories['model_path'] = os.path.join(directories['trial'], 'model')  # + "{epoch:03d}"
+    directories['backup'] = os.path.join(directories['trial'], 'backup')
+    directories['image_folder'] = os.path.join(MAIN_DIR, f"proc_{args['image_size']}_{args['colour']}", 'data')
+    return directories
