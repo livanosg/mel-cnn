@@ -28,7 +28,7 @@ class MelData:
         df['image'] = df['image'].apply(lambda x: os.path.join(self.args['dir_dict']['image_folder'], x))
         if mode != 'isic20_test':
             if self.args['task'] == 'ben_mal':
-                df['class'].replace(to_replace=BEN_MAL_MAP, inplace=True)
+                df.replace(to_replace=BEN_MAL_MAP, inplace=True)
             else:
                 if self.args['task'] == 'nev_mel':
                     df.drop(df[df['class'].isin(['NNV', 'SUS', 'NMC'])].index, errors='ignore', inplace=True)

@@ -40,14 +40,14 @@ def train_val_test(args):
              for key in args.keys() if key not in ('dir_dict', 'hparams', 'train_data', 'val_data', 'test_data', 'isic20_test')]
             if not args['no_image_weights']:
                 f.write('Weights per class\n')
-                for _class in args['class_names']:
-                    f.write(_class+'\n')
-                    if args['image_type'] == 'both':
-                        image_types = IMAGE_TYPE
-                    else:
-                        image_types = [args['image_type']]
-                    for _image_type in image_types:
-                        f.write(': '.join([_image_type, str(weights_per_image_type[_image_type] * weights_per_class[_class])+'\n']))
+                if args['image_type'] == 'both':
+                    image_types = IMAGE_TYPE
+                else:
+                    image_types = [args['image_type']]
+                for _image_type in image_types:
+                    f.write(_image_type + '\n')
+                    for _class in args['class_names']:
+                        f.write(': '.join([_class, str(weights_per_image_type[_image_type] * weights_per_class[_class])+'\n']))
 
         optimizer = {'adam': tf.keras.optimizers.Adam, 'ftrl': tf.keras.optimizers.Ftrl,
                      'sgd': tf.keras.optimizers.SGD, 'rmsprop': tf.keras.optimizers.RMSprop,
