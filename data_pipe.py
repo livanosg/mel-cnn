@@ -4,7 +4,7 @@ import pandas as pd
 import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
-from config import BEN_MAL_MAP, LOCATIONS, IMAGE_TYPE, SEX, AGE_APPROX, TASK_CLASSES
+from config import BEN_MAL_MAP, LOCATIONS, IMAGE_TYPE, SEX, AGE_APPROX, TASK_CLASSES, MAIN_DIR
 from sklearn.preprocessing import OneHotEncoder
 
 
@@ -40,7 +40,8 @@ class MelData:
                         cat_dict[cat] = pd.DataFrame.from_dict(class_dict)
                     img_type_dict[img_tp] = pd.concat(cat_dict)
                 new_df = pd.concat(img_type_dict, keys=list(img_type_dict.keys()))
-                new_df.to_csv('data_info/descr_{}.csv'.format(mode))
+                os.makedirs(os.path.join(MAIN_DIR, 'data_info'), exist_ok=True)
+                new_df.to_csv(os.path.join(MAIN_DIR, 'data_info', 'descr_{}.csv'.format(mode)))
 
                 if self.args['task'] == 'nev_mel':
                     df.drop(df[df['class'].isin(['NNV', 'SUS', 'NMC'])].index, errors='ignore', inplace=True)
