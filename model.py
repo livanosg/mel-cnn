@@ -70,6 +70,5 @@ def model_fn(args):
     common = Dense(32, activation=activation, kernel_regularizer=rglzr)(common)
     common = normalization()(common)
     common = Dense(32, activation=activation, kernel_regularizer=rglzr)(common)
-    common = normalization()(common)
     output = Dense(args['num_classes'], activation='softmax', kernel_regularizer=rglzr, name='class')(common)
     return Model(inputs_list, [output])

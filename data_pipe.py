@@ -58,7 +58,7 @@ class MelData:
         if self.args['task'] == '5cls':
             class_multipliers = {key: [1.5, 1., 1., 1., 2.5][idx] for idx, key in enumerate(self.classes)}
         else:
-            class_multipliers = {key: [1., 2.5][idx] for idx, key in enumerate(self.classes)}
+            class_multipliers = {key: [1., 2.][idx] for idx, key in enumerate(self.classes)}
         for key in self.classes:
             weights_per_class[key] = weights_per_class[key] * class_multipliers[key]
         return weights_per_class, weights_per_image_type, image_type_counts, class_counts
