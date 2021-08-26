@@ -32,6 +32,17 @@ class MelData:
             else:
                 if self.args['task'] == 'nev_mel':
                     df.drop(df[df['class'].isin(['NNV', 'SUS', 'NMC'])].index, errors='ignore', inplace=True)
+                img_type_dict = {}
+                for img_tp in self.image_types:
+                    cat_dict = {}
+                    for cat in ['sex', 'age_approx', 'location', 'image_type']:
+                        class_dict = {}
+                        for class_ in self.classes + ['UNK']:
+                            class_dict[class_] = dict(df.loc[(df['image_type'] == img_tp) & (df['class'] == class_), cat].value_counts())
+                        cat_dict[cat] = pd.DataFrame.from_dict(class_dict)
+                    img_type_dict[img_tp] = pd.concat(cat_dict)
+                new_df = pd.concat(img_type_dict, keys=list(img_type_dict.keys()))
+                new_df.to_csv('data_info/descr_{}.csv'.format(mode))
                 df.drop(df[df['class'] == 'UNK'].index, errors='ignore', inplace=True)
 
         if self.args['image_type'] != 'both':  # Keep derm or clinic, samples.
