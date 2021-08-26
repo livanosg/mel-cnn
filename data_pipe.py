@@ -20,7 +20,7 @@ class MelData:
         else:
             self.image_types = IMAGE_TYPE
         for key in ('train', 'val', 'test', 'isic20_test'):
-            self.data_df[key] = self.prep_df(pd.read_csv(self.args['dir_dict']['data_csv'][key]), mode=key)
+            self.data_df[key] = self.prep_df(pd.read_csv(self.args['dir_dict']['data_csv'][key]), mode=key).fillna(-1)
             if key in ('train', 'val'):
                 self.data_df[key] = self.data_df[key].sample(frac=self.args['dataset_frac'], random_state=1312)
 
