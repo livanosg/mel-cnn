@@ -57,12 +57,14 @@ def model_fn(args):
         if args['no_image_type']:
             shape = (18, 1)
         clinical_data_input = Input(shape=shape, name='clinical_data', dtype=tf.float32)
-        lstm_1 = LSTM(32, return_sequences=True)(clinical_data_input)
+        lstm_1 = LSTM(128, return_sequences=True)(clinical_data_input)
         lstm_1 = normalization()(lstm_1)
         inputs_list.append(clinical_data_input)
         # 1834/1834 [==============================] - 77s 42ms/step - loss: 0.6042 - auc: 0.8626 - val_loss: 0.6479 - val_auc: 0.8535
-        lstm_2 = LSTM(16)(lstm_1)
-        common_2 = normalization()(lstm_2)
+        lstm_2 = LSTM(64)(lstm_1)
+        lstm_2 = normalization()(lstm_2)
+        fcl = Dense(32, activation=activation, kernel_regularizer=rglzr)(lstm_2)
+        common_2 = normalization()(fcl)
         # -------------------------------================== Concat part ==================---------------------------------#
         common = Concatenate(axis=-1)([common, common_2])
     common = Dense(32, activation=activation, kernel_regularizer=rglzr)(common)

@@ -30,8 +30,6 @@ class MelData:
             if self.args['task'] == 'ben_mal':
                 df.replace(to_replace=BEN_MAL_MAP, inplace=True)
             else:
-                if self.args['task'] == 'nev_mel':
-                    df.drop(df[df['class'].isin(['NNV', 'SUS', 'NMC'])].index, errors='ignore', inplace=True)
                 img_type_dict = {}
                 for img_tp in self.image_types:
                     cat_dict = {}
@@ -43,10 +41,12 @@ class MelData:
                     img_type_dict[img_tp] = pd.concat(cat_dict)
                 new_df = pd.concat(img_type_dict, keys=list(img_type_dict.keys()))
                 new_df.to_csv('data_info/descr_{}.csv'.format(mode))
-                df.drop(df[df['class'] == 'UNK'].index, errors='ignore', inplace=True)
 
-        if self.args['image_type'] != 'both':  # Keep derm or clinic, samples.
-            df.drop(df[df['image_type'] != self.args['image_type']].index, errors='ignore', inplace=True)
+                if self.args['task'] == 'nev_mel':
+                    df.drop(df[df['class'].isin(['NNV', 'SUS', 'NMC'])].index, errors='ignore', inplace=True)
+                df.drop(df[df['class'] == 'UNK'].index, errors='ignore', inplace=True)
+            if self.args['image_type'] != 'both':  # Keep derm or clinic, samples.
+                df.drop(df[df['image_type'] != self.args['image_type']].index, errors='ignore', inplace=True)
         return df
 
     def weights(self):
@@ -81,11 +81,16 @@ class MelData:
             if not self.args['no_image_type']:
                 categories.append(IMAGE_TYPE)
                 columns.append('image_type')
-            ohe_features['clinical_data'] = OneHotEncoder(handle_unknown='ignore', categories=categories).fit_transform(df[columns]).toarray()
+            features_env = OneHotEncoder(handle_unknown='ignore', categories=categories)
+            features_env.fit(self.data_df['train'][columns])
+            ohe_features['clinical_data'] = features_env.transform(df[columns]).toarray()
         labels = None
         sample_weights = None
+
         if mode != 'isic20_test':
-            labels = {'class': OneHotEncoder(categories=[self.classes]).fit_transform(df['class'].values.reshape(-1, 1)).toarray()}
+            label_enc = OneHotEncoder(categories=[self.classes])  # .fit_transform(self.data_df['train']['class'].values.reshape(-1, 1)).toarray()
+            label_enc.fit(self.data_df['train']['class'].values.reshape(-1, 1))
+            labels = {'class': label_enc.transform(df['class'].values.reshape(-1, 1)).toarray()}
             sample_weights = df['sample_weights']
         return ohe_features, labels, sample_weights
 
