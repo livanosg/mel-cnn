@@ -54,14 +54,18 @@ class MelData:
         class_counts = dict(self.data_df['train']['class'].value_counts())
         image_type_counts = dict(self.data_df['train']['image_type'].value_counts())
 
-        weights_per_image_type = {k: np.sqrt(len(self.data_df['train']) / (len(image_type_counts) * image_type_counts[k])) for k in self.image_types}
-        weights_per_class = {k: len(self.data_df['train']) / (self.args['num_classes'] * class_counts[k]) for k in self.classes}
-        if self.args['task'] == '5cls':
-            class_multipliers = {key: [1.5, 1., 1., 1., 2.5][idx] for idx, key in enumerate(self.classes)}
-        else:
-            class_multipliers = {key: [1., 2.][idx] for idx, key in enumerate(self.classes)}
-        for key in self.classes:
-            weights_per_class[key] = weights_per_class[key] * class_multipliers[key]
+        def norm_array(array):
+            return np.divide(array - np.mean(array), np.std(array))
+
+        def softmax(array, beta=1):
+            numerator = np.exp(np.multiply(beta, array))
+            denominator = np.sum(np.exp(np.multiply(beta, array)))
+            return numerator / denominator
+
+        weight_it = 1/softmax(norm_array([image_type_counts[k] for k in self.image_types]), beta=.8)
+        weights_per_image_type = {k: weight_it[idx] for idx, k in enumerate(self.image_types)}
+        weeiigt = 1/softmax(norm_array([class_counts[k] for k in self.classes]), beta=.8)
+        weights_per_class = {k: weeiigt[idx] for idx, k in enumerate(self.classes)}
         return weights_per_class, weights_per_image_type, image_type_counts, class_counts
 
     def set_sample_weights_to_df(self, df):
@@ -69,9 +73,10 @@ class MelData:
         if not self.args['no_image_weights']:
             for _class in self.classes:
                 for _image_type in self.image_types:
-                    df.loc[(df['image_type'] == _image_type) & (df['class'] == _class), 'sample_weights'] = (weights_per_image_type[_image_type] * weights_per_class[_class])
+                    df.loc[(df['image_type'] == _image_type) & (df['class'] == _class), 'sample_weights'] = weights_per_image_type[_image_type] + weights_per_class[_class]
         else:
             df['sample_weights'] = 1.
+        df['sample_weights'] /= np.min(df['sample_weights'])
         return df
 
     def make_onehot(self, df, mode):
@@ -87,7 +92,6 @@ class MelData:
             ohe_features['clinical_data'] = features_env.transform(df[columns]).toarray()
         labels = None
         sample_weights = None
-
         if mode != 'isic20_test':
             label_enc = OneHotEncoder(categories=[self.classes])  # .fit_transform(self.data_df['train']['class'].values.reshape(-1, 1)).toarray()
             label_enc.fit(self.data_df['train']['class'].values.reshape(-1, 1))

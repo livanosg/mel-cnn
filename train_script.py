@@ -3,8 +3,6 @@ import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.metrics import AUC
 from tensorboard.plugins.hparams import api as hp
-
-from config import IMAGE_TYPE
 from data_pipe import MelData
 from metrics import calc_metrics
 from model import model_fn
@@ -36,22 +34,9 @@ def train_val_test(args):
     else:
         os.makedirs(args['dir_dict']['logs'], exist_ok=True)
         os.makedirs(args['dir_dict']['trial'], exist_ok=True)
-        data = MelData(args=args)
-        weights_per_class, weights_per_image_type, image_type_counts, class_counts = data.weights()
         with open(args['dir_dict']['hparams_logs'], 'w') as f:
             [f.write(': '.join([key.capitalize().rjust(len(max(args.keys(), key=len))), str(args[key])]) + '\n')
              for key in args.keys() if key not in ('dir_dict', 'hparams', 'train_data', 'val_data', 'test_data', 'isic20_test')]
-            if not args['no_image_weights']:
-                f.write('Weights per class\n')
-                if args['image_type'] == 'both':
-                    image_types = IMAGE_TYPE
-                else:
-                    image_types = [args['image_type']]
-                for _image_type in image_types:
-                    f.write(_image_type + '\n')
-                    for _class in args['class_names']:
-                        f.write(': '.join([_class, str(weights_per_image_type[_image_type] * weights_per_class[_class])+'\n']))
-
         optimizer = {'adam': tf.keras.optimizers.Adam, 'ftrl': tf.keras.optimizers.Ftrl,
                      'sgd': tf.keras.optimizers.SGD, 'rmsprop': tf.keras.optimizers.RMSprop,
                      'adadelta': tf.keras.optimizers.Adadelta, 'adagrad': tf.keras.optimizers.Adagrad,
