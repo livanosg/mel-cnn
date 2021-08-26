@@ -113,7 +113,7 @@ class MelData:
                 sample['image'] = tf.image.random_contrast(image=sample['image'], lower=.5, upper=1.5)
                 sample['image'] = tf.clip_by_value(sample['image'], clip_value_min=0., clip_value_max=255.)
                 sample['image'] = tf.image.random_saturation(image=sample['image'], lower=0.8, upper=1.2)
-                sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=self.TF_RNG.uniform(shape=[1], minval=0.5, maxval=1.5), name='Sharpness')
+                # sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=self.TF_RNG.uniform(shape=[1], minval=0.5, maxval=1.5), name='Sharpness')
                 sample['image'] = tfa.image.translate(images=sample['image'], translations=self.TF_RNG.uniform(shape=[2], minval=-self.args['image_size'] * 0.2, maxval=self.args['image_size'] * 0.2, dtype=tf.float32), name='Translation')
                 sample['image'] = tfa.image.rotate(images=sample['image'], angles=tf.cast(self.TF_RNG.uniform(shape=[1], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32), interpolation='bilinear', name='Rotation')
                 sample['image'] = tf.cond(tf.less(self.TF_RNG.uniform(shape=[1]), 0.5),
