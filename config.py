@@ -62,14 +62,14 @@ DATA_MAP = {'location': {'abdomen': LOCATIONS[0], 'back': LOCATIONS[0], 'chest':
                       'melanoma (in situ)': CLASS_NAMES[4], 'melanoma metastasis': CLASS_NAMES[4], 'Melanoma': CLASS_NAMES[4],
                       # 5: Unknown
                       'unknown': CLASS_NAMES[5]}
-}
+            }
 
 BEN_MAL_MAP = {'class': {CLASS_NAMES[0]: 'BEN', CLASS_NAMES[1]: 'BEN', CLASS_NAMES[2]: 'BEN', CLASS_NAMES[5]: 'BEN',  # Group 0: NV, NNV, SUS, UNK
                          CLASS_NAMES[3]: 'MAL', CLASS_NAMES[4]: 'MAL'}  # | 1: MEL, NMC
                }
 
 
-def dir_dict(args):
+def dir_dict(args: dict):
     trial_id = datetime.now().strftime('%d%m%y%H%M%S')
     directories = {'data': DATA_DIR,
                    'data_csv': {'train': TRAIN_CSV_PATH,
@@ -77,7 +77,7 @@ def dir_dict(args):
                                 'test': TEST_CSV_PATH,
                                 'isic20_test': ISIC_ORIG_TEST_PATH},
                    'logs': os.path.join(LOGS_DIR, args['task'], args['image_type'], trial_id),
-                   'trial': os.path.join(TRIALS_DIR, args['task'], args['image_type'], trial_id)}
+                   'trial': os.path.join(TRIALS_DIR, args['task'], args['image_type'], trial_id)}  # type: dict
     try:
         directories['logs'] = directories['logs'] + f"-{os.environ['SLURMD_NODENAME']}"
         directories['trial'] = directories['trial'] + f"-{os.environ['SLURMD_NODENAME']}"
