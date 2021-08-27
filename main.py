@@ -37,6 +37,7 @@ if __name__ == '__main__':
     args = parser().parse_args().__dict__
     os.environ['AUTOGRAPH_VERBOSITY'] = '0'
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = str(max(0, (3 - args['verbose'])))  # 0 log all, 1:noINFO, 2:noWARNING, 3:noERROR
+    # os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
     if args['verbose'] >= 2:  # Set verbosity for keras 0 = silent, 1 = progress bar, 2 = one line per epoch.
         args['verbose'] = 1
     else:

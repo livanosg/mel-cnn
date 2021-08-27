@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt, use as plt_use
 from config import TASK_CLASSES
-from sklearn.metrics import roc_curve, precision_recall_curve, auc, classification_report, confusion_matrix
+from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, precision_recall_curve, average_precision_score, classification_report
 plt_use('Agg')
 
 
@@ -33,58 +33,49 @@ def calc_metrics(args, model, dataset, dataset_type):
         df.to_csv(path_or_buf=os.path.join(save_dir, 'results.csv'), index=False)
     else:
         y_prob = model.predict(dataset)
-        dataset_to_numpy = np.asarray(list(map(lambda dt: dt[1]['class'], dataset.as_numpy_iterator())), dtype=object)
+        dataset_to_numpy = np.asarray([dt[1]['class'] for dt in dataset.as_numpy_iterator()])
         one_hot_labels = np.concatenate(dataset_to_numpy)
         y_true = np.argmax(one_hot_labels, axis=-1)
         y_pred = np.argmax(y_prob, axis=-1)
-        confmat_image = cm_image(y_true=y_true, y_pred=y_pred, class_names=args['class_names'])
+        cm_img = cm_image(y_true=y_true, y_pred=y_pred, class_names=args['class_names'])
         with open(os.path.join(save_dir, "cm.png"), "wb") as f:
-            f.write(confmat_image)
+            f.write(cm_img)
         with open(os.path.join(save_dir, "report.txt"), "w") as f:
-            labels = list(range(len(args['class_names'])))
-            f.write(classification_report(y_true=y_true, y_pred=y_pred,
-                                          target_names=list([args['class_names'][i] for i in labels]), labels=labels,
-                                          digits=3, zero_division=0))
+            f.write(classification_report(y_true=y_true, y_pred=y_pred, target_names=args['class_names'], digits=3, zero_division=0))
             # In binary classification,
             # recall of the positive class is also known as "sensitivity";
             # recall of the negative class is also known as "specificity".
             # Micro average (averaging the total true positives, false negatives and false positives)
             # is only shown for multi-label or multi-class with a subset of classes,
             # because it corresponds to accuracy otherwise and would be the same for all metrics.
+            # One-vs-one. Computes the average AUC of all possible pairwise combinations of classes. Insensitive to class imbalance when `average == 'macro'`.
+
+        auc_macro_ovr = np.round(roc_auc_score(y_true=y_true, y_score=y_prob, multi_class='ovr', average='macro'), 3)
+        auc_macro_ovo = np.round(roc_auc_score(y_true=y_true, y_score=y_prob, multi_class='ovo', average='macro'), 3)
         with open(os.path.join(save_dir, "report.txt"), "a") as f:
-            col_1 = len(max(TASK_CLASSES[args['task']], key=len))
-            f.write("{} {}\n".format(''.rjust(col_1, ' '), 'AUC'.rjust(10)))
+            col_1 = len(max(TASK_CLASSES[args['task']] + ['OvR_macro'], key=len))
+            f.write("{} {}\n".format(''.rjust(max(col_1, 12), ' '), 'AUC'.rjust(10)))
+            f.write("{} {}\n".format('{}'.format('OvR_macro').rjust(max(col_1, 12), ' '), '{}'.format(auc_macro_ovr).rjust(10)))
+            f.write("{} {}\n".format('{}'.format('OvO_macro').rjust(max(col_1, 12), ' '), '{}'.format(auc_macro_ovo).rjust(10)))
 
         for _class in range(args['num_classes']):
             if args['num_classes'] == 2 and _class == 0:
                 pass
             else:
-                fpr_roc, tpr_roc, thresholds_roc = roc_curve(y_true=y_true, y_score=y_prob[..., _class],
-                                                             pos_label=_class)
-                precision, recall, thresholds = precision_recall_curve(y_true=y_true, probas_pred=y_prob[..., _class],
-                                                                       pos_label=_class)
-                class_auc = auc(fpr_roc, tpr_roc)
+                class_AP = np.round(average_precision_score(y_true=one_hot_labels[..., _class], y_score=y_prob[..., _class]), 3)
+                class_roc_auc = np.round(roc_auc_score(y_true=one_hot_labels[..., _class], y_score=y_prob[..., _class]), 3)
+                fpr_roc_curve, tpr_roc_curve, thresholds_roc = roc_curve(y_true=y_true, y_score=y_prob[..., _class], pos_label=_class)
+                precision_curve, recall_curve, thresholds = precision_recall_curve(y_true=y_true, probas_pred=y_prob[..., _class], pos_label=_class)
                 with open(os.path.join(save_dir, "report.txt"), "a") as f:
-                    f.write(' '.join([TASK_CLASSES[args['task']][_class].rjust(col_1), str(np.round(class_auc, 3)).rjust(10) + '\n']))
-                plt.figure(1)
-                plt.plot([0, 1], [0, 1], 'k--')
-                plt.plot(fpr_roc, tpr_roc, label=' '.join([args['class_names'][_class], '(area = {:.3f})'.format(class_auc)]))
-                plt.xlabel('False positive rate')
-                plt.ylabel('True positive rate')
-                plt.title('ROC curve {}-{}'.format(args['image_type'], dataset_type))
+                    f.write('{} {}\n'.format(TASK_CLASSES[args['task']][_class].rjust(max(col_1, 12), ' '), str(class_roc_auc).rjust(10)))
+                plt.figure(1), plt.title('ROC curve'), plt.xlabel('False positive rate'), plt.ylabel('True positive rate')
+                plt.plot(fpr_roc_curve, tpr_roc_curve, label=' '.join([args['class_names'][_class], '(AUC= {:.3f})'.format(class_roc_auc)])), plt.plot([0, 1], [0, 1], 'k--')
                 plt.legend(loc='best')
-
-                plt.figure(2)
-                plt.plot(recall, precision, label=args['class_names'][_class])
-                plt.xlabel('Precision')
-                plt.ylabel('Recall')
-                plt.title('PR curve {}-{}'.format(args['image_type'], dataset_type))
+                plt.figure(2), plt.title('PR curve'), plt.xlabel('Recall'), plt.ylabel('Precision'),
+                plt.plot(recall_curve, precision_curve, label=' '.join([args['class_names'][_class], '(AP= {:.3f})'.format(class_AP)]))
                 plt.legend(loc='best')
-
-        plt.figure(1)
-        plt.savefig(os.path.join(save_dir, 'roc.png'))
-        plt.figure(2)
-        plt.savefig(os.path.join(save_dir, 'pr.png'))
+        plt.figure(1), plt.savefig(os.path.join(save_dir, 'roc_curve.png'))
+        plt.figure(2), plt.savefig(os.path.join(save_dir, 'pr_curve.png'))
         plt.close('all')
 
 

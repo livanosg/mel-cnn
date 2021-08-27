@@ -20,6 +20,7 @@ def train_val_test(args):
     args['test_data'] = data.get_dataset(mode='test')
     args['isic20_test'] = data.get_dataset(mode='isic20_test')
     if args['test'] or args['validate']:
+        args['dir_dict']['model_path'] = args['test_model']
         args['dir_dict']['trial'] = os.path.dirname(args['dir_dict']['model_path'])
         model = tf.keras.models.load_model(args['dir_dict']['model_path'], compile=False)
         if args['test']:
