@@ -61,9 +61,7 @@ def model_fn(args):
         inputs_list.append(clinical_data_input)
         lstm_2 = LSTM(64)(lstm_1)
         lstm_2 = normalization()(lstm_2)
-        fcl = Dense(32, activation=activation, kernel_regularizer=rglzr)(lstm_2)
-        common_2 = normalization()(fcl)
-        common = Concatenate(axis=-1)([common, common_2])
+        common = Concatenate(axis=-1)([common, lstm_2])
         # -------------------------------================== Concat part ==================---------------------------------#
     common = Dense(32, activation=activation, kernel_regularizer=rglzr)(common)
     common = normalization()(common)
