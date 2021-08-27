@@ -1,7 +1,6 @@
 import os
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
-from tensorflow.keras.metrics import AUC
 from tensorboard.plugins.hparams import api as hp
 from data_pipe import MelData
 from metrics import calc_metrics
@@ -46,25 +45,22 @@ def train_val_test(args):
             with open(os.path.join(args['dir_dict']['trial'], 'model_summary.txt'), 'w') as f:
                 custom_model.summary(print_fn=lambda x: f.write(x + '\n'))
 
-            custom_model.compile(optimizer=optimizer,
-                                 loss='categorical_crossentropy',
-                                 metrics=[AUC(multi_label=True)])
+            custom_model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['AUC'])
         # --------------------------------------------------- Callbacks ---------------------------------------------- #
-        callbacks = [LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=20),
-                     EnrTensorboard(log_dir=args['dir_dict']['logs'], val_data=args['val_data'], class_names=args['class_names']),
-                     ReduceLROnPlateau(factor=0.75, patience=10),
+        callbacks = [ReduceLROnPlateau(factor=0.75, patience=10),
                      EarlyStopping(verbose=args['verbose'], patience=20),
-                     hp.KerasCallback(args['dir_dict']['logs'], hparams={'pretrained': args['pretrained'], 'task':args['task'],
-                                                                         'image_type':args['image_type'], 'image_size':args['image_size'],
-                                                                         'only_image':args['only_image'], 'colour':args['colour'],
-                                                                         'batch_size':args['batch_size'], 'learning_rate':args['learning_rate'],
-                                                                         'optimizer':args['optimizer'], 'activation':args['activation'],
-                                                                         'dropout':args['dropout'], 'epochs':args['epochs'],
-                                                                         'layers':args['layers'], 'no_image_weights':args['no_image_weights'],
-                                                                         'no_image_type':args['no_image_type']
-                                                                         }, trial_id=os.path.basename(args["dir_dict"]["trial"])),
+                     LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=20),
+                     EnrTensorboard(log_dir=args['dir_dict']['logs'], val_data=args['val_data'], class_names=args['class_names']),
+                     hp.KerasCallback(args['dir_dict']['logs'],
+                                      hparams={'pretrained': args['pretrained'], 'task':args['task'],
+                                               'image_type':args['image_type'], 'image_size':args['image_size'],
+                                               'only_image':args['only_image'], 'colour':args['colour'],
+                                               'batch_size':args['batch_size'], 'learning_rate':args['learning_rate'],
+                                               'optimizer':args['optimizer'], 'activation':args['activation'],
+                                               'dropout':args['dropout'], 'epochs':args['epochs'],
+                                               'layers':args['layers'], 'no_image_weights':args['no_image_weights'],
+                                               'no_image_type':args['no_image_type']},
+                                      trial_id=os.path.basename(args["dir_dict"]["trial"])),
                      TestCallback(args=args)]
-        # ------------------------------------------------- Train model ---------------------------------------------- #
-        custom_model.fit(x=args['train_data'], epochs=args['epochs'],
-                         validation_data=args['val_data'],
-                         callbacks=callbacks, verbose=args['verbose'])
+        custom_model.fit(x=args['train_data'], validation_data=args['val_data'],
+                         epochs=args['epochs'], callbacks=callbacks, verbose=args['verbose'])

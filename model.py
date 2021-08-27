@@ -25,8 +25,7 @@ def model_fn(args):
     inputs_list.append(image_input)
 
     base_model = base_model(image_input, training=False)
-    # -----------------================= Inception module C used in Inception v4 =================-------------------- #
-    inc_avrg = AveragePooling2D(padding='same', strides=1)(base_model)
+    inc_avrg = AveragePooling2D(padding='same', strides=1)(base_model)  # Inception module C used in Inception v4
     inc_avrg = Conv2D(main_conf[1], activation=activation, kernel_size=1, padding='same')(inc_avrg)
     inc_avrg = normalization()(inc_avrg)
     inc_avrg = Dropout(rate=args['dropout'])(inc_avrg)
@@ -60,13 +59,12 @@ def model_fn(args):
         lstm_1 = LSTM(128, return_sequences=True)(clinical_data_input)
         lstm_1 = normalization()(lstm_1)
         inputs_list.append(clinical_data_input)
-        # 1834/1834 [==============================] - 77s 42ms/step - loss: 0.6042 - auc: 0.8626 - val_loss: 0.6479 - val_auc: 0.8535
         lstm_2 = LSTM(64)(lstm_1)
         lstm_2 = normalization()(lstm_2)
         fcl = Dense(32, activation=activation, kernel_regularizer=rglzr)(lstm_2)
         common_2 = normalization()(fcl)
-        # -------------------------------================== Concat part ==================---------------------------------#
         common = Concatenate(axis=-1)([common, common_2])
+        # -------------------------------================== Concat part ==================---------------------------------#
     common = Dense(32, activation=activation, kernel_regularizer=rglzr)(common)
     common = normalization()(common)
     common = Dense(32, activation=activation, kernel_regularizer=rglzr)(common)
