@@ -17,7 +17,7 @@ def parser():
     args_parser.add_argument('--colour', '-clr', default='rgb', type=str, help='Select image size.')
     args_parser.add_argument('--batch-size', '-btch', default=16, type=int, help='Select batch size.')
     args_parser.add_argument('--learning-rate', '-lr', default=1e-5, type=float, help='Select learning rate.')
-    args_parser.add_argument('--optimizer', '-opt', default='adam', choices=['adam', 'ftrl', 'sgd', 'rmsprop', 'adadelta', 'adagrad', 'adamax', 'nadam'], type=str, help='Select optimizer.')
+    args_parser.add_argument('--optimizer', '-opt', default='adamax', choices=['adam', 'ftrl', 'sgd', 'rmsprop', 'adadelta', 'adagrad', 'adamax', 'nadam'], type=str, help='Select optimizer.')
     args_parser.add_argument('--activation', '-act', default='swish', choices=['relu', 'swish'], type=str, help='Select leaky relu gradient.')
     args_parser.add_argument('--dropout', '-dor', default=0.25, type=float, help='Select dropout ratio.')
     args_parser.add_argument('--epochs', '-e', default=500, type=int, help='Number of epochs epochs.')
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     args = parser().parse_args().__dict__
     os.environ['AUTOGRAPH_VERBOSITY'] = '0'
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = str(max(0, (3 - args['verbose'])))  # 0 log all, 1:noINFO, 2:noWARNING, 3:noERROR
-    # os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
+    os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
     if args['verbose'] >= 2:  # Set verbosity for keras 0 = silent, 1 = progress bar, 2 = one line per epoch.
         args['verbose'] = 1
     else:

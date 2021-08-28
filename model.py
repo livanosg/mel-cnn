@@ -6,12 +6,13 @@ from tensorflow.keras.layers import Concatenate, AveragePooling2D, GlobalAvgPool
 from tensorflow.keras.layers import Dense, Conv2D, LSTM, Dropout, LayerNormalization
 from tensorflow.keras.activations import swish, relu
 from tensorflow.keras.regularizers import l1_l2
+from tensorflow.python.keras.layers import Reshape
 
 
 def model_fn(args):
-    main_conf = np.asarray([8, 16]) * args['layers']
+    main_conf = np.asarray([1, 2]) * args['layers']
     activation = {'swish': swish, 'relu': relu}[args['activation']]
-    rglzr = l1_l2(l1=0., l2=0.0001)
+    rglzr = l1_l2(l1=0., l2=0.00)
     normalization = LayerNormalization
     inputs_list = []
     # -------------------------------================= Image data =================----------------------------------- #
@@ -56,15 +57,27 @@ def model_fn(args):
         if args['no_image_type']:
             shape = (18, 1)
         clinical_data_input = Input(shape=shape, name='clinical_data', dtype=tf.float32)
-        lstm_1 = LSTM(128, return_sequences=True)(clinical_data_input)
-        lstm_1 = normalization()(lstm_1)
         inputs_list.append(clinical_data_input)
-        lstm_2 = LSTM(64)(lstm_1)
-        lstm_2 = normalization()(lstm_2)
-        common = Concatenate(axis=-1)([common, lstm_2])
+        clinical_data = Reshape(target_shape=[shape[0]])(clinical_data_input)
+        clinical_data = Dense(32, activation=activation, kernel_regularizer=rglzr)(clinical_data)
+        clinical_data = normalization()(clinical_data)
+        clinical_data = Dropout(rate=args['dropout'])(clinical_data)
+        clinical_data = Dense(16, activation=activation, kernel_regularizer=rglzr)(clinical_data)
+        clinical_data = normalization()(clinical_data)
+        clinical_data = Dense(16, activation=activation, kernel_regularizer=rglzr)(clinical_data)
+        clinical_data = normalization()(clinical_data)
+        # lstm_1 = LSTM(128, return_sequences=True)(clinical_data_input)
+        # lstm_1 = normalization()(lstm_1)
+
+        # lstm_2 = LSTM(64)(lstm_1)
+        # lstm_2 = normalization()(lstm_2)
+
+        common = Concatenate(axis=-1)([common, clinical_data])
         # -------------------------------================== Concat part ==================---------------------------------#
     common = Dense(32, activation=activation, kernel_regularizer=rglzr)(common)
     common = normalization()(common)
-    common = Dense(32, activation=activation, kernel_regularizer=rglzr)(common)
+    common = Dense(16, activation=activation, kernel_regularizer=rglzr)(common)
+    common = normalization()(common)
+    # common = Dense(16, activation=activation, kernel_regularizer=rglzr)(common)
     output = Dense(args['num_classes'], activation='softmax', kernel_regularizer=rglzr, name='class')(common)
     return Model(inputs_list, [output])

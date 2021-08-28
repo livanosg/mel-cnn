@@ -1,7 +1,8 @@
 import os
 import tensorflow as tf
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, LearningRateScheduler
 from tensorboard.plugins.hparams import api as hp
+
 from data_pipe import MelData
 from metrics import calc_metrics
 from model import model_fn
@@ -14,6 +15,11 @@ def train_val_test(args):
     else:
         strategy = tf.distribute.OneDeviceStrategy('gpu')
     args['replicas'] = strategy.num_replicas_in_sync
+
+    if not args['test'] and not args['validate']:
+        os.makedirs(args['dir_dict']['logs'], exist_ok=True)
+        os.makedirs(args['dir_dict']['trial'], exist_ok=True)
+
     data = MelData(args=args)
     args['train_data'] = data.get_dataset(mode='train')
     args['val_data'] = data.get_dataset(mode='val')
@@ -32,9 +38,7 @@ def train_val_test(args):
             if args['task'] in ('ben_mal', '5cls'):
                 calc_metrics(args=args, model=model, dataset=args['isic20_test'], dataset_type='isic20_test')
     else:
-        os.makedirs(args['dir_dict']['logs'], exist_ok=True)
-        os.makedirs(args['dir_dict']['trial'], exist_ok=True)
-        with open(args['dir_dict']['hparams_logs'], 'w') as f:
+        with open(args['dir_dict']['hparams_logs'], 'a') as f:
             [f.write(': '.join([key.capitalize().rjust(len(max(args.keys(), key=len))), str(args[key])]) + '\n')
              for key in args.keys() if key not in ('dir_dict', 'hparams', 'train_data', 'val_data', 'test_data', 'isic20_test')]
         optimizer = {'adam': tf.keras.optimizers.Adam, 'ftrl': tf.keras.optimizers.Ftrl,
@@ -45,12 +49,18 @@ def train_val_test(args):
             custom_model = model_fn(args=args)
             with open(os.path.join(args['dir_dict']['trial'], 'model_summary.txt'), 'w') as f:
                 custom_model.summary(print_fn=lambda x: f.write(x + '\n'))
-
             custom_model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['AUC'])
         # --------------------------------------------------- Callbacks ---------------------------------------------- #
-        callbacks = [ReduceLROnPlateau(factor=0.75, patience=10),
-                     EarlyStopping(verbose=args['verbose'], patience=20),
-                     LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=20),
+
+        def schedule(epoch, lr):
+            if epoch > 1000 and lr > 1e-4:
+                lr = 1e-4
+            return lr
+
+        callbacks = [LearningRateScheduler(schedule),
+                     ReduceLROnPlateau(factor=0.1, patience=5, verbose=args['verbose']),
+                     EarlyStopping(patience=20, verbose=args['verbose']),
+                     LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=20, verbose=args['verbose']),
                      EnrTensorboard(log_dir=args['dir_dict']['logs'], val_data=args['val_data'], class_names=args['class_names']),
                      hp.KerasCallback(args['dir_dict']['logs'],
                                       hparams={'pretrained': args['pretrained'], 'task':args['task'],

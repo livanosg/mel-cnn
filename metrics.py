@@ -49,34 +49,30 @@ def calc_metrics(args, model, dataset, dataset_type):
             # is only shown for multi-label or multi-class with a subset of classes,
             # because it corresponds to accuracy otherwise and would be the same for all metrics.
             # One-vs-one. Computes the average AUC of all possible pairwise combinations of classes. Insensitive to class imbalance when `average == 'macro'`.
-
-        auc_macro_ovr = np.round(roc_auc_score(y_true=y_true, y_score=y_prob, multi_class='ovr', average='macro'), 3)
-        auc_macro_ovo = np.round(roc_auc_score(y_true=y_true, y_score=y_prob, multi_class='ovo', average='macro'), 3)
-        with open(os.path.join(save_dir, "report.txt"), "a") as f:
-            col_1 = len(max(TASK_CLASSES[args['task']] + ['OvR_macro'], key=len))
-            f.write("{} {}\n".format(''.rjust(max(col_1, 12), ' '), 'AUC'.rjust(10)))
-            f.write("{} {}\n".format('{}'.format('OvR_macro').rjust(max(col_1, 12), ' '), '{}'.format(auc_macro_ovr).rjust(10)))
-            f.write("{} {}\n".format('{}'.format('OvO_macro').rjust(max(col_1, 12), ' '), '{}'.format(auc_macro_ovo).rjust(10)))
-
+        auc_dict = {}
+        ap_dict = {}
         for _class in range(args['num_classes']):
-            if args['num_classes'] == 2 and _class == 0:
-                pass
-            else:
-                class_AP = np.round(average_precision_score(y_true=one_hot_labels[..., _class], y_score=y_prob[..., _class]), 3)
-                class_roc_auc = np.round(roc_auc_score(y_true=one_hot_labels[..., _class], y_score=y_prob[..., _class]), 3)
-                fpr_roc_curve, tpr_roc_curve, thresholds_roc = roc_curve(y_true=y_true, y_score=y_prob[..., _class], pos_label=_class)
-                precision_curve, recall_curve, thresholds = precision_recall_curve(y_true=y_true, probas_pred=y_prob[..., _class], pos_label=_class)
-                with open(os.path.join(save_dir, "report.txt"), "a") as f:
-                    f.write('{} {}\n'.format(TASK_CLASSES[args['task']][_class].rjust(max(col_1, 12), ' '), str(class_roc_auc).rjust(10)))
+            # if not (args['num_classes'] == 2 and _class == 0):
+            class_AP = np.round(average_precision_score(y_true=one_hot_labels[..., _class], y_score=y_prob[..., _class]), 3)  # OvR
+            class_roc_auc = np.round(roc_auc_score(y_true=one_hot_labels[..., _class], y_score=y_prob[..., _class]), 3)  # OvR
+            ap_dict[_class] = class_AP
+            auc_dict[_class] = class_roc_auc
+            fpr_roc_curve, tpr_roc_curve, thresholds_roc = roc_curve(y_true=y_true, y_score=y_prob[..., _class], pos_label=_class)
+            precision_curve, recall_curve, thresholds = precision_recall_curve(y_true=y_true, probas_pred=y_prob[..., _class], pos_label=_class)
+            if not (args['num_classes'] == 2 and _class == 0):
                 plt.figure(1), plt.title('ROC curve'), plt.xlabel('False positive rate'), plt.ylabel('True positive rate')
                 plt.plot(fpr_roc_curve, tpr_roc_curve, label=' '.join([args['class_names'][_class], '(AUC= {:.3f})'.format(class_roc_auc)])), plt.plot([0, 1], [0, 1], 'k--')
                 plt.legend(loc='best')
-                plt.figure(2), plt.title('PR curve'), plt.xlabel('Recall'), plt.ylabel('Precision'),
-                plt.plot(recall_curve, precision_curve, label=' '.join([args['class_names'][_class], '(AP= {:.3f})'.format(class_AP)]))
-                plt.legend(loc='best')
+            plt.figure(2), plt.title('PR curve'), plt.xlabel('Recall'), plt.ylabel('Precision'),
+            plt.plot(recall_curve, precision_curve, label=' '.join([args['class_names'][_class], '(AP= {:.3f})'.format(class_AP)]))
+            plt.legend(loc='best')
         plt.figure(1), plt.savefig(os.path.join(save_dir, 'roc_curve.png'))
         plt.figure(2), plt.savefig(os.path.join(save_dir, 'pr_curve.png'))
         plt.close('all')
+        with open(os.path.join(save_dir, "report.txt"), "a") as f:
+            f.write("{} {} {}\n".format(' '.rjust(12), 'AUC'.rjust(10), 'AP'.rjust(10)))
+            for _class in ap_dict.keys():
+                f.write('{} {} {}\n'.format(TASK_CLASSES[args['task']][_class].rjust(12), str(auc_dict[_class]).rjust(10), str(ap_dict[_class]).rjust(10)))
 
 
 def plot_confusion_matrix(cm, class_names):
