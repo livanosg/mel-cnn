@@ -21,7 +21,7 @@ def parser():
     args_parser.add_argument('--activation', '-act', default='swish', choices=['relu', 'swish'], type=str, help='Select leaky relu gradient.')
     args_parser.add_argument('--dropout', '-dor', default=0.25, type=float, help='Select dropout ratio.')
     args_parser.add_argument('--epochs', '-e', default=500, type=int, help='Number of epochs epochs.')
-    args_parser.add_argument('--layers', '-lrs', default=1, type=int, help='Select multiplier for number of nodes in inception layers.')
+    args_parser.add_argument('--layers', '-lrs', default=32, type=int, help='Select multiplier for number of nodes in inception layers.')
     args_parser.add_argument('--dense-layers', '-dlrs', default=1, type=int, help='Select multiplier for number of nodes in dense layers.')
     args_parser.add_argument('--no-image-weights', '-niw', action='store_true', help='Set to not weight per image type.')
     args_parser.add_argument('--no-image-type', '-nit', action='store_true', help='Set to remove image type from training.')
