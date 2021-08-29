@@ -75,12 +75,7 @@ class MelData:
                     sample_weight_dict[_image_type][_class] = comb_weight
             # log
             if (not self.args['test']) and (not self.args['validate']) and mode == 'train':
-                print(df['class'].value_counts())
-                print(df['image_type'].value_counts())
                 df = df.sample(frac=1.5, replace=True, weights='sample_weights', random_state=1312)
-                print(df['class'].value_counts())
-                print(df['image_type'].value_counts())
-
                 with open(self.args['dir_dict']['hparams_logs'], 'a') as f:
                     for _image_type in self.image_types:
                         f.write(_image_type.rjust(len(max(self.image_types, key=len))) + '\n')

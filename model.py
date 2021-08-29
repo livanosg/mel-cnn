@@ -3,10 +3,9 @@ import tensorflow as tf
 from tensorflow.keras import Model, Input
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
 from tensorflow.keras.layers import Concatenate, AveragePooling2D, GlobalAvgPool2D
-from tensorflow.keras.layers import Dense, Conv2D, LSTM, Dropout, LayerNormalization
+from tensorflow.keras.layers import Dense, Conv2D, Dropout, LayerNormalization
 from tensorflow.keras.activations import swish, relu
 from tensorflow.keras.regularizers import l1_l2
-from tensorflow.python.keras.layers import Reshape
 
 
 def model_fn(args):
@@ -54,13 +53,12 @@ def model_fn(args):
     common = GlobalAvgPool2D()(inc_mod)
     # --------------------------------================ Tabular data =================--------------------------------- #
     if not args['only_image']:
-        shape = (20, 1)
+        shape = (20,)
         if args['no_image_type']:
-            shape = (18, 1)
+            shape = (18,)
         clinical_data_input = Input(shape=shape, name='clinical_data', dtype=tf.float32)
         inputs_list.append(clinical_data_input)
-        clinical_data = Reshape(target_shape=[shape[0]])(clinical_data_input)
-        clinical_data = Dense(dense_nodes[1], activation=activation, kernel_regularizer=rglzr)(clinical_data)
+        clinical_data = Dense(dense_nodes[1], activation=activation, kernel_regularizer=rglzr)(clinical_data_input)
         clinical_data = normalization()(clinical_data)
         clinical_data = Dropout(rate=args['dropout'])(clinical_data)
         clinical_data = Dense(dense_nodes[0], activation=activation, kernel_regularizer=rglzr)(clinical_data)
