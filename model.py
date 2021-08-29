@@ -10,7 +10,8 @@ from tensorflow.python.keras.layers import Reshape
 
 
 def model_fn(args):
-    main_conf = np.asarray([1, 2]) * args['layers']
+    dense_nodes = np.asarray([1, 2]) * args['dense_layers']
+    incept_nodes = np.asarray([1, 2]) * args['layers']
     activation = {'swish': swish, 'relu': relu}[args['activation']]
     rglzr = l1_l2(l1=0., l2=0.00)
     normalization = LayerNormalization
@@ -27,26 +28,26 @@ def model_fn(args):
 
     base_model = base_model(image_input, training=False)
     inc_avrg = AveragePooling2D(padding='same', strides=1)(base_model)  # Inception module C used in Inception v4
-    inc_avrg = Conv2D(main_conf[1], activation=activation, kernel_size=1, padding='same')(inc_avrg)
+    inc_avrg = Conv2D(incept_nodes[1], activation=activation, kernel_size=1, padding='same')(inc_avrg)
     inc_avrg = normalization()(inc_avrg)
     inc_avrg = Dropout(rate=args['dropout'])(inc_avrg)
-    inc_conv1 = Conv2D(main_conf[1], activation=activation, kernel_size=1, padding='same')(base_model)
+    inc_conv1 = Conv2D(incept_nodes[1], activation=activation, kernel_size=1, padding='same')(base_model)
     inc_conv1 = normalization()(inc_conv1)
     inc_conv1 = Dropout(rate=args['dropout'])(inc_conv1)
-    inc_conv2 = Conv2D(main_conf[0], activation=activation, kernel_size=1, padding='same')(base_model)
-    inc_conv2_1 = Conv2D(main_conf[1], activation=activation, kernel_size=(1, 3), padding='same')(inc_conv2)
+    inc_conv2 = Conv2D(incept_nodes[0], activation=activation, kernel_size=1, padding='same')(base_model)
+    inc_conv2_1 = Conv2D(incept_nodes[1], activation=activation, kernel_size=(1, 3), padding='same')(inc_conv2)
     inc_conv2_1 = normalization()(inc_conv2_1)
     inc_conv2_1 = Dropout(rate=args['dropout'])(inc_conv2_1)
-    inc_conv2_2 = Conv2D(main_conf[1], activation=activation, kernel_size=(3, 1), padding='same')(inc_conv2)
+    inc_conv2_2 = Conv2D(incept_nodes[1], activation=activation, kernel_size=(3, 1), padding='same')(inc_conv2)
     inc_conv2_2 = normalization()(inc_conv2_2)
     inc_conv2_2 = Dropout(rate=args['dropout'])(inc_conv2_2)
-    inc_conv3 = Conv2D(main_conf[0], activation=activation, kernel_size=1, padding='same')(base_model)
-    inc_conv3 = Conv2D(main_conf[1], activation=activation, kernel_size=(1, 3), padding='same')(inc_conv3)
-    inc_conv3 = Conv2D(main_conf[1], activation=activation, kernel_size=(3, 1), padding='same')(inc_conv3)
-    inc_conv3_1 = Conv2D(main_conf[1], activation=activation, kernel_size=(1, 3), padding='same')(inc_conv3)
+    inc_conv3 = Conv2D(incept_nodes[0], activation=activation, kernel_size=1, padding='same')(base_model)
+    inc_conv3 = Conv2D(incept_nodes[1], activation=activation, kernel_size=(1, 3), padding='same')(inc_conv3)
+    inc_conv3 = Conv2D(incept_nodes[1], activation=activation, kernel_size=(3, 1), padding='same')(inc_conv3)
+    inc_conv3_1 = Conv2D(incept_nodes[1], activation=activation, kernel_size=(1, 3), padding='same')(inc_conv3)
     inc_conv3_1 = normalization()(inc_conv3_1)
     inc_conv3_1 = Dropout(rate=args['dropout'])(inc_conv3_1)
-    inc_conv3_2 = Conv2D(main_conf[1], activation=activation, kernel_size=(3, 1), padding='same')(inc_conv3)
+    inc_conv3_2 = Conv2D(incept_nodes[1], activation=activation, kernel_size=(3, 1), padding='same')(inc_conv3)
     inc_conv3_2 = normalization()(inc_conv3_2)
     inc_conv3_2 = Dropout(rate=args['dropout'])(inc_conv3_2)
     inc_mod = Concatenate()([inc_avrg, inc_conv1, inc_conv2_1, inc_conv2_2, inc_conv3_1, inc_conv3_2])
@@ -59,12 +60,12 @@ def model_fn(args):
         clinical_data_input = Input(shape=shape, name='clinical_data', dtype=tf.float32)
         inputs_list.append(clinical_data_input)
         clinical_data = Reshape(target_shape=[shape[0]])(clinical_data_input)
-        clinical_data = Dense(32, activation=activation, kernel_regularizer=rglzr)(clinical_data)
+        clinical_data = Dense(dense_nodes[1], activation=activation, kernel_regularizer=rglzr)(clinical_data)
         clinical_data = normalization()(clinical_data)
         clinical_data = Dropout(rate=args['dropout'])(clinical_data)
-        clinical_data = Dense(16, activation=activation, kernel_regularizer=rglzr)(clinical_data)
+        clinical_data = Dense(dense_nodes[0], activation=activation, kernel_regularizer=rglzr)(clinical_data)
         clinical_data = normalization()(clinical_data)
-        clinical_data = Dense(16, activation=activation, kernel_regularizer=rglzr)(clinical_data)
+        clinical_data = Dense(dense_nodes[0], activation=activation, kernel_regularizer=rglzr)(clinical_data)
         clinical_data = normalization()(clinical_data)
         # lstm_1 = LSTM(128, return_sequences=True)(clinical_data_input)
         # lstm_1 = normalization()(lstm_1)
