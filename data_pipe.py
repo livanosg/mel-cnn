@@ -127,40 +127,36 @@ class MelData:
             else:
                 return sample, label  # , weights
 
-        def augm(sample, label=None, weights=None):
-            sample['image'] = tf.image.random_flip_up_down(image=sample['image'])
-            sample['image'] = tf.image.random_flip_left_right(image=sample['image'])
-            sample['image'] = tf.image.random_brightness(image=sample['image'], max_delta=60.)
-            sample['image'] = tf.image.random_contrast(image=sample['image'], lower=.5, upper=1.5)
-            sample['image'] = tf.clip_by_value(sample['image'], clip_value_min=0., clip_value_max=255.)
-            sample['image'] = tf.image.random_saturation(image=sample['image'], lower=0.8, upper=1.2)
-            # sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=self.TF_RNG.uniform(shape=[1], minval=0.5, maxval=1.5), name='Sharpness')
-            sample['image'] = tfa.image.translate(images=sample['image'],
-                                                  translations=self.TF_RNG.uniform(shape=[2], minval=-self.args[
-                                                      'image_size'] * 0.2, maxval=self.args['image_size'] * 0.2,
-                                                                                   dtype=tf.float32),
-                                                  name='Translation')
-            sample['image'] = tfa.image.rotate(images=sample['image'], angles=tf.cast(
-                self.TF_RNG.uniform(shape=[1], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32),
-                                               interpolation='bilinear', name='Rotation')
-            sample['image'] = tf.cond(tf.less(self.TF_RNG.uniform(shape=[1]), 0.5),
-                                      lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=1.5,
-                                                                          filter_shape=3, name='Gaussian_filter'),
-                                      lambda: sample['image'])
-            sample['image'] = {'xept': xception.preprocess_input, 'incept': inception_v3.preprocess_input,
-                               'effnet0': efficientnet.preprocess_input,
-                               'effnet1': efficientnet.preprocess_input}[self.args['pretrained']](sample['image'])
-            return sample, label  # , weights
-
         dataset = tf.data.Dataset.from_tensor_slices(data)
         if mode == 'train':
             dataset = dataset.shuffle(buffer_size=len(self.data_df['train']), reshuffle_each_iteration=True)
         dataset = dataset.map(prep_input, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         if mode == 'train':
-            dataset = dataset.map(augm, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+            dataset = dataset.map(self.augm, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.batch(self.batch_size)
         options = tf.data.Options()
         options.experimental_threading.max_intra_op_parallelism = 1
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
         dataset = dataset.with_options(options)
         return dataset.repeat(repeat).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+
+    def augm(self, sample, label=None):
+        sample['image'] = tf.image.random_flip_up_down(image=sample['image'])
+        sample['image'] = tf.image.random_flip_left_right(image=sample['image'])
+        sample['image'] = tf.image.random_brightness(image=sample['image'], max_delta=60.)
+        sample['image'] = tf.image.random_contrast(image=sample['image'], lower=.5, upper=1.5)
+        sample['image'] = tf.clip_by_value(sample['image'], clip_value_min=0., clip_value_max=255.)
+        sample['image'] = tf.image.random_saturation(image=sample['image'], lower=0.8, upper=1.2)
+        # sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=self.TF_RNG.uniform(shape=[1], minval=0.5, maxval=1.5), name='Sharpness')
+        sample['image'] = tfa.image.translate(images=sample['image'], translations=self.TF_RNG.uniform(shape=[2], minval=-self.args['image_size'] * 0.2, maxval=self.args['image_size'] * 0.2, dtype=tf.float32), name='Translation')
+        sample['image'] = tfa.image.rotate(images=sample['image'], angles=tf.cast(self.TF_RNG.uniform(shape=[1], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32), interpolation='bilinear', name='Rotation')
+        sample['image'] = tf.cond(tf.less(self.TF_RNG.uniform(shape=[1]), 0.5), lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=1.5, filter_shape=3, name='Gaussian_filter'), lambda: sample['image'])
+        cutout_ratio = 0.15
+        sample['image'] = tfa.image.random_cutout(tf.expand_dims(sample['image'], 0), mask_size=(tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.args['image_size'] * cutout_ratio), dtype=tf.int32) * 2, tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.args['image_size'] * cutout_ratio), dtype=tf.int32) * 2))
+        for i in range(self.TF_RNG.uniform(shape=[], minval=0, maxval=5, dtype=tf.int32)):
+            sample['image'] = tfa.image.random_cutout(sample['image'], mask_size=(tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.args['image_size'] * cutout_ratio), dtype=tf.int32) * 2, tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.args['image_size'] * cutout_ratio), dtype=tf.int32) * 2))
+        sample['image'] = tf.squeeze(sample['image'])
+        sample['image'] = {'xept': xception.preprocess_input, 'incept': inception_v3.preprocess_input,
+                           'effnet0': efficientnet.preprocess_input, 'effnet1': efficientnet.preprocess_input,
+                           'effnet6': efficientnet.preprocess_input}[self.args['pretrained']](sample['image'])
+        return sample, label

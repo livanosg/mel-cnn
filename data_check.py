@@ -35,10 +35,11 @@ def resize_cvt_color(args, image_name):
         # ------------------======================== Resize ===========================----------------------------#
         if int(args['image_size']) != 500:
             image = resize_img(image, args['image_size'])
-        dx = (image.shape[0] - image.shape[1]) / 2  # Compare height-width
+        dx = (image.shape[0] - image.shape[1]) // 2  # Compare height-width
         tblr = [np.ceil(abs(dx)), np.floor(abs(dx)), 0, 0]  # Pad top-bottom
         if dx > 0:  # If height > width
             tblr = tblr[2:] + tblr[:2]  # Pad left-right
+
         image = cv2.copyMakeBorder(image, *tblr, borderType=cv2.BORDER_CONSTANT)
         if args['colour'] == 'grey':
             image = cv2.cvtColor(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2BGR)
