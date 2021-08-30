@@ -3,7 +3,7 @@ import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, LearningRateScheduler
 from tensorboard.plugins.hparams import api as hp
 
-from custom_losses import binary_focal_loss
+from custom_losses import binary_focal_loss, PerClassWeightedCategoricalCrossentropy
 from data_pipe import MelData
 from metrics import calc_metrics
 from model import model_fn
@@ -43,6 +43,10 @@ def train_val_test(args):
             [f.write(': '.join([key.capitalize().rjust(len(max(args.keys(), key=len))), str(args[key])]) + '\n')
              for key in args.keys() if key not in ('dir_dict', 'hparams', 'train_data', 'val_data', 'test_data', 'isic20_test')]
         with strategy.scope():
+            loss_fn = {'cxe': 'categorical_crossentropy',
+                       'focal': binary_focal_loss(),
+                       'perclass': PerClassWeightedCategoricalCrossentropy(args=args)}[args['loss_fn']]
+
             optimizer = {'adam': tf.keras.optimizers.Adam, 'ftrl': tf.keras.optimizers.Ftrl,
                          'sgd': tf.keras.optimizers.SGD, 'rmsprop': tf.keras.optimizers.RMSprop,
                          'adadelta': tf.keras.optimizers.Adadelta, 'adagrad': tf.keras.optimizers.Adagrad,
@@ -50,7 +54,7 @@ def train_val_test(args):
             custom_model = model_fn(args=args)
             with open(os.path.join(args['dir_dict']['trial'], 'model_summary.txt'), 'w') as f:
                 custom_model.summary(print_fn=lambda x: f.write(x + '\n'))
-            custom_model.compile(optimizer=optimizer(learning_rate=args['learning_rate'] * args['replicas']), loss=binary_focal_loss(), metrics=['accuracy'])  # 'categorical_crossentropy'
+            custom_model.compile(optimizer=optimizer(learning_rate=args['learning_rate'] * args['replicas']), loss=loss_fn, metrics=['accuracy'])
         # --------------------------------------------------- Callbacks ---------------------------------------------- #
 
         def schedule(epoch, lr):
