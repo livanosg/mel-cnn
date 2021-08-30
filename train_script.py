@@ -10,6 +10,7 @@ from callbacks import LaterCheckpoint, EnrTensorboard, TestCallback
 
 
 def train_val_test(args):
+    print(tf.config.list_physical_devices('XLA_GPU'))
     if args['strategy'] == 'mirrored':
         strategy = tf.distribute.MirroredStrategy()
     else:

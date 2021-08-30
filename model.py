@@ -11,6 +11,8 @@ from tensorflow.keras.regularizers import l1_l2
 def model_fn(args):
     dense_nodes = np.asarray([1, 2]) * args['dense_layers']
     incept_nodes = np.asarray([1, 2]) * args['layers']
+    merge_nodes = np.asarray([1, 2]) * args['merge_layers']
+
     activation = {'swish': swish, 'relu': relu}[args['activation']]
     rglzr = l1_l2(l1=0., l2=0.00)
     normalization = LayerNormalization
@@ -73,9 +75,9 @@ def model_fn(args):
 
         common = Concatenate(axis=-1)([common, clinical_data])
         # -------------------------------================== Concat part ==================---------------------------------#
-    common = Dense(32, activation=activation, kernel_regularizer=rglzr)(common)
+    common = Dense(merge_nodes[1], activation=activation, kernel_regularizer=rglzr)(common)
     common = normalization()(common)
-    common = Dense(16, activation=activation, kernel_regularizer=rglzr)(common)
+    common = Dense(merge_nodes[0], activation=activation, kernel_regularizer=rglzr)(common)
     common = normalization()(common)
     # common = Dense(16, activation=activation, kernel_regularizer=rglzr)(common)
     output = Dense(args['num_classes'], activation='softmax', kernel_regularizer=rglzr, name='class')(common)
