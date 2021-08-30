@@ -4,7 +4,7 @@ import pandas as pd
 import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
-from config import BEN_MAL_MAP, LOCATIONS, IMAGE_TYPE, SEX, AGE_APPROX, TASK_CLASSES, MAIN_DIR
+from config import BEN_MAL_MAP, LOCATIONS, IMAGE_TYPE, SEX, AGE_APPROX, TASK_CLASSES, MAIN_DIR, NP_RNG
 from sklearn.preprocessing import OneHotEncoder
 
 
@@ -153,7 +153,8 @@ class MelData:
         sample['image'] = tf.cond(tf.less(self.TF_RNG.uniform(shape=[1]), 0.5), lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=1.5, filter_shape=3, name='Gaussian_filter'), lambda: sample['image'])
         cutout_ratio = 0.15
         sample['image'] = tfa.image.random_cutout(tf.expand_dims(sample['image'], 0), mask_size=(tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.args['image_size'] * cutout_ratio), dtype=tf.int32) * 2, tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.args['image_size'] * cutout_ratio), dtype=tf.int32) * 2))
-        for i in range(self.TF_RNG.uniform(shape=[], minval=0, maxval=5, dtype=tf.int32)):
+        # for i in range(self.TF_RNG.uniform(shape=[], minval=0, maxval=5, dtype=tf.int32)):
+        for i in range(5):
             sample['image'] = tfa.image.random_cutout(sample['image'], mask_size=(tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.args['image_size'] * cutout_ratio), dtype=tf.int32) * 2, tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.args['image_size'] * cutout_ratio), dtype=tf.int32) * 2))
         sample['image'] = tf.squeeze(sample['image'])
         sample['image'] = {'xept': xception.preprocess_input, 'incept': inception_v3.preprocess_input,
