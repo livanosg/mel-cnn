@@ -23,7 +23,7 @@ def parser():
     args_parser.add_argument('--epochs', '-e', type=int, default=500, help='Number of epochs epochs.')
     args_parser.add_argument('--loss-fn', '-loss', type=str, default='cxe', choices=['cxe', 'focal', 'perclass'], help='Select loss function.')
     args_parser.add_argument('--conv_layers', '-clrs', type=int, default=32, help='Select multiplier for number of nodes in inception layers.')
-    args_parser.add_argument('--dense-layers', '-dlrs', type=int, default=64, help='Select multiplier for number of nodes in dense layers.')
+    args_parser.add_argument('--dense-layers', '-dlrs', type=int, default=16, help='Select multiplier for number of nodes in dense layers.')
     args_parser.add_argument('--merge-layers', '-mlrs', type=int, default=8, help='Select multiplier for number of nodes in merge layers.')
     args_parser.add_argument('--no-image-weights', '-niw', action='store_true', help='Set to not weight per image type.')
     args_parser.add_argument('--no-image-type', '-nit', action='store_true', help='Set to remove image type from training.')
