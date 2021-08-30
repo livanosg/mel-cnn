@@ -10,7 +10,7 @@ from tensorflow.keras.regularizers import l1_l2
 
 def model_fn(args):
     dense_nodes = np.asarray([1, 2]) * args['dense_layers']
-    incept_nodes = np.asarray([1, 2]) * args['layers']
+    incept_nodes = np.asarray([1, 2]) * args['conv_layers']
     merge_nodes = np.asarray([1, 2]) * args['merge_layers']
 
     activation = {'swish': swish, 'relu': relu}[args['activation']]

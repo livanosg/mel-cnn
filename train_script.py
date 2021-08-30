@@ -61,7 +61,7 @@ def train_val_test(args):
         callbacks = [LearningRateScheduler(schedule),
                      ReduceLROnPlateau(factor=0.1, patience=10, verbose=args['verbose']),
                      EarlyStopping(patience=20, verbose=args['verbose']),
-                     LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=0, verbose=args['verbose']),
+                     LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=10, verbose=args['verbose']),
                      EnrTensorboard(log_dir=args['dir_dict']['logs'], val_data=args['val_data'], class_names=args['class_names']),
                      hp.KerasCallback(args['dir_dict']['logs'], hparams={'pretrained': args['pretrained'], 'task':args['task'],
                                                                          'image_type':args['image_type'], 'image_size':args['image_size'],
@@ -69,7 +69,7 @@ def train_val_test(args):
                                                                          'batch_size':args['batch_size'], 'learning_rate':args['learning_rate'],
                                                                          'optimizer':args['optimizer'], 'activation':args['activation'],
                                                                          'dropout':args['dropout'], 'epochs':args['epochs'],
-                                                                         'layers':args['layers'], 'no_image_weights':args['no_image_weights'],
+                                                                         'conv_layers':args['conv_layers'], 'no_image_weights':args['no_image_weights'],
                                                                          'no_image_type':args['no_image_type']},
                                       trial_id=os.path.basename(args["dir_dict"]["trial"])),
                      TestCallback(args=args)]
@@ -80,12 +80,11 @@ def train_val_test(args):
 # -------------------------------- FINE TUNING ------------------------------------------------------------------------ #
         n_epochs = len(train_1.history['loss'])
 
-        def unfreeze_model(model):
-            # We unfreeze the top 20 layers while leaving BatchNorm layers frozen
-            for layer in model.layers:
+        def unfreeze_model(trained_model):
+            for layer in trained_model.layers:
                 if not isinstance(layer, tf.keras.layers.BatchNormalization):
                     layer.trainable = True
-            return model
+            return trained_model
 
         with strategy.scope():
             custom_model = unfreeze_model(custom_model)
@@ -100,12 +99,12 @@ def train_val_test(args):
 
         def schedule2(epoch, lr):
             if epoch >= n_epochs and lr > 1e-4:
-                lr = 1e-5
+                lr = 1e-6
             return lr
 
         callbacks = [LearningRateScheduler(schedule2),
-                     ReduceLROnPlateau(factor=0.1, patience=5, verbose=args['verbose']),
-                     EarlyStopping(patience=10, verbose=args['verbose']),
+                     ReduceLROnPlateau(factor=0.1, patience=10, verbose=args['verbose']),
+                     EarlyStopping(patience=15, verbose=args['verbose']),
                      LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=n_epochs + 0, verbose=args['verbose']),
                      EnrTensorboard(log_dir=args['dir_dict']['logs'], val_data=args['val_data'], class_names=args['class_names']),
                      hp.KerasCallback(args['dir_dict']['logs'],
@@ -115,9 +114,8 @@ def train_val_test(args):
                                                'batch_size':args['batch_size'], 'learning_rate':args['learning_rate'],
                                                'optimizer':args['optimizer'], 'activation':args['activation'],
                                                'dropout':args['dropout'], 'epochs':args['epochs'],
-                                               'layers':args['layers'], 'no_image_weights':args['no_image_weights'],
+                                               'conv_layers':args['conv_layers'], 'no_image_weights':args['no_image_weights'],
                                                'no_image_type':args['no_image_type']},
                                       trial_id=args["dir_dict"]["trial"].split('/')[-2] + '_fine'),
                      TestCallback(args=args)]
-
         custom_model.fit(x=args['train_data'], validation_data=args['val_data'], initial_epoch=n_epochs, epochs=n_epochs + 2, callbacks=callbacks, verbose=args['verbose'])
