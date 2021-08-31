@@ -52,7 +52,7 @@ if __name__ == '__main__':
     args['num_classes'] = len(args['class_names'])
     args['input_shape'] = (args['image_size'], args['image_size'], 3)
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
+    # os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
     os.environ['OMP_NUM_THREADS'] = '1'
     for key, path in args['dir_dict']['data_csv'].items():
         check_create_dataset(key=key, datasplit_path=path, args=args)
