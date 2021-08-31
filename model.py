@@ -24,7 +24,7 @@ def model_fn(args):
                   'effnet0': efficientnet.EfficientNetB0,
                   'effnet1': efficientnet.EfficientNetB1,
                   'effnet6': efficientnet.EfficientNetB6}[args['pretrained']](include_top=False, input_shape=args['input_shape'])
-    base_model.trainable = False
+    base_model.trainable = True
     image_input = Input(shape=args['input_shape'], name='image')
     inputs_list.append(image_input)
 
@@ -59,7 +59,7 @@ def model_fn(args):
         clinical_data_2 = Dense(dense_nodes[0], activation=activation, kernel_regularizer=rglzr)(clinical_data_1)
         clinical_data_2 = normalization()(clinical_data_2)
         clinical_data_3 = Dense(dense_nodes[0], activation=activation, kernel_regularizer=rglzr)(clinical_data_2)
-        clinical_data_2 = normalization()(clinical_data_2)
+        clinical_data_3 = normalization()(clinical_data_3)
         # lstm_1 = LSTM(128, return_sequences=True)(clinical_data_input)
         # lstm_1 = normalization()(lstm_1)
 
