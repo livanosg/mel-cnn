@@ -28,7 +28,7 @@ def parser():
     args_parser.add_argument('--no-image-weights', '-niw', action='store_true', help='Set to not weight per image type.')
     args_parser.add_argument('--no-image-type', '-nit', action='store_true', help='Set to remove image type from training.')
     args_parser.add_argument('--dataset-frac', '-frac', type=float, default=1., help='Dataset fraction.')
-    args_parser.add_argument('--strategy', '-strg', type=str, default='mirrored', choices=['multiworker', 'mirrored'], help='Select parallelization strategy.')
+    args_parser.add_argument('--strategy', '-strg', type=str, default='mirrored', choices=['multiworker', 'mirrored', 'singlegpu'], help='Select parallelization strategy.')
     args_parser.add_argument('--validate', '-val', action='store_true', help='Validate model')
     args_parser.add_argument('--test', '-test', action='store_true', help='Test to isic2020.')
     args_parser.add_argument('--test-model', '-testmodel', type=str, help='Path to load model.')
@@ -52,7 +52,12 @@ if __name__ == '__main__':
     args['num_classes'] = len(args['class_names'])
     args['input_shape'] = (args['image_size'], args['image_size'], 3)
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
+    if args['strategy'] == 'singlegpu':
+        try:
+            os.environ['CUDA_VISIBLE_DEVICES'] = os.environ['SLURM_PROCID']
+        except KeyError:
+            os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+
     os.environ['OMP_NUM_THREADS'] = '1'
     for key, path in args['dir_dict']['data_csv'].items():
         check_create_dataset(key=key, datasplit_path=path, args=args)
