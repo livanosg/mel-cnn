@@ -129,7 +129,7 @@ class MelData:
 
         dataset = tf.data.Dataset.from_tensor_slices(data)
         if mode == 'train':
-            dataset = dataset.shuffle(buffer_size=len(self.data_df['train']), reshuffle_each_iteration=True, seed=1312)
+            dataset = dataset.shuffle(buffer_size=len(self.data_df['train']), reshuffle_each_iteration=True)
         dataset = dataset.map(prep_input, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         if mode == 'train':
             dataset = dataset.map(self.augm, num_parallel_calls=tf.data.experimental.AUTOTUNE)

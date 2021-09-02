@@ -1,7 +1,10 @@
 import os
+import numpy as np
 import pandas as pd
-from config import NP_RNG, DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH, ISIC_ORIG_TEST_PATH, \
+from config import DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH, ISIC_ORIG_TEST_PATH, \
     DATA_MAP, MAIN_DIR
+
+NP_RNG = np.random.default_rng(seed=1312)
 
 isic18_val = pd.read_csv(os.path.join(DATA_DIR, 'isic18.csv'))
 [isic18_val.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in isic18_val.columns]

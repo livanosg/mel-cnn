@@ -1,8 +1,5 @@
 import os
 from datetime import datetime
-import numpy as np
-
-NP_RNG = np.random.default_rng(1312)
 MAIN_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(MAIN_DIR, 'data')
 LOGS_DIR = os.path.join(MAIN_DIR, 'logs')
