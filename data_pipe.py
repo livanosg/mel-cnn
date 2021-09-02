@@ -12,7 +12,6 @@ class MelData:
     def __init__(self, args: dict):
         self.args = args
         self.TF_RNG = tf.random.Generator.from_non_deterministic_state()  # .from_seed(1312)
-        self.batch_size = self.args['batch_size'] * self.args['replicas']
         self.data_df = {}
         self.classes = TASK_CLASSES[self.args['task']]
         if self.args['image_type'] != 'both':
@@ -108,7 +107,7 @@ class MelData:
             sample_weights = df['sample_weights']
         return ohe_features, labels  # , sample_weights
 
-    def get_dataset(self, mode=None, repeat=1):
+    def get_dataset(self, mode=None, repeat=1, batch=16):
         data = self.data_df[mode]
         if mode != 'isic20_test':
             data = self.set_sample_weights_to_df(df=data, mode=mode)
@@ -133,7 +132,7 @@ class MelData:
         dataset = dataset.map(prep_input, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         if mode == 'train':
             dataset = dataset.map(self.augm, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        dataset = dataset.batch(self.batch_size)
+        dataset = dataset.batch(batch)
         options = tf.data.Options()
         options.experimental_threading.max_intra_op_parallelism = 1
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA

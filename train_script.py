@@ -22,10 +22,10 @@ def train_val_test(args):
         os.makedirs(args['dir_dict']['trial'], exist_ok=True)
 
     data = MelData(args=args)
-    args['train_data'] = data.get_dataset(mode='train')
-    args['val_data'] = data.get_dataset(mode='val')
-    args['test_data'] = data.get_dataset(mode='test')
-    args['isic20_test'] = data.get_dataset(mode='isic20_test')
+    args['train_data'] = data.get_dataset(mode='train', batch=args['batch_size'] * args['replicas'])
+    args['val_data'] = data.get_dataset(mode='val', batch=args['batch_size'] * args['replicas'])
+    args['test_data'] = data.get_dataset(mode='test', batch=args['batch_size'] * args['replicas'])
+    args['isic20_test'] = data.get_dataset(mode='isic20_test', batch=args['batch_size'] * args['replicas'])
     if args['test'] or args['validate']:
         args['dir_dict']['model_path'] = args['test_model']
         args['dir_dict']['trial'] = os.path.dirname(args['dir_dict']['model_path'])
@@ -57,13 +57,12 @@ def train_val_test(args):
             custom_model.compile(optimizer=optimizer(learning_rate=args['learning_rate'] * args['replicas']), loss=loss_fn, metrics=['accuracy'])
         # --------------------------------------------------- Callbacks ---------------------------------------------- #
 
-        def schedule(epoch, lr):
-            if epoch > 10 and lr >= 1e-4:
-                lr = 1e-5
-            return lr
-
-        callbacks = [LearningRateScheduler(schedule),
-                     ReduceLROnPlateau(factor=0.1, patience=10, verbose=args['verbose']),
+        # def schedule(epoch, lr):
+        #     if epoch > 10 and lr >= 1e-4:
+        #         lr = 1e-5
+        #     return lr
+        # LearningRateScheduler(schedule),
+        callbacks = [ReduceLROnPlateau(factor=0.1, patience=10, verbose=args['verbose']),
                      EarlyStopping(patience=20, verbose=args['verbose']),
                      LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=10, verbose=args['verbose']),
                      EnrTensorboard(log_dir=args['dir_dict']['logs'], val_data=args['val_data'], class_names=args['class_names']),
@@ -83,6 +82,12 @@ def train_val_test(args):
 
 # -------------------------------- FINE TUNING ------------------------------------------------------------------------ #
         n_epochs = len(train_1.history['loss'])
+        args['learning_rate'] = 1e-6
+        args['batch_size'] = 4
+        args['train_data'] = data.get_dataset(mode='train', batch=args['batch_size'] * args['replicas'])
+        args['val_data'] = data.get_dataset(mode='val', batch=args['batch_size'] * args['replicas'])
+        args['test_data'] = data.get_dataset(mode='test', batch=args['batch_size'] * args['replicas'])
+        args['isic20_test'] = data.get_dataset(mode='isic20_test', batch=args['batch_size'] * args['replicas'])
 
         def unfreeze_model(trained_model):
             for layer in trained_model.layers:
@@ -92,7 +97,7 @@ def train_val_test(args):
 
         with strategy.scope():
             custom_model = unfreeze_model(custom_model)
-            custom_model.compile(optimizer=optimizer(learning_rate=args['learning_rate'] * 0.1 * args['replicas']), loss='categorical_crossentropy', metrics=['accuracy'])  # binary_focal_loss()
+            custom_model.compile(optimizer=optimizer(learning_rate=args['learning_rate'] * args['replicas']), loss='categorical_crossentropy', metrics=['accuracy'])  # binary_focal_loss()
 
         with open(os.path.join(args['dir_dict']['trial'], 'fine_model_summary.txt'), 'w') as f:
             custom_model.summary(print_fn=lambda x: f.write(x + '\n'))
@@ -101,13 +106,7 @@ def train_val_test(args):
         args['dir_dict']['logs'] = os.path.join(args['dir_dict']['logs'], 'fine')
         args['dir_dict']['model_path'] = os.path.join(args['dir_dict']['model_path'], 'fine')
 
-        def schedule2(epoch, lr):
-            if epoch >= n_epochs and lr > 1e-4:
-                lr = 1e-6
-            return lr
-
-        callbacks = [LearningRateScheduler(schedule2),
-                     ReduceLROnPlateau(factor=0.1, patience=10, verbose=args['verbose']),
+        callbacks = [ReduceLROnPlateau(factor=0.1, patience=10, verbose=args['verbose']),
                      EarlyStopping(patience=15, verbose=args['verbose']),
                      LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=n_epochs + 0, verbose=args['verbose']),
                      EnrTensorboard(log_dir=args['dir_dict']['logs'], val_data=args['val_data'], class_names=args['class_names']),
