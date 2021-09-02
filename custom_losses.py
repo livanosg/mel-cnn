@@ -78,5 +78,29 @@ def binary_focal_loss(gamma=2., alpha=.25):
         pt_1 = K.clip(pt_1, epsilon, 1. - epsilon)
         pt_0 = K.clip(pt_0, epsilon, 1. - epsilon)
         return -K.sum(alpha * K.pow(1. - pt_1, gamma) * K.log(pt_1)) \
-               -K.sum((1 - alpha) * K.pow(pt_0, gamma) * K.log(1. - pt_0))
+               - K.sum((1 - alpha) * K.pow(pt_0, gamma) * K.log(1. - pt_0))
     return binary_focal_loss_fixed
+
+
+def custom_loss(frac):
+    def total_loss(y_true, y_pred):
+        def log_dice_loss():
+            """Inputs: y_pred: probs form per class
+                       y_true: one-hot encoding of label
+            """
+            with tf.name_scope('Generalized_Dice_Log_Loss'):
+                numerator = tf.reduce_sum(y_true * y_pred)
+                denominator = tf.reduce_sum(y_true + y_pred)
+                dice = tf.math.divide(x=2. * numerator, y=denominator)
+            return - tf.math.log(dice)
+
+        def weighted_crossentropy():
+            """ y_true: One-hot label
+                y_pred: Softmax output."""
+            with tf.name_scope('Crossentropy_Loss'):
+                wcce = tf.keras.losses.categorical_crossentropy(y_true, y_pred)
+            return tf.reduce_mean(wcce)
+
+        return tf.math.multiply(frac, log_dice_loss()) + tf.math.multiply(1. - frac, weighted_crossentropy())
+
+    return total_loss

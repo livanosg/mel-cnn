@@ -1,9 +1,10 @@
 import os
 import tensorflow as tf
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, LearningRateScheduler
+import tensorflow_addons as tfa
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorboard.plugins.hparams import api as hp
 
-from custom_losses import binary_focal_loss, PerClassWeightedCategoricalCrossentropy
+from custom_losses import binary_focal_loss, PerClassWeightedCategoricalCrossentropy, custom_loss
 from data_pipe import MelData
 from metrics import calc_metrics
 from model import model_fn
@@ -45,8 +46,8 @@ def train_val_test(args):
         with strategy.scope():
             loss_fn = {'cxe': 'categorical_crossentropy',
                        'focal': binary_focal_loss(),
+                       'custom': custom_loss(args['loss_frac']),
                        'perclass': PerClassWeightedCategoricalCrossentropy(args=args)}[args['loss_fn']]
-
             optimizer = {'adam': tf.keras.optimizers.Adam, 'ftrl': tf.keras.optimizers.Ftrl,
                          'sgd': tf.keras.optimizers.SGD, 'rmsprop': tf.keras.optimizers.RMSprop,
                          'adadelta': tf.keras.optimizers.Adadelta, 'adagrad': tf.keras.optimizers.Adagrad,
@@ -54,14 +55,9 @@ def train_val_test(args):
             custom_model = model_fn(args=args)
             with open(os.path.join(args['dir_dict']['trial'], 'model_summary.txt'), 'w') as f:
                 custom_model.summary(print_fn=lambda x: f.write(x + '\n'))
-            custom_model.compile(optimizer=optimizer(learning_rate=args['learning_rate'] * args['replicas']), loss=loss_fn, metrics=['accuracy'])
+            custom_model.compile(optimizer=optimizer(learning_rate=args['learning_rate'] * args['replicas']), loss=loss_fn, metrics=[tfa.metrics.F1Score(num_classes=args['num_classes'], average='macro')])
         # --------------------------------------------------- Callbacks ---------------------------------------------- #
 
-        # def schedule(epoch, lr):
-        #     if epoch > 10 and lr >= 1e-4:
-        #         lr = 1e-5
-        #     return lr
-        # LearningRateScheduler(schedule),
         callbacks = [ReduceLROnPlateau(factor=0.1, patience=10, verbose=args['verbose']),
                      EarlyStopping(patience=20, verbose=args['verbose']),
                      LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=10, verbose=args['verbose']),
