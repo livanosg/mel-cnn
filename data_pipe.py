@@ -4,7 +4,7 @@ import pandas as pd
 import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
-from config import BEN_MAL_MAP, LOCATIONS, IMAGE_TYPE, SEX, AGE_APPROX, TASK_CLASSES, MAIN_DIR, NP_RNG
+from config import BEN_MAL_MAP, LOCATIONS, IMAGE_TYPE, SEX, AGE_APPROX, TASK_CLASSES, MAIN_DIR
 from sklearn.preprocessing import OneHotEncoder
 
 
@@ -129,7 +129,7 @@ class MelData:
 
         dataset = tf.data.Dataset.from_tensor_slices(data)
         if mode == 'train':
-            dataset = dataset.shuffle(buffer_size=len(self.data_df['train']), reshuffle_each_iteration=True)
+            dataset = dataset.shuffle(buffer_size=len(self.data_df['train']), reshuffle_each_iteration=True, seed=1312)
         dataset = dataset.map(prep_input, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         if mode == 'train':
             dataset = dataset.map(self.augm, num_parallel_calls=tf.data.experimental.AUTOTUNE)
@@ -154,7 +154,7 @@ class MelData:
         cutout_ratio = 0.15
         sample['image'] = tfa.image.random_cutout(tf.expand_dims(sample['image'], 0), mask_size=(tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.args['image_size'] * cutout_ratio), dtype=tf.int32) * 2, tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.args['image_size'] * cutout_ratio), dtype=tf.int32) * 2))
         # for i in range(self.TF_RNG.uniform(shape=[], minval=0, maxval=5, dtype=tf.int32)):
-        for i in range(5):
+        for i in range(3):
             sample['image'] = tfa.image.random_cutout(sample['image'], mask_size=(tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.args['image_size'] * cutout_ratio), dtype=tf.int32) * 2, tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.args['image_size'] * cutout_ratio), dtype=tf.int32) * 2))
         sample['image'] = tf.squeeze(sample['image'])
         sample['image'] = {'xept': xception.preprocess_input, 'incept': inception_v3.preprocess_input,
