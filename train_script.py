@@ -60,7 +60,7 @@ def train_val_test(args):
 
         callbacks = [ReduceLROnPlateau(factor=0.1, patience=10, verbose=args['verbose']),
                      EarlyStopping(patience=20, verbose=args['verbose']),
-                     LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=10, verbose=args['verbose']),
+                     LaterCheckpoint(filepath=args['dir_dict']['model_path'], monitor='val_f1_score', mode='max', save_best_only=True, start_at=10, verbose=args['verbose']),
                      EnrTensorboard(log_dir=args['dir_dict']['logs'], val_data=args['val_data'], class_names=args['class_names']),
                      hp.KerasCallback(args['dir_dict']['logs'], hparams={'pretrained': args['pretrained'], 'task':args['task'],
                                                                          'image_type':args['image_type'], 'image_size':args['image_size'],
@@ -93,7 +93,7 @@ def train_val_test(args):
 
         with strategy.scope():
             custom_model = unfreeze_model(custom_model)
-            custom_model.compile(optimizer=optimizer(learning_rate=args['learning_rate'] * args['replicas']), loss='categorical_crossentropy', metrics=['accuracy'])  # binary_focal_loss()
+            custom_model.compile(optimizer=optimizer(learning_rate=args['learning_rate'] * args['replicas']), loss=loss_fn, metrics=[tfa.metrics.F1Score(num_classes=args['num_classes'], average='macro')])  # binary_focal_loss()
 
         with open(os.path.join(args['dir_dict']['trial'], 'fine_model_summary.txt'), 'w') as f:
             custom_model.summary(print_fn=lambda x: f.write(x + '\n'))
@@ -104,7 +104,7 @@ def train_val_test(args):
 
         callbacks = [ReduceLROnPlateau(factor=0.1, patience=10, verbose=args['verbose']),
                      EarlyStopping(patience=15, verbose=args['verbose']),
-                     LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=n_epochs + 0, verbose=args['verbose']),
+                     LaterCheckpoint(filepath=args['dir_dict']['model_path'], monitor='val_f1_score', mode='max', save_best_only=True, start_at=n_epochs + 0, verbose=args['verbose']),
                      EnrTensorboard(log_dir=args['dir_dict']['logs'], val_data=args['val_data'], class_names=args['class_names']),
                      hp.KerasCallback(args['dir_dict']['logs'],
                                       hparams={'pretrained': args['pretrained'], 'task':args['task'],
@@ -117,4 +117,4 @@ def train_val_test(args):
                                                'no_image_type':args['no_image_type']},
                                       trial_id=args["dir_dict"]["trial"].split('/')[-2] + '_fine'),
                      TestCallback(args=args)]
-        custom_model.fit(x=args['train_data'], validation_data=args['val_data'], initial_epoch=n_epochs, epochs=n_epochs + 2, callbacks=callbacks, verbose=args['verbose'])
+        custom_model.fit(x=args['train_data'], validation_data=args['val_data'], initial_epoch=n_epochs, epochs=n_epochs + 10, callbacks=callbacks, verbose=args['verbose'])
