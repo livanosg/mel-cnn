@@ -17,12 +17,11 @@ def train_val_test(args):
         strategy = tf.distribute.MirroredStrategy()
     else:
         strategy = tf.distribute.OneDeviceStrategy('GPU')
-    batch = args['batch_size'] * strategy.num_replicas_in_sync
-    data = MelData(task=args['task'], image_type=args['image_type'], pretrained=args['pretrained'],
-                   dir_dict=args['dir_dict'], input_shape=args['input_shape'], dataset_frac=args['dataset_frac'])
-    data.logs()
-    all_data = data.all_datasets(batch=batch, no_image_type=args['no_image_type'], only_image=args['only_image'])
+
     if args['test']:
+        data = MelData(task=args['task'], image_type=args['image_type'], pretrained=args['pretrained'],
+                       dir_dict=args['dir_dict'], input_shape=args['input_shape'], dataset_frac=args['dataset_frac'])
+        all_data = data.all_datasets(batch=128, no_image_type=args['no_image_type'], only_image=args['only_image'])
         model = tf.keras.models.load_model(args['dir_dict']['model_path'], compile=False)
         if args['task'] in ('ben_mal', '5cls'):
             calc_metrics(args=args, model=model, dataset=all_data['isic20_test'], dataset_type='isic20_test')
@@ -31,10 +30,17 @@ def train_val_test(args):
     else:
         os.makedirs(args['dir_dict']['logs'], exist_ok=True)
         os.makedirs(args['dir_dict']['trial'], exist_ok=True)
-
         with open(args['dir_dict']['hparams_logs'], 'a') as f:
             writer = csv.writer(f)
+            writer.writerow(['trial', os.path.basename(args['dir_dict']['trial'])])
             [writer.writerow([key, str(args[key])]) for key in args.keys() if key != 'dir_dict']
+
+        batch = args['batch_size'] * strategy.num_replicas_in_sync
+        data = MelData(task=args['task'], image_type=args['image_type'], pretrained=args['pretrained'],
+                       dir_dict=args['dir_dict'], input_shape=args['input_shape'], dataset_frac=args['dataset_frac'])
+        all_data = data.all_datasets(batch=batch, no_image_type=args['no_image_type'], only_image=args['only_image'])
+        data.logs()
+
         loss_fn = {'cxe': 'categorical_crossentropy', 'focal': binary_focal_loss(), 'custom': custom_loss(args['loss_frac']),
                    'perclass': PerClassWeightedCategoricalCrossentropy(args=args)}[args['loss_fn']]
 

@@ -1,3 +1,4 @@
+import csv
 import os
 import numpy as np
 import pandas as pd
@@ -74,9 +75,13 @@ class MelData:
         for _image_type in self.image_types:
             sample_weight_dict[_image_type] = {}
             for _class in self.class_names:
-                comb_weight = (weights_per_image_type[_image_type] + weights_per_class[_class]) / 2
+                comb_weight = (weights_per_image_type[_image_type] + weights_per_class[_class])
                 df.loc[(df['image_type'] == _image_type) & (df['class'] == _class), 'sample_weights'] = comb_weight
-            return df.sample(frac=1.5, replace=True, weights='sample_weights', random_state=1312)
+                with open(self.dir_dict['hparams_logs'], 'a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow([_image_type, _class, comb_weight])
+        df_2 = df.sample(frac=1., replace=True, weights='sample_weights', random_state=1312)
+        return pd.concat([df, df_2])
 
     def make_onehot(self, df, mode, no_image_type, only_image):
         ohe_features = {'image_path': df['image']}
