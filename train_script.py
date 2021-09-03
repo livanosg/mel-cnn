@@ -77,7 +77,7 @@ def train_val_test(args):
 
 # --------------------------------------------------- FINE TUNING ---------------------------------------------------- #
         n_epochs = len(train_1.history['loss'])
-        args['learning_rate'] = 1e-5
+        args['learning_rate'] = 1e-6
         batch = 256 * strategy.num_replicas_in_sync
         all_data = data.all_datasets(batch=batch, no_image_type=args['no_image_type'], only_image=args['only_image'])
         args['dir_dict']['trial'] = os.path.join(args['dir_dict']['trial'], 'fine')
