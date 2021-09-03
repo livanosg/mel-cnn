@@ -58,7 +58,7 @@ def train_val_test(args):
 
         callbacks = [ReduceLROnPlateau(factor=0.1, patience=10, verbose=args['verbose']),
                      EarlyStopping(patience=20, verbose=args['verbose']),
-                     LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=0, verbose=args['verbose']),
+                     LaterCheckpoint(filepath=args['dir_dict']['model_path'], save_best_only=True, start_at=10, verbose=args['verbose']),
                      EnrTensorboard(val_data=data.get_dataset(mode='validation', batch=batch, no_image_type=args['no_image_type'], only_image=args['only_image']),
                                     log_dir=args['dir_dict']['logs'], class_names=args['class_names']),
                      hp.KerasCallback(writer=args['dir_dict']['logs'], hparams={'pretrained': args['pretrained'], 'task':args['task'],
@@ -78,7 +78,7 @@ def train_val_test(args):
 # --------------------------------------------------- FINE TUNING ---------------------------------------------------- #
         n_epochs = len(train_1.history['loss'])
         args['learning_rate'] = 1e-6
-        batch = 256 * strategy.num_replicas_in_sync
+        batch = 4 * strategy.num_replicas_in_sync
         all_data = data.all_datasets(batch=batch, no_image_type=args['no_image_type'], only_image=args['only_image'])
         args['dir_dict']['trial'] = os.path.join(args['dir_dict']['trial'], 'fine')
         args['dir_dict']['model_path'] = os.path.join(args['dir_dict']['trial'], 'model')
@@ -116,4 +116,4 @@ def train_val_test(args):
                                   test=data.get_dataset(mode='test', batch=batch))]
 
         custom_model.fit(x=all_data['train'], validation_data=all_data['validation'], callbacks=callbacks,
-                         initial_epoch=n_epochs, epochs=n_epochs + 1, verbose=args['verbose'])
+                         initial_epoch=n_epochs, epochs=n_epochs + 10, verbose=args['verbose'])
