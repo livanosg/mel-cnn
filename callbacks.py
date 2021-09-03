@@ -30,16 +30,19 @@ class EnrTensorboard(tf.keras.callbacks.TensorBoard):
 
 
 class TestCallback(tf.keras.callbacks.Callback):
-    def __init__(self, args):
+    def __init__(self, args, validation, test, isic20_test):
         super().__init__()
         self.args = args
+        self.validation = validation
+        self.test = test
+        self.isic20_test = isic20_test
 
     def on_train_end(self, logs=None):
         model = tf.keras.models.load_model(self.args['dir_dict']['model_path'], compile=False)
-        calc_metrics(args=self.args, model=model, dataset=self.args['val_data'], dataset_type='val')
-        calc_metrics(args=self.args, model=model, dataset=self.args['test_data'], dataset_type='test')
+        calc_metrics(args=self.args, model=model, dataset=self.validation, dataset_type='validation')
+        calc_metrics(args=self.args, model=model, dataset=self.test, dataset_type='test')
         if self.args['task'] in ('ben_mal', '5cls'):
-            calc_metrics(args=self.args, model=model, dataset=self.args['isic20_test'], dataset_type='isic20_test')
+            calc_metrics(args=self.args, model=model, dataset=self.isic20_test, dataset_type='isic20_test')
 
 
 class LaterCheckpoint(tf.keras.callbacks.ModelCheckpoint):

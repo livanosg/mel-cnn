@@ -8,7 +8,7 @@ TRIALS_DIR = os.path.join(MAIN_DIR, 'trials')
 TRAIN_CSV_PATH = os.path.join(MAIN_DIR, 'data_train.csv')
 VAL_CSV_PATH = os.path.join(MAIN_DIR, 'data_val.csv')
 TEST_CSV_PATH = os.path.join(MAIN_DIR, 'data_test.csv')
-ISIC_ORIG_TEST_PATH = os.path.join(MAIN_DIR, 'isic20_test.csv')
+ISIC20_TEST_PATH = os.path.join(MAIN_DIR, 'isic20_test.csv')
 
 COLUMNS = ['dataset_id', 'patient_id', 'lesion_id', 'image', 'image_type', 'sex', 'age_approx', 'location', 'class']
 
@@ -72,7 +72,7 @@ def dir_dict(args: dict):
                    'data_csv': {'train': TRAIN_CSV_PATH,
                                 'val': VAL_CSV_PATH,
                                 'test': TEST_CSV_PATH,
-                                'isic20_test': ISIC_ORIG_TEST_PATH},
+                                'isic20_test': ISIC20_TEST_PATH},
                    'logs': os.path.join(LOGS_DIR, args['task'], args['image_type'], trial_id),
                    'trial': os.path.join(TRIALS_DIR, args['task'], args['image_type'], trial_id)}  # type: dict
     try:
@@ -80,7 +80,7 @@ def dir_dict(args: dict):
         directories['trial'] = directories['trial'] + f"-{os.environ['SLURMD_NODENAME']}"
     except KeyError:
         pass
-    directories['hparams_logs'] = os.path.join(directories['trial'], 'hparams_log.txt')
+    directories['hparams_logs'] = os.path.join(directories['trial'], 'hparams_log.csv')
     directories['model_path'] = os.path.join(directories['trial'], 'model')  # + "{epoch:03d}"
     directories['backup'] = os.path.join(directories['trial'], 'backup')
     directories['image_folder'] = os.path.join(MAIN_DIR, f"proc_{args['image_size']}_{args['colour']}", 'data')

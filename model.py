@@ -8,7 +8,7 @@ from tensorflow.keras.activations import swish, relu
 from tensorflow.keras.regularizers import l1_l2
 
 
-def model_fn(args):
+def model_struct(args):
     dense_nodes = np.asarray([1, 2]) * args['dense_layers']
     incept_nodes = np.asarray([1, 2]) * args['conv_layers']
     merge_nodes = np.asarray([1, 2]) * args['merge_layers']
@@ -55,18 +55,11 @@ def model_fn(args):
         inputs_list.append(clinical_data_input)
         clinical_data_1 = Dense(dense_nodes[1], activation=activation, kernel_regularizer=rglzr)(clinical_data_input)
         clinical_data_1 = normalization()(clinical_data_1)
-        # clinical_data = Dropout(rate=args['dropout'])(clinical_data)
         clinical_data_2 = Dense(dense_nodes[0], activation=activation, kernel_regularizer=rglzr)(clinical_data_1)
         clinical_data_2 = normalization()(clinical_data_2)
-        clinical_data_2 = Concatenate(axis=-1)([clinical_data_2, clinical_data_1])
-        clinical_data_3 = Dense(dense_nodes[0], activation=activation, kernel_regularizer=rglzr)(clinical_data_2)
+        clinical_data_con = Concatenate(axis=-1)([clinical_data_2, clinical_data_1])
+        clinical_data_3 = Dense(dense_nodes[0], activation=activation, kernel_regularizer=rglzr)(clinical_data_con)
         clinical_data_3 = normalization()(clinical_data_3)
-        # lstm_1 = LSTM(128, return_sequences=True)(clinical_data_input)
-        # lstm_1 = normalization()(lstm_1)
-
-        # lstm_2 = LSTM(64)(lstm_1)
-        # lstm_2 = normalization()(lstm_2)
-
         common = Concatenate(axis=-1)([common, clinical_data_1, clinical_data_2, clinical_data_3])
         # -------------------------------================== Concat part ==================---------------------------------#
     common = Dense(merge_nodes[1], activation=activation, kernel_regularizer=rglzr)(common)

@@ -1,8 +1,7 @@
 import os
 import numpy as np
 import pandas as pd
-from config import DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH, ISIC_ORIG_TEST_PATH, \
-    DATA_MAP, MAIN_DIR
+from config import DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH, ISIC20_TEST_PATH, DATA_MAP, MAIN_DIR
 
 NP_RNG = np.random.default_rng(seed=1312)
 
@@ -70,7 +69,7 @@ total_val = padufes_val.append(isic19_val).append(isic20_val).append(spt_val).ap
 total_test = isic18_val.append(dermofit).append(up)
 total_data_len = len(total_train) + len(total_val) + len(total_test)
 
-for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (total_test, TEST_CSV_PATH), (isic20_orig_test, ISIC_ORIG_TEST_PATH)]:
+for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (total_test, TEST_CSV_PATH), (isic20_orig_test, ISIC20_TEST_PATH)]:
     df = df.sample(frac=1., random_state=NP_RNG.bit_generator)
     columns = ['dataset_id', 'location', 'sex', 'image', 'age_approx', 'image_type', 'class']
     df['age_approx'] -= (df['age_approx'] % 10)
