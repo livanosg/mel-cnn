@@ -12,11 +12,11 @@ def parser():
     args_parser.add_argument('--pretrained', '-pt', type=str, default='effnet1', choices=['incept', 'xept', 'effnet0', 'effnet1', 'effnet6'], help='Select pretrained model.')
     args_parser.add_argument('--task', '-task', type=str, required=True, choices=['5cls', 'ben_mal', 'nev_mel'], help='Select the type of model.')
     args_parser.add_argument('--image-type', '-it', type=str, required=True, choices=['derm', 'clinic', 'both'], help='Select image type to use during training.')
-    args_parser.add_argument('--image-size', '-is', type=int, default=500, help='Select image size.')
+    args_parser.add_argument('--image-size', '-is', type=int, default=224, help='Select image size.')
     args_parser.add_argument('--only-image', '-io', action='store_true', help='Train model only with images.')
     args_parser.add_argument('--colour', '-clr', type=str, default='rgb', help='Select image size.')
     args_parser.add_argument('--batch-size', '-btch', type=int, default=16, help='Select batch size.')
-    args_parser.add_argument('--learning-rate', '-lr', type=float, default=1e-4, help='Select learning rate.')
+    args_parser.add_argument('--learning-rate', '-lr', type=float, default=1e-5, help='Select learning rate.')
     args_parser.add_argument('--optimizer', '-opt', type=str, default='adamax', choices=['adam', 'ftrl', 'sgd', 'rmsprop', 'adadelta', 'adagrad', 'adamax', 'nadam'], help='Select optimizer.')
     args_parser.add_argument('--activation', '-act', type=str, default='swish', choices=['relu', 'swish'], help='Select leaky relu gradient.')
     args_parser.add_argument('--dropout', '-dor', type=float, default=0.1, help='Select dropout ratio.')
@@ -31,7 +31,7 @@ def parser():
     args_parser.add_argument('--strategy', '-strg', type=str, default='mirrored', choices=['multiworker', 'mirrored', 'singlegpu'], help='Select parallelization strategy.')
     args_parser.add_argument('--load-model', '-load', type=str, help='Path to load model.')
     args_parser.add_argument('--test', '-test', action='store_true', help='Test loaded model with isic2020.')
-    args_parser.add_argument('--fine', '-fine', action='store_true', help='Fine tune  .')
+    args_parser.add_argument('--fine', '-fine', action='store_true', help='Fine tune.')
     args_parser.add_argument('--verbose', '-v', default=0, action='count', help='Set verbosity.')
     return args_parser
 
