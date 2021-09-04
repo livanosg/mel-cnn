@@ -116,4 +116,4 @@ def train_val_test(args):
                                   test=data.get_dataset(mode='test', batch=batch))]
 
         custom_model.fit(x=all_data['train'], validation_data=all_data['validation'], callbacks=callbacks,
-                         initial_epoch=n_epochs, epochs=n_epochs + 10, verbose=args['verbose'])
+                         initial_epoch=n_epochs, epochs=n_epochs + 20, verbose=args['verbose'])
