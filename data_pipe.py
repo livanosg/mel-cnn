@@ -24,8 +24,8 @@ class MelData:
             self.image_types = [self.image_type]
         else:
             self.image_types = IMAGE_TYPE
-        self.data_df = {'train': self.oversampling(self.prep_df(mode='train')).sample(frac=dataset_frac, random_state=1312),
-                        'validation': self.prep_df(mode='validation').sample(frac=dataset_frac, random_state=1312),
+        self.data_df = {'train': self.oversampling(self.prep_df(mode='train')).sample(frac=dataset_frac),
+                        'validation': self.prep_df(mode='validation').sample(frac=dataset_frac),
                         'test': self.prep_df(mode='test'),
                         'isic20_test': self.prep_df(mode='isic20_test')}
 
@@ -80,7 +80,7 @@ class MelData:
                 with open(self.dir_dict['hparams_logs'], 'a') as f:
                     writer = csv.writer(f)
                     writer.writerow([_image_type, _class, comb_weight])
-        df_2 = df.sample(frac=1., replace=True, weights='sample_weights', random_state=1312)
+        df_2 = df.sample(frac=1., replace=True, weights='sample_weights')
         return pd.concat([df, df_2])
 
     def make_onehot(self, df, mode, no_image_type, only_image):
