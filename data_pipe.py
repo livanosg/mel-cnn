@@ -24,7 +24,7 @@ class MelData:
             self.image_types = [self.image_type]
         else:
             self.image_types = IMAGE_TYPE
-        self.data_df = {'train': self.oversampling(self.prep_df(mode='train')).sample(frac=dataset_frac),
+        self.data_df = {'train': self.prep_df(mode='train').sample(frac=dataset_frac),
                         'validation': self.prep_df(mode='validation').sample(frac=dataset_frac),
                         'test': self.prep_df(mode='test'),
                         'isic20_test': self.prep_df(mode='isic20_test')}
@@ -35,9 +35,10 @@ class MelData:
         if mode != 'isic20_test':
             if self.task == 'ben_mal':
                 df.replace(to_replace=BEN_MAL_MAP, inplace=True)
-            if self.task == 'nev_mel':
-                df.drop(df[df['class'].isin(['NNV', 'SUS', 'NMC'])].index, errors='ignore', inplace=True)
-            df.drop(df[df['class'] == 'UNK'].index, errors='ignore', inplace=True)
+            elif self.task in ('nev_mel', '5cls'):
+                if self.task == 'nev_mel':
+                    df.drop(df[df['class'].isin(['NNV', 'SUS', 'NMC'])].index, errors='ignore', inplace=True)
+                df.drop(df[df['class'] == 'UNK'].index, errors='ignore', inplace=True)
             if self.image_type != 'both':  # Keep derm or clinic, samples.
                 df.drop(df[df['image_type'] != self.image_type].index, errors='ignore', inplace=True)
         return df
@@ -103,6 +104,8 @@ class MelData:
 
     def get_dataset(self, mode=None, repeat=1, batch=16, no_image_type=False, only_image=False):
         data = self.data_df[mode]
+        if mode == 'train':
+            data = self.oversampling(data)
         data = self.make_onehot(df=data, mode=mode, no_image_type=no_image_type, only_image=only_image)
         dataset = tf.data.Dataset.from_tensor_slices(data)
         if mode == 'train':

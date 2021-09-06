@@ -46,7 +46,6 @@ if __name__ == '__main__':
     else:
         logging.set_verbosity(logging.INFO)  # Suppress > values
         args['verbose'] = 2
-
     args['dir_dict'] = dir_dict(args=args)
     args['class_names'] = TASK_CLASSES[args['task']]
     args['num_classes'] = len(args['class_names'])
@@ -56,9 +55,5 @@ if __name__ == '__main__':
     os.environ['OMP_NUM_THREADS'] = '1'
     for key, path in args['dir_dict']['data_csv'].items():
         check_create_dataset(key=key, datasplit_path=path, args=args)
-    if args['test'] or args['fine']:
-        args['dir_dict']['model_path'] = args['load_model']
-        args['dir_dict']['trial'] = os.path.dirname(args['dir_dict']['model_path'])
-        args['dir_dict']['logs'] = args['dir_dict']['trial'].replace('trials', 'logs')
     train_val_test(args=args)
     exit()

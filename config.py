@@ -72,16 +72,20 @@ def dir_dict(args: dict):
                    'data_csv': {'train': TRAIN_CSV_PATH,
                                 'val': VAL_CSV_PATH,
                                 'test': TEST_CSV_PATH,
-                                'isic20_test': ISIC20_TEST_PATH},
-                   'logs': os.path.join(LOGS_DIR, args['task'], args['image_type'], trial_id),
-                   'trial': os.path.join(TRIALS_DIR, args['task'], args['image_type'], trial_id)}  # type: dict
+                                'isic20_test': ISIC20_TEST_PATH}}
+    if args['load_model']:
+        directories['trial'] = os.path.dirname(args['load_model'])
+        directories['logs'] = directories['trial'].replace('trials', 'logs')
+    else:
+        directories['logs'] = os.path.join(LOGS_DIR, args['task'], args['image_type'], trial_id)
+        directories['trial'] = os.path.join(TRIALS_DIR, args['task'], args['image_type'], trial_id)
     try:
         directories['logs'] = directories['logs'] + f"-{os.environ['SLURMD_NODENAME']}"
         directories['trial'] = directories['trial'] + f"-{os.environ['SLURMD_NODENAME']}"
     except KeyError:
         pass
     directories['hparams_logs'] = os.path.join(directories['trial'], 'hparams_log.csv')
-    directories['model_path'] = os.path.join(directories['trial'], 'model')  # + "{epoch:03d}"
+    directories['model_path'] = os.path.join(directories['trial'], 'model')
     directories['backup'] = os.path.join(directories['trial'], 'backup')
     directories['image_folder'] = os.path.join(MAIN_DIR, f"proc_{args['image_size']}_{args['colour']}", 'data')
     return directories
