@@ -79,11 +79,11 @@ def dir_dict(args: dict):
     else:
         directories['logs'] = os.path.join(LOGS_DIR, args['task'], args['image_type'], trial_id)
         directories['trial'] = os.path.join(TRIALS_DIR, args['task'], args['image_type'], trial_id)
-    try:
-        directories['logs'] = directories['logs'] + f"-{os.environ['SLURMD_NODENAME']}"
-        directories['trial'] = directories['trial'] + f"-{os.environ['SLURMD_NODENAME']}"
-    except KeyError:
-        pass
+        try:
+            directories['logs'] = directories['logs'] + f"-{os.environ['SLURMD_NODENAME']}"
+            directories['trial'] = directories['trial'] + f"-{os.environ['SLURMD_NODENAME']}"
+        except KeyError:
+            pass
     directories['hparams_logs'] = os.path.join(directories['trial'], 'hparams_log.csv')
     directories['model_path'] = os.path.join(directories['trial'], 'model')
     directories['backup'] = os.path.join(directories['trial'], 'backup')
