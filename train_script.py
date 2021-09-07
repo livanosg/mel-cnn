@@ -40,7 +40,7 @@ def train_val_test(args):
             model = tf.keras.models.load_model(args['load_model'], compile=False)
         elif not args['test']:
             model = model_struct(args=args)
-
+    start_save = 20
     init_epoch = 0
     if (not args['fine']) and (not args['test']):
         with open(os.path.join(args['dir_dict']['trial'], 'model_summary.txt'), 'w') as f:
@@ -48,7 +48,7 @@ def train_val_test(args):
         data.logs()
         with strategy.scope():
             model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_fn, metrics=[tfa.metrics.F1Score(num_classes=args['num_classes'], average='macro')])
-        callbacks = callback_list(args, data, batch)
+        callbacks = callback_list(args, data, batch, start_save=start_save)
         all_data = data.all_datasets(batch=batch, no_image_type=args['no_image_type'], only_image=args['only_image'])
         train_results = model.fit(x=all_data['train'], validation_data=all_data['validation'], callbacks=callbacks, epochs=args['epochs'], verbose=args['verbose'])
         init_epoch = len(train_results.history['loss'])
@@ -57,7 +57,7 @@ def train_val_test(args):
         with strategy.scope():
             model_fine = unfreeze_model(model)
             model_fine.compile(optimizer=optimizer(learning_rate=lr), loss=loss_fn, metrics=[tfa.metrics.F1Score(num_classes=args['num_classes'], average='macro')])
-        callbacks = callback_list(args, data, batch)
+        callbacks = callback_list(args, data, batch, start_save=start_save)
         all_data = data.all_datasets(batch=batch, no_image_type=args['no_image_type'], only_image=args['only_image'])
         model_fine.fit(x=all_data['train'], validation_data=all_data['validation'], callbacks=callbacks, initial_epoch=init_epoch, epochs=init_epoch + args['epochs'], verbose=args['verbose'])
         args['test'] = True
