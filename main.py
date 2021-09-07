@@ -40,7 +40,6 @@ if __name__ == '__main__':
     args = parser().parse_args().__dict__
     os.environ['AUTOGRAPH_VERBOSITY'] = '0'
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = str(max(0, (3 - args['verbose'])))  # 0 log all, 1:noINFO, 2:noWARNING, 3:noERROR
-    os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
     if args['verbose'] >= 2:  # Set verbosity for keras 0 = silent, 1 = progress bar, 2 = one line per epoch.
         args['verbose'] = 1
     else:
@@ -52,6 +51,7 @@ if __name__ == '__main__':
     args['input_shape'] = (args['image_size'], args['image_size'], 3)
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
     os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
+    os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=2 --tf_xla_enable_xla_devices --tf_xla_cpu_global_jit'
     os.environ['OMP_NUM_THREADS'] = '1'
     for key, path in args['dir_dict']['data_csv'].items():
         check_create_dataset(key=key, datasplit_path=path, args=args)

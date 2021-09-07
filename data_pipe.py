@@ -110,15 +110,18 @@ class MelData:
         dataset = tf.data.Dataset.from_tensor_slices(data)
         if mode == 'train':
             dataset = dataset.shuffle(buffer_size=len(self.data_df['train']), reshuffle_each_iteration=True)
+            dataset = dataset.batch(batch, drop_remainder=True)
+        else:
+            dataset = dataset.batch(batch)
         dataset = dataset.map(lambda sample, label: self.prep_input(sample=sample, label=label, mode=mode), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         if mode == 'train':
-            dataset = dataset.map(self.augm, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        dataset = dataset.batch(batch)
+            dataset = dataset.map(lambda sample, label: self.augm(sample, label, batch), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        dataset = dataset.repeat(repeat)
         options = tf.data.Options()
-        options.experimental_threading.max_intra_op_parallelism = 1
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
         dataset = dataset.with_options(options)
-        return dataset.repeat(repeat).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+        dataset = dataset.repeat(repeat)
+        return dataset.prefetch(buffer_size=batch)
 
     def all_datasets(self, repeat=1, batch=16, no_image_type=False, only_image=False):
         return {'train': self.get_dataset('train', repeat=repeat, batch=batch, no_image_type=no_image_type, only_image=only_image),
@@ -126,17 +129,21 @@ class MelData:
                 'test': self.get_dataset('test', repeat=repeat, batch=batch, no_image_type=no_image_type, only_image=only_image),
                 'isic20_test': self.get_dataset('isic20_test', repeat=repeat, batch=batch, no_image_type=no_image_type, only_image=only_image)}
 
+    @tf.function()
     def prep_input(self, sample, label, mode):
-        sample['image'] = tf.cast(tf.image.decode_image(tf.io.read_file(sample['image_path']), channels=3, dtype=tf.uint8), tf.float32)
-        sample['image'] = tf.reshape(tensor=sample['image'], shape=self.input_shape)
-        for key in sample.keys():
-            if key not in ('image', 'image_path'):
-                sample[key] = tf.expand_dims(input=sample[key], axis=-1)
+        modified = {'image': tf.map_fn(lambda x: tf.reshape(tensor=tf.cast(tf.image.decode_image(tf.io.read_file(x), channels=3, dtype=tf.uint8),
+                                                                           dtype=tf.float32), shape=self.input_shape),
+                                       elems=sample['image_path'],
+                                       fn_output_signature=tf.float32),
+                    'image_path': sample['image_path'],
+                    'clinical_data': sample['clinical_data']}
         if mode == 'isic20_test':
-            label = sample.pop('image_path')
-        return sample, label
+            label = modified.pop('image_path')
+        else:
+            modified.pop('image_path')
+        return modified, label
 
-    def augm(self, sample, label=None):
+    def augm(self, sample, label, batch):
         sample['image'] = tf.image.random_flip_up_down(image=sample['image'])
         sample['image'] = tf.image.random_flip_left_right(image=sample['image'])
         sample['image'] = tf.image.random_brightness(image=sample['image'], max_delta=60.)
@@ -145,14 +152,15 @@ class MelData:
         sample['image'] = tf.image.random_saturation(image=sample['image'], lower=0.8, upper=1.2)
         # sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=self.TF_RNG.uniform(shape=[1], minval=0.5, maxval=1.5), name='Sharpness')
         sample['image'] = tfa.image.translate(images=sample['image'], translations=self.TF_RNG.uniform(shape=[2], minval=-self.input_shape[0] * 0.2, maxval=self.input_shape[0] * 0.2, dtype=tf.float32), name='Translation')
-        sample['image'] = tfa.image.rotate(images=sample['image'], angles=tf.cast(self.TF_RNG.uniform(shape=[1], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32), interpolation='bilinear', name='Rotation')
-        sample['image'] = tf.cond(tf.less(self.TF_RNG.uniform(shape=[1]), 0.5), lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=1.5, filter_shape=3, name='Gaussian_filter'), lambda: sample['image'])
+        sample['image'] = tfa.image.rotate(images=sample['image'], angles=tf.cast(self.TF_RNG.uniform(shape=[batch], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32), interpolation='bilinear', name='Rotation')
+        sample['image'] = tf.cond(tf.less(self.TF_RNG.uniform(shape=[1]), 0.5),
+                                  lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=1.5, filter_shape=3, name='Gaussian_filter'),
+                                  lambda: sample['image'])
         cutout_ratio = 0.15
-        sample['image'] = tfa.image.random_cutout(tf.expand_dims(sample['image'], 0), mask_size=(tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.input_shape[0] * cutout_ratio), dtype=tf.int32) * 2, tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.input_shape[0] * cutout_ratio), dtype=tf.int32) * 2))
-        # for i in range(self.TF_RNG.uniform(shape=[], minval=0, maxval=5, dtype=tf.int32)):
         for i in range(3):
-            sample['image'] = tfa.image.random_cutout(sample['image'], mask_size=(tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.input_shape[0] * cutout_ratio), dtype=tf.int32) * 2, tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.input_shape[0] * cutout_ratio), dtype=tf.int32) * 2))
-        sample['image'] = tf.squeeze(sample['image'])
+            mask_height = tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.input_shape[0] * cutout_ratio), dtype=tf.int32) * 2
+            mask_width = tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.input_shape[0] * cutout_ratio), dtype=tf.int32) * 2
+            sample['image'] = tfa.image.random_cutout(sample['image'], mask_size=(mask_height, mask_width))
         sample['image'] = {'xept': xception.preprocess_input, 'incept': inception_v3.preprocess_input,
                            'effnet0': efficientnet.preprocess_input, 'effnet1': efficientnet.preprocess_input,
                            'effnet6': efficientnet.preprocess_input}[self.pretrained](sample['image'])
