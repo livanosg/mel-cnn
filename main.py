@@ -52,6 +52,7 @@ if __name__ == '__main__':
     args['input_shape'] = (args['image_size'], args['image_size'], 3)
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
     os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(map(str, (range(args['gpus']))))
+    os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/apps/compilers/cuda/10.1.168'
     os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=2 --tf_xla_enable_xla_devices --tf_xla_cpu_global_jit'
     os.environ['OMP_NUM_THREADS'] = '1'
     for key, path in args['dir_dict']['data_csv'].items():
