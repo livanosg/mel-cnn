@@ -32,6 +32,7 @@ def parser():
     args_parser.add_argument('--load-model', '-load', type=str, help='Path to load model.')
     args_parser.add_argument('--test', '-test', action='store_true', help='Test loaded model with isic2020.')
     args_parser.add_argument('--fine', '-fine', action='store_true', help='Fine tune.')
+    args_parser.add_argument('--gpus', '-gpus', type=int, default=2, help='Select number of GPUs.')
     args_parser.add_argument('--verbose', '-v', default=0, action='count', help='Set verbosity.')
     return args_parser
 
@@ -50,7 +51,7 @@ if __name__ == '__main__':
     args['num_classes'] = len(args['class_names'])
     args['input_shape'] = (args['image_size'], args['image_size'], 3)
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
+    os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(map(str, (range(args['gpus']))))
     os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=2 --tf_xla_enable_xla_devices --tf_xla_cpu_global_jit'
     os.environ['OMP_NUM_THREADS'] = '1'
     for key, path in args['dir_dict']['data_csv'].items():
