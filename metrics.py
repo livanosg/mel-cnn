@@ -10,11 +10,12 @@ plt_use('Agg')
 
 
 def calc_metrics(args, model, dataset, dataset_type):
-    save_dir = os.path.join(args['dir_dict']['trial'], dataset_type)
+    save_dir = os.path.join(args['dir_dict']['trial'], dataset_type + '_{}'.format(args['image_type']))
     os.makedirs(save_dir, exist_ok=True)
+    results = []
+    ohl = []
+    paths = []
     if dataset_type == 'isic20_test':
-        results = []
-        paths = []
         for x in dataset.as_numpy_iterator():
             y_prob = model.predict(x[0])
             if args['task'] == 'ben_mal':
@@ -32,11 +33,14 @@ def calc_metrics(args, model, dataset, dataset_type):
         # noinspection PyTypeChecker
         df.to_csv(path_or_buf=os.path.join(save_dir, 'results.csv'), index=False)
     else:
-        y_prob = model.predict(dataset)
-        dataset_to_numpy = np.asarray([dt[1]['class'] for dt in dataset.as_numpy_iterator()])
-        one_hot_labels = np.concatenate(dataset_to_numpy)
-        y_true = np.argmax(one_hot_labels, axis=-1)
-        y_pred = np.argmax(y_prob, axis=-1)
+        for x in dataset.as_numpy_iterator():
+            y_prob = model.predict(x[0])
+            results.append(np.vstack(y_prob))
+            ohl.append(x[1]['class'])
+        results = np.vstack(results)
+        ohl = np.vstack(ohl)
+        y_true = np.argmax(ohl, axis=-1)
+        y_pred = np.argmax(results, axis=-1)
         cm_img = cm_image(y_true=y_true, y_pred=y_pred, class_names=args['class_names'])
         with open(os.path.join(save_dir, "cm.png"), "wb") as f:
             f.write(cm_img)
@@ -53,12 +57,12 @@ def calc_metrics(args, model, dataset, dataset_type):
         ap_dict = {}
         for _class in range(args['num_classes']):
             # if not (args['num_classes'] == 2 and _class == 0):
-            class_AP = np.round(average_precision_score(y_true=one_hot_labels[..., _class], y_score=y_prob[..., _class]), 3)  # OvR
-            class_roc_auc = np.round(roc_auc_score(y_true=one_hot_labels[..., _class], y_score=y_prob[..., _class]), 3)  # OvR
+            class_AP = np.round(average_precision_score(y_true=ohl[..., _class], y_score=results[..., _class]), 3)  # OvR
+            class_roc_auc = np.round(roc_auc_score(y_true=ohl[..., _class], y_score=results[..., _class]), 3)  # OvR
             ap_dict[_class] = class_AP
             auc_dict[_class] = class_roc_auc
-            fpr_roc_curve, tpr_roc_curve, thresholds_roc = roc_curve(y_true=y_true, y_score=y_prob[..., _class], pos_label=_class)
-            precision_curve, recall_curve, thresholds = precision_recall_curve(y_true=y_true, probas_pred=y_prob[..., _class], pos_label=_class)
+            fpr_roc_curve, tpr_roc_curve, thresholds_roc = roc_curve(y_true=y_true, y_score=results[..., _class], pos_label=_class)
+            precision_curve, recall_curve, thresholds = precision_recall_curve(y_true=y_true, probas_pred=results[..., _class], pos_label=_class)
             if not (args['num_classes'] == 2 and _class == 0):
                 plt.figure(1), plt.title('ROC curve'), plt.xlabel('False positive rate'), plt.ylabel('True positive rate')
                 plt.plot(fpr_roc_curve, tpr_roc_curve, label=' '.join([args['class_names'][_class], '(AUC= {:.3f})'.format(class_roc_auc)])), plt.plot([0, 1], [0, 1], 'k--')

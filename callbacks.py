@@ -52,7 +52,6 @@ class LaterCheckpoint(tf.keras.callbacks.ModelCheckpoint):
         print('Start saving on epoch {}.'.format(self.start_at))
 
     def on_epoch_end(self, epoch, logs=None):
-        print('EPOCH IN LATER CHECKPOINT', epoch)
         if epoch + 1 >= self.start_at:
             if self.start_at == epoch + 1:
                 print('Epoch {} reached. Start saving'.format(self.start_at))

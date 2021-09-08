@@ -28,6 +28,7 @@ class MelData:
                         'validation': self.prep_df(mode='validation').sample(frac=dataset_frac),
                         'test': self.prep_df(mode='test'),
                         'isic20_test': self.prep_df(mode='isic20_test')}
+        self.train_len = len(self.data_df['train'])
 
     def prep_df(self, mode: str):
         df = pd.read_csv({'train': TRAIN_CSV_PATH, 'validation': VAL_CSV_PATH, 'test': TEST_CSV_PATH, 'isic20_test': ISIC20_TEST_PATH}[mode])
@@ -66,23 +67,12 @@ class MelData:
             new_df.to_csv(os.path.join(MAIN_DIR, 'data_info', 'descr_{}_{}_{}.csv'.format(self.task, self.image_type, key)))
 
     def oversampling(self, df):
-        class_counts = dict(df['class'].value_counts())
-        image_type_counts = dict(df['image_type'].value_counts())
-        class_weights = np.divide(len(df), np.multiply(self.num_classes, [class_counts[k] for k in self.class_names]))
-        image_type_weights = np.divide(np.sum(len(df)), np.multiply(self.num_classes, [image_type_counts[k] for k in self.image_types]))
-        weights_per_class = {k: class_weights[idx] for idx, k in enumerate(self.class_names)}
-        weights_per_image_type = {k: image_type_weights[idx] for idx, k in enumerate(self.image_types)}
-        sample_weight_dict = {}
         for _image_type in self.image_types:
-            sample_weight_dict[_image_type] = {}
+            class_weights = len(df) / df.loc[df['image_type'] == _image_type, 'class'].value_counts()
             for _class in self.class_names:
-                comb_weight = (weights_per_image_type[_image_type] + weights_per_class[_class])
-                df.loc[(df['image_type'] == _image_type) & (df['class'] == _class), 'sample_weights'] = comb_weight
-                with open(self.dir_dict['hparams_logs'], 'a') as f:
-                    writer = csv.writer(f)
-                    writer.writerow([_image_type, _class, comb_weight])
-        df_2 = df.sample(frac=1., replace=True, weights='sample_weights')
-        return pd.concat([df, df_2])
+                df.loc[(df['image_type'] == _image_type) & (df['class'] == _class), 'sample_weights'] = class_weights[_class]
+        df = df.sample(frac=5., replace=True, weights='sample_weights')
+        return df
 
     def make_onehot(self, df, mode, no_image_type, only_image):
         ohe_features = {'image_path': df['image']}
@@ -116,11 +106,13 @@ class MelData:
         dataset = dataset.map(lambda sample, label: self.prep_input(sample=sample, label=label, mode=mode), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         if mode == 'train':
             dataset = dataset.map(lambda sample, label: self.augm(sample, label, batch), num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        dataset = dataset.repeat(repeat)
         options = tf.data.Options()
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
         dataset = dataset.with_options(options)
-        dataset = dataset.repeat(repeat)
+        if mode == 'train':
+            dataset = dataset.repeat()
+        else:
+            dataset = dataset.repeat(1)
         return dataset.prefetch(buffer_size=batch)
 
     def all_datasets(self, repeat=1, batch=16, no_image_type=False, only_image=False):
@@ -151,8 +143,11 @@ class MelData:
         sample['image'] = tf.clip_by_value(sample['image'], clip_value_min=0., clip_value_max=255.)
         sample['image'] = tf.image.random_saturation(image=sample['image'], lower=0.8, upper=1.2)
         # sample['image'] = tfa.image.sharpness(image=tf.cast(sample['image'], dtype=tf.float32), factor=self.TF_RNG.uniform(shape=[1], minval=0.5, maxval=1.5), name='Sharpness')
-        sample['image'] = tfa.image.translate(images=sample['image'], translations=self.TF_RNG.uniform(shape=[2], minval=-self.input_shape[0] * 0.2, maxval=self.input_shape[0] * 0.2, dtype=tf.float32), name='Translation')
-        sample['image'] = tfa.image.rotate(images=sample['image'], angles=tf.cast(self.TF_RNG.uniform(shape=[batch], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32), interpolation='bilinear', name='Rotation')
+        trans_val = self.input_shape[0] * 0.2
+        sample['image'] = tfa.image.translate(images=sample['image'], translations=self.TF_RNG.uniform(shape=[2], minval=-trans_val, maxval=trans_val, dtype=tf.float32), name='Translation')
+        sample['image'] = tfa.image.rotate(images=sample['image'], angles=tf.cast(
+            self.TF_RNG.uniform(shape=[batch], minval=0, maxval=360, dtype=tf.int32), dtype=tf.float32),
+                                           interpolation='bilinear', name='Rotation')
         sample['image'] = tf.cond(tf.less(self.TF_RNG.uniform(shape=[1]), 0.5),
                                   lambda: tfa.image.gaussian_filter2d(image=sample['image'], sigma=1.5, filter_shape=3, name='Gaussian_filter'),
                                   lambda: sample['image'])

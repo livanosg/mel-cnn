@@ -1,5 +1,7 @@
 import csv
 import os
+
+import numpy as np
 import tensorflow as tf
 import tensorflow_addons as tfa
 import models
@@ -28,7 +30,7 @@ def train_val_test(args):
     batch = args['batch_size'] * strategy.num_replicas_in_sync
     lr = args['learning_rate'] * strategy.num_replicas_in_sync
 
-    if not args['test'] or args['fine']:
+    if not args['test']:
         os.makedirs(args['dir_dict']['trial'], exist_ok=True)
         os.makedirs(args['dir_dict']['logs'], exist_ok=True)
 
@@ -59,23 +61,27 @@ def train_val_test(args):
             model.compile(optimizer=optimizer(learning_rate=lr), loss=loss_fn, metrics=[tfa.metrics.F1Score(num_classes=args['num_classes'], average='macro')])
         all_data = data.all_datasets(batch=batch, no_image_type=args['no_image_type'], only_image=args['only_image'])
         callbacks = callback_list(args, val_data=all_data['validation'], start_save=start_save)
-        train_results = model.fit(x=all_data['train'], validation_data=all_data['validation'], callbacks=callbacks, epochs=args['epochs'], verbose=args['verbose'])
+        train_results = model.fit(x=all_data['train'], validation_data=all_data['validation'], steps_per_epoch=np.floor(data.train_len / batch),
+                                  callbacks=callbacks, epochs=args['epochs'], verbose=args['verbose'])
         init_epoch = len(train_results.history['loss'])
         args['fine'] = True
         lr = 1e-6 * strategy.num_replicas_in_sync
         batch = 4 * strategy.num_replicas_in_sync
-    if args['fine']:
-        args['dir_dict']['trial'] = os.path.join(args['dir_dict']['trial'], 'fine')
-        args['dir_dict']['logs'] = os.path.join(args['dir_dict']['logs'], 'fine')
-        args['dir_dict']['model_path'] = os.path.join(args['dir_dict']['trial'], 'model')
-        os.makedirs(args['dir_dict']['trial'], exist_ok=True)
-        os.makedirs(args['dir_dict']['logs'], exist_ok=True)
+    if args['fine'] and (not args['test']):
+        if not args['load_model']:
+            args['dir_dict']['trial'] = os.path.join(args['dir_dict']['trial'], 'fine')
+            args['dir_dict']['logs'] = os.path.join(args['dir_dict']['logs'], 'fine')
+            args['dir_dict']['model_path'] = os.path.join(args['dir_dict']['trial'], 'model')
+            os.makedirs(args['dir_dict']['trial'], exist_ok=True)
+            os.makedirs(args['dir_dict']['logs'], exist_ok=True)
         with strategy.scope():
             model_fine = unfreeze_model(model)
-            model_fine.compile(optimizer=optimizer(learning_rate=lr), loss=loss_fn, metrics=[tfa.metrics.F1Score(num_classes=args['num_classes'], average='macro')])
+            model_fine.compile(optimizer=optimizer(learning_rate=lr), loss=loss_fn,
+                               metrics=[tfa.metrics.F1Score(num_classes=args['num_classes'], average='macro')])
         all_data = data.all_datasets(batch=batch, no_image_type=args['no_image_type'], only_image=args['only_image'])
         callbacks = callback_list(args, val_data=all_data['validation'], start_save=start_save)
-        model_fine.fit(x=all_data['train'], validation_data=all_data['validation'], callbacks=callbacks, initial_epoch=init_epoch, epochs=init_epoch + args['epochs'], verbose=args['verbose'])
+        model_fine.fit(x=all_data['train'], validation_data=all_data['validation'], callbacks=callbacks,
+                       initial_epoch=init_epoch, epochs=init_epoch + args['epochs'], steps_per_epoch=np.floor(data.train_len / batch), verbose=args['verbose'])
         args['test'] = True
     if args['test']:
         batch = 64
