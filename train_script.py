@@ -51,7 +51,7 @@ def train_val_test(args):
             model = tf.keras.models.load_model(args['load_model'], compile=False)
         else:
             model = models.model_struct(args=args)
-    start_save = 15
+    start_save = 10
     init_epoch = 0
     if (not args['fine']) and (not args['test']):
         with open(os.path.join(args['dir_dict']['trial'], 'model_summary.txt'), 'w') as f:
@@ -101,7 +101,7 @@ def unfreeze_model(trained_model):
     return trained_model
 
 
-def callback_list(args, val_data, start_save=1):
+def callback_list(args, val_data, start_save=10):
     rop_patience = 10
     es_patience = rop_patience * 2
     if args['fine']:
