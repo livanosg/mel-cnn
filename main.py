@@ -1,10 +1,10 @@
-import sklearn
 import os
 import argparse
-from absl import logging
-from data_check import check_create_dataset
-from train_script import train_val_test
-from config import dir_dict, TASK_CLASSES
+from absl import logging as absl_log
+from data_pipe import MelData
+from preproc_images import setup_images
+from train_script import train_fn, val_fn
+from config import dir_dict, TASK_CLASSES, log_params
 
 
 def parser():
@@ -14,7 +14,6 @@ def parser():
     args_parser.add_argument('--image-type', '-it', type=str, required=True, choices=['derm', 'clinic', 'both'], help='Select image type to use during training.')
     args_parser.add_argument('--image-size', '-is', type=int, default=224, help='Select image size.')
     args_parser.add_argument('--only-image', '-io', action='store_true', help='Train model only with images.')
-    args_parser.add_argument('--colour', '-clr', type=str, default='rgb', help='Select image size.')
     args_parser.add_argument('--batch-size', '-btch', type=int, default=16, help='Select batch size.')
     args_parser.add_argument('--learning-rate', '-lr', type=float, default=1e-5, help='Select learning rate.')
     args_parser.add_argument('--optimizer', '-opt', type=str, default='adamax', choices=['adam', 'ftrl', 'sgd', 'rmsprop', 'adadelta', 'adagrad', 'adamax', 'nadam'], help='Select optimizer.')
@@ -28,34 +27,49 @@ def parser():
     args_parser.add_argument('--merge-layers', '-mlrs', type=int, default=32, help='Select multiplier for number of nodes in merge layers.')
     args_parser.add_argument('--no-image-type', '-nit', action='store_true', help='Set to remove image type from training.')
     args_parser.add_argument('--dataset-frac', '-frac', type=float, default=1., help='Dataset fraction.')
-    args_parser.add_argument('--strategy', '-strg', type=str, default='mirrored', choices=['multiworker', 'mirrored', 'singlegpu'], help='Select parallelization strategy.')
+    args_parser.add_argument('--strategy', '-strg', type=str, default='mirrored', choices=['mirrored', 'singlegpu'], help='Select parallelization strategy.')
     args_parser.add_argument('--load-model', '-load', type=str, help='Path to load model.')
     args_parser.add_argument('--test', '-test', action='store_true', help='Test loaded model with isic2020.')
     args_parser.add_argument('--fine', '-fine', action='store_true', help='Fine tune.')
     args_parser.add_argument('--gpus', '-gpus', type=int, default=2, help='Select number of GPUs.')
-    args_parser.add_argument('--verbose', '-v', default=0, action='count', help='Set verbosity.')
     return args_parser
 
 
 if __name__ == '__main__':
     args = parser().parse_args().__dict__
     os.environ['AUTOGRAPH_VERBOSITY'] = '0'
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = str(max(0, (3 - args['verbose'])))  # 0 log all, 1:noINFO, 2:noWARNING, 3:noERROR
-    if args['verbose'] >= 2:  # Set verbosity for keras 0 = silent, 1 = progress bar, 2 = one line per epoch.
-        args['verbose'] = 1
-    else:
-        logging.set_verbosity(logging.INFO)  # Suppress > values
-        args['verbose'] = 2
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 0 log all, 1:noINFO, 2:noWARNING, 3:noERROR
+    absl_log.set_verbosity(absl_log.INFO)
+
     args['dir_dict'] = dir_dict(args=args)
     args['class_names'] = TASK_CLASSES[args['task']]
     args['num_classes'] = len(args['class_names'])
     args['input_shape'] = (args['image_size'], args['image_size'], 3)
-    os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
+
     os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(map(str, (range(args['gpus']))))
+    os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
     os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/apps/compilers/cuda/10.1.168'
     os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=2 --tf_xla_enable_xla_devices --tf_xla_cpu_global_jit'
     os.environ['OMP_NUM_THREADS'] = '1'
+    print('Setting up Datasets...')
     for key, path in args['dir_dict']['data_csv'].items():
-        check_create_dataset(key=key, datasplit_path=path, args=args)
-    train_val_test(args=args)
+        setup_images(csv_path=path, args=args)
+    print('Done!')
+    data = MelData(task=args['task'], image_type=args['image_type'], pretrained=args['pretrained'],
+                   dir_dict=args['dir_dict'], input_shape=args['input_shape'], dataset_frac=args['dataset_frac'])
+    data.log_freqs_per_class()
+    if not args['test']:
+        log_params(args=args)
+        train_fn(args=args, data=data)
+        args['load_model'] = args['dir_dict']['save_path']
+        val_fn(args, data)
+
+        if args['fine']:
+            args['dir_dict'] = dir_dict(args=args)
+            log_params(args=args)
+            train_fn(args=args, data=data)
+            args['load_model'] = args['dir_dict']['save_path']
+            val_fn(args, data)
+    else:
+        val_fn(args=args, data=data)
     exit()

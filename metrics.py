@@ -9,74 +9,85 @@ from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, precisio
 plt_use('Agg')
 
 
-def calc_metrics(args, model, dataset, dataset_type):
+# noinspection PyTypeChecker
+def calc_metrics(args, model, dataset, dataset_type, thresh_dist=None, thresh_f1=None):
     save_dir = os.path.join(args['dir_dict']['trial'], dataset_type + '_{}'.format(args['image_type']))
     os.makedirs(save_dir, exist_ok=True)
-    results = []
-    ohl = []
+    output = []
+    labels = []
     paths = []
+    for x in dataset.as_numpy_iterator():
+        if dataset_type == 'isic20_test':
+            paths.append(x['image_path'])
+            output.append(model.predict(x))
+        else:
+            paths.append(x[0]['image_path'])
+            output.append(model.predict(x[0]))
+            labels.append(x[1]['class'])
+
+    paths = np.concatenate(paths)
+    output = np.concatenate(output)
+    if dataset_type != 'isic20_test':
+        labels = np.concatenate(labels)
+
+    df_dict = {'image_name': paths}
+    df_dict.update({class_name: output[..., i] for i, class_name in enumerate(TASK_CLASSES[args['task']])})
+    if dataset_type != 'isic20_test':
+        df_dict.update({class_name+'_true': labels[..., i] for i, class_name in enumerate(TASK_CLASSES[args['task']])})
+    df = pd.DataFrame(df_dict)
+    df['image_name'] = df['image_name'].apply(lambda path: path.decode('UTF-8').replace(args['dir_dict']['data_folder'], ''))
     if dataset_type == 'isic20_test':
-        for x in dataset.as_numpy_iterator():
-            y_prob = model.predict(x[0])
-            if args['task'] == 'ben_mal':
-                results.append(np.vstack(y_prob[..., 1]))
-            else:  # Test 5cls performance in Benign-Malignant Task
-                #  3: Non-Melanocytic Carcinoma | 4: Melanoma
-                malignant = np.sum(y_prob[..., 3:], axis=-1)
-                results.append(np.vstack(malignant))
-            paths.append(np.vstack(x[1]))
-        results = np.vstack(results).reshape((-1))
-        paths = np.vstack(paths).reshape((-1))
-        df = pd.DataFrame({'image_name': paths, 'target': results})
-        df['image_name'] = df['image_name'].apply(
-            lambda path: os.path.splitext(os.path.basename(path.decode('UTF-8')))[0])
-        # noinspection PyTypeChecker
-        df.to_csv(path_or_buf=os.path.join(save_dir, 'results.csv'), index=False)
-    else:
-        for x in dataset.as_numpy_iterator():
-            y_prob = model.predict(x[0])
-            results.append(np.vstack(y_prob))
-            ohl.append(x[1]['class'])
-        results = np.vstack(results)
-        ohl = np.vstack(ohl)
-        y_true = np.argmax(ohl, axis=-1)
-        y_pred = np.argmax(results, axis=-1)
+        df = pd.DataFrame({'image_name': paths, 'target': output[..., 1]})
+    df.to_csv(path_or_buf=os.path.join(save_dir, '{}_{}_results.csv'.format(dataset_type, args['image_type'])), index=False)
+
+    if dataset_type != 'isic20_test':
+        y_true = np.argmax(labels, axis=-1)
+        y_pred = np.argmax(output, axis=-1)  # Threshold 0.5
         cm_img = cm_image(y_true=y_true, y_pred=y_pred, class_names=args['class_names'])
-        with open(os.path.join(save_dir, "cm.png"), "wb") as f:
+        with open(os.path.join(save_dir, "cm_max.png"), "wb") as f:
             f.write(cm_img)
-        with open(os.path.join(save_dir, "report.txt"), "w") as f:
+        with open(os.path.join(save_dir, "report_max.txt"), "w") as f:
             f.write(classification_report(y_true=y_true, y_pred=y_pred, target_names=args['class_names'], digits=3, zero_division=0))
-            # In binary classification,
-            # recall of the positive class is also known as "sensitivity";
-            # recall of the negative class is also known as "specificity".
-            # Micro average (averaging the total true positives, false negatives and false positives)
-            # is only shown for multi-label or multi-class with a subset of classes,
-            # because it corresponds to accuracy otherwise and would be the same for all metrics.
-            # One-vs-one. Computes the average AUC of all possible pairwise combinations of classes. Insensitive to class imbalance when `average == 'macro'`.
-        auc_dict = {}
-        ap_dict = {}
-        for _class in range(args['num_classes']):
-            # if not (args['num_classes'] == 2 and _class == 0):
-            class_AP = np.round(average_precision_score(y_true=ohl[..., _class], y_score=results[..., _class]), 3)  # OvR
-            class_roc_auc = np.round(roc_auc_score(y_true=ohl[..., _class], y_score=results[..., _class]), 3)  # OvR
-            ap_dict[_class] = class_AP
-            auc_dict[_class] = class_roc_auc
-            fpr_roc_curve, tpr_roc_curve, thresholds_roc = roc_curve(y_true=y_true, y_score=results[..., _class], pos_label=_class)
-            precision_curve, recall_curve, thresholds = precision_recall_curve(y_true=y_true, probas_pred=results[..., _class], pos_label=_class)
-            if not (args['num_classes'] == 2 and _class == 0):
-                plt.figure(1), plt.title('ROC curve'), plt.xlabel('False positive rate'), plt.ylabel('True positive rate')
-                plt.plot(fpr_roc_curve, tpr_roc_curve, label=' '.join([args['class_names'][_class], '(AUC= {:.3f})'.format(class_roc_auc)])), plt.plot([0, 1], [0, 1], 'k--')
-                plt.legend(loc='best')
-            plt.figure(2), plt.title('PR curve'), plt.xlabel('Recall'), plt.ylabel('Precision'),
-            plt.plot(recall_curve, precision_curve, label=' '.join([args['class_names'][_class], '(AP= {:.3f})'.format(class_AP)]))
+        # Micro average (averaging the total true positives, false negatives and false positives)
+        # is only shown for multi-label or multi-class with a subset of classes,
+        # because it corresponds to accuracy otherwise and would be the same for all metrics.
+        # One-vs-one. Computes the average AUC of all possible pairwise combinations of classes. Insensitive to class imbalance when `average == 'macro'`.
+        if args['num_classes'] == 2:
+            AP = np.round(average_precision_score(y_true=labels[..., 1], y_score=output[..., 1]), 3)
+            ROC_AUC = np.round(roc_auc_score(y_true=labels[..., 1], y_score=output[..., 1]), 3)
+            fpr_values, tpr_values, thresh_roc = roc_curve(y_true=labels[..., 1], y_score=output[..., 1], pos_label=1)
+            prec_values, rec_values, thresh_pr = precision_recall_curve(y_true=labels[..., 1], probas_pred=output[..., 1], pos_label=1)
+            dist = np.sqrt(np.power(fpr_values, 2) + np.power(1 - tpr_values, 2))
+            if dataset_type != 'test':
+                # Distance from (0,1)
+                thresh_dist = thresh_roc[np.argmin(dist)]
+                # F1 score for each threshold
+                f1 = np.multiply(2., np.divide(np.multiply(prec_values, rec_values), np.add(prec_values, rec_values)))
+                thresh_f1 = thresh_pr[np.argmax(f1)]
+            for threshold in [thresh_dist, thresh_f1]:
+                y_pred2 = np.greater_equal(output[..., 1], threshold).astype(np.int32)
+                cm_img2 = cm_image(y_true=y_true, y_pred=y_pred2, class_names=args['class_names'])
+                with open(os.path.join(save_dir, "cm_{}.png".format(str(round(threshold, 2)))), "wb") as f:
+                    f.write(cm_img2)
+                with open(os.path.join(save_dir, "report_{}.txt".format(str(round(threshold, 2)))), "w") as f:
+                    f.write(classification_report(y_true=y_true, y_pred=y_pred2, target_names=args['class_names'], digits=3, zero_division=0))
+                    f.write("{} {} {}\n".format(' '.rjust(12), 'AUC'.rjust(10), 'AP'.rjust(10)))
+                    f.write('{} {} {}\n'.format(TASK_CLASSES[args['task']][1].rjust(12), str(ROC_AUC).rjust(10), str(AP).rjust(10)))
+                    f.write("{} {} {}\n".format(' '.rjust(12), 'thresh_dist'.rjust(10), 'thresh_f1'.rjust(10)))
+                    f.write('{} {} {}\n'.format(' '.rjust(12), str(thresh_dist).rjust(10), str(thresh_f1).rjust(10)))
+
+            plt.figure(1), plt.title('ROC curve'), plt.xlabel('False positive rate'), plt.ylabel('True positive rate'), plt.gca().set_aspect('equal', adjustable='box')
+            plt.plot([0, fpr_values[np.argmin(dist)]], [1, tpr_values[np.argmin(dist)]])
+            plt.plot(fpr_values, tpr_values, label=' '.join([args['class_names'][1], '(AUC= {:.3f})'.format(ROC_AUC)])), plt.plot([0, 1], [0, 1], 'k--')
             plt.legend(loc='best')
-        plt.figure(1), plt.savefig(os.path.join(save_dir, 'roc_curve.png'))
-        plt.figure(2), plt.savefig(os.path.join(save_dir, 'pr_curve.png'))
-        plt.close('all')
-        with open(os.path.join(save_dir, "report.txt"), "a") as f:
-            f.write("{} {} {}\n".format(' '.rjust(12), 'AUC'.rjust(10), 'AP'.rjust(10)))
-            for _class in ap_dict.keys():
-                f.write('{} {} {}\n'.format(TASK_CLASSES[args['task']][_class].rjust(12), str(auc_dict[_class]).rjust(10), str(ap_dict[_class]).rjust(10)))
+            plt.figure(2), plt.title('PR curve'), plt.xlabel('Recall'), plt.ylabel('Precision'), plt.gca().set_aspect('equal', adjustable='box')
+            plt.plot(rec_values, prec_values, label=' '.join([args['class_names'][1], '(AP= {:.3f})'.format(AP)]))
+            plt.legend(loc='best')
+            plt.figure(1), plt.savefig(os.path.join(save_dir, 'roc_curve.png'))
+            plt.figure(2), plt.savefig(os.path.join(save_dir, 'pr_curve.png'))
+            plt.close('all')
+            if dataset_type == 'validation':
+                return thresh_dist, thresh_f1
 
 
 def plot_confusion_matrix(cm, class_names):

@@ -5,7 +5,7 @@ from metrics import calc_metrics, cm_image
 
 class EnrTensorboard(tf.keras.callbacks.TensorBoard):
     def __init__(self, val_data, class_names, **kwargs):
-        super().__init__(profile_batch=0, **kwargs)
+        super().__init__(profile_batch=0, write_steps_per_second=True, **kwargs)
         self.val_data = val_data
         self.class_names = class_names
 
