@@ -102,8 +102,9 @@ def dir_dict(args: dict):
             directories['trial'] = '-'.join([directories['trial'], os.getenv('SLURMD_NODENAME')])
             directories['save_path'] = '-'.join([directories['save_path'], os.getenv('SLURMD_NODENAME')])
     else:
-        directories['logs'] = args['load_model'].replace(MODELS_DIR, LOGS_DIR)
-        directories['trial'] = args['load_model'].replace(MODELS_DIR, TRIALS_DIR)
+        main_folder = os.path.split(args['load_model'])[0]
+        directories['logs'] = main_folder.replace(MODELS_DIR, LOGS_DIR)
+        directories['trial'] = main_folder.replace(MODELS_DIR, TRIALS_DIR)
         directories['save_path'] = args['load_model']
         if args['fine'] and (not args['load_model'].endswith('_fine')):
             directories['logs'] = directories['logs'] + '_fine'

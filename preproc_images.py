@@ -33,7 +33,7 @@ def hair_removal_and_resize(args, image_name):
         if args['image_size'] != 500:
             image = resize_img(image, args['image_size'])
         dx = (image.shape[0] - image.shape[1]) // 2  # Compare height-width
-        tblr = [np.ceil(np.abs(dx)), np.floor(np.abs(dx)), 0, 0]  # Pad top-bottom
+        tblr = [int(np.ceil(np.abs(dx))), int(np.floor(np.abs(dx))), 0, 0]  # Pad top-bottom
         if dx > 0:  # If height > width
             tblr = tblr[2:] + tblr[:2]  # Pad left-right
         image = cv2.copyMakeBorder(image, *tblr, borderType=cv2.BORDER_CONSTANT)  # Pad with zeros to make it squared.
