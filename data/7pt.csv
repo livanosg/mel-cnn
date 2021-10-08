@@ -1,4 +1,4 @@
-dataset_id,case_num,image,image_type,sex,class,seven_point_score,pigment_network,streaks,pigmentation,regression_structures,dots_and_globules,blue_whitish_veil,vascular_structures,level_of_diagnostic_difficulty,elevation,anatom_site_general,management,case_id,notes
+dataset_id,case_num,image,image_type,sex,class,seven_point_score,pigment_network,streaks,pigmentation,regression_structures,dots_and_globules,blue_whitish_veil,vascular_structures,level_of_diagnostic_difficulty,elevation,location,management,case_id,notes
 7pt,1,NEL/NEL025.JPG,clinic,female,basal cell carcinoma,0,absent,absent,absent,absent,absent,absent,arborizing,medium,nodular,torso,excision,,
 7pt,1,NEL/Nel026.jpg,derm,female,basal cell carcinoma,0,absent,absent,absent,absent,absent,absent,arborizing,medium,nodular,torso,excision,,
 7pt,2,NEL/NEL027.JPG,clinic,female,basal cell carcinoma,1,absent,absent,absent,absent,irregular,absent,absent,low,palpable,head/neck,excision,,
