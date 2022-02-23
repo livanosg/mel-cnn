@@ -11,6 +11,7 @@ MODELS_DIR = os.path.join(MAIN_DIR, 'models')
 TRAIN_CSV_PATH = os.path.join(MAIN_DIR, 'data_train.csv')
 VAL_CSV_PATH = os.path.join(MAIN_DIR, 'data_val.csv')
 TEST_CSV_PATH = os.path.join(MAIN_DIR, 'data_test.csv')
+ISIC16_TEST_PATH = os.path.join(MAIN_DIR, 'isic16_test.csv')
 ISIC20_TEST_PATH = os.path.join(MAIN_DIR, 'isic20_test.csv')
 
 COLUMNS = ['dataset_id', 'patient_id', 'lesion_id', 'image', 'image_type', 'sex', 'age_approx', 'location', 'class']
@@ -92,7 +93,8 @@ def dir_dict(args: dict):
                    'data_csv': {'train': TRAIN_CSV_PATH,
                                 'val': VAL_CSV_PATH,
                                 'test': TEST_CSV_PATH,
-                                'isic20_test': ISIC20_TEST_PATH}}
+                                'isic20_test': ISIC20_TEST_PATH,
+                                'isic16_test': ISIC16_TEST_PATH}}
     if not args['load_model']:
         directories['logs'] = os.path.join(LOGS_DIR, exp_path)
         directories['trial'] = os.path.join(TRIALS_DIR, exp_path)

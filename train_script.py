@@ -39,7 +39,7 @@ def train_fn(args, data):
 
     with open(args['dir_dict']['model_summary'], 'w') as f:
         model.summary(print_fn=lambda x: f.write(x + '\n'))
-    start_save = 3
+    start_save = 0
     rlrop_patience = 10
     if args['fine']:
         rlrop_patience = 5
@@ -67,7 +67,9 @@ def val_fn(args, data):
         calc_metrics(args=args, model=model, dataset=test_data, dataset_type='test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
         if args['task'] == 'ben_mal':
             isic20_test_data = data.get_dataset(mode='isic20_test', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
+            isic16_test_data = data.get_dataset(mode='isic16_test', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
             calc_metrics(args=args, model=model, dataset=isic20_test_data, dataset_type='isic20_test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
+            calc_metrics(args=args, model=model, dataset=isic16_test_data, dataset_type='isic16_test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
 
 def unfreeze_model(trained_model):
     for layer in trained_model.layers:

@@ -4,7 +4,7 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
 from config import BEN_MAL_MAP, LOCATIONS, IMAGE_TYPE, SEX, AGE_APPROX, TASK_CLASSES, MAIN_DIR, ISIC20_TEST_PATH, \
-    TEST_CSV_PATH, VAL_CSV_PATH, TRAIN_CSV_PATH
+    TEST_CSV_PATH, VAL_CSV_PATH, TRAIN_CSV_PATH, ISIC16_TEST_PATH
 from sklearn.preprocessing import OneHotEncoder
 
 
@@ -22,13 +22,16 @@ class MelData:
         self.data_df = {'train': self.prep_df(mode='train').sample(frac=dataset_frac, random_state=1312),
                         'validation': self.prep_df(mode='validation').sample(frac=dataset_frac, random_state=1312),
                         'test': self.prep_df(mode='test'),
-                        'isic20_test': self.prep_df(mode='isic20_test')}
+                        'isic16_test': self.prep_df(mode='isic16_test'),
+                        'isic20_test': self.prep_df(mode='isic20_test')
+                        }
         self.train_len = len(self.data_df['train'])
 
     def prep_df(self, mode: str):
-        df = pd.read_csv({'train': TRAIN_CSV_PATH, 'validation': VAL_CSV_PATH, 'test': TEST_CSV_PATH, 'isic20_test': ISIC20_TEST_PATH}[mode])
+        df = pd.read_csv({'train': TRAIN_CSV_PATH, 'validation': VAL_CSV_PATH, 'test': TEST_CSV_PATH,
+                          'isic20_test': ISIC20_TEST_PATH, 'isic16_test': ISIC16_TEST_PATH }[mode])
         df['image'] = df['image'].apply(lambda x: os.path.join(self.dir_dict['data_folder'], x))
-        if mode != 'isic20_test':
+        if mode not in ('isic16_test', 'isic20_test'):
             if self.task == 'ben_mal':
                 df.replace(to_replace=BEN_MAL_MAP, inplace=True)
             elif self.task in ('nev_mel', '5cls'):
@@ -72,7 +75,7 @@ class MelData:
                 columns.append('image_type')
             ohe = OneHotEncoder(handle_unknown='ignore', categories=categories).fit(self.data_df['train'][columns])
             ohe_features['clinical_data'] = ohe.transform(df[columns]).toarray()
-        if mode == 'isic20_test':
+        if mode in ('isic16_test', 'isic20_test'):
             # labels = ohe_features['image_path']
             labels = None
         else:
@@ -94,7 +97,7 @@ class MelData:
         dataset = dataset.map(lambda sample, label: (self.read_image(sample=sample), label), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         if mode == 'train':
             dataset = dataset.map(lambda sample, label: (self.augm(sample), label), num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        if mode == 'isic20_test':
+        if mode in ('isic16_test', 'isic20_test'):
             dataset = dataset.map(lambda sample, label: sample, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         options = tf.data.Options()
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
