@@ -88,6 +88,7 @@ def calc_metrics(args, model, dataset, dataset_type, thresh_dist=None, thresh_f1
             plt.close('all')
             if dataset_type == 'validation':
                 return thresh_dist, thresh_f1
+        return None, None
 
 
 def plot_confusion_matrix(cm, class_names):
