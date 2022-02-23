@@ -46,6 +46,9 @@ padufes_train = padufes.loc[padufes["patient_id"].isin(padufes_ids[:int(len(padu
 padufes_val = padufes.loc[padufes["patient_id"].isin(padufes_ids[int(len(padufes_ids) * 0.9):])]
 
 isic16_test = pd.read_csv(os.path.join(DATA_DIR, 'isic16_test.csv'))
+[isic16_test.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in isic16_test.columns]
+isic16_test = isic16_test[COLUMNS]
+
 isic20_test = pd.read_csv(os.path.join(DATA_DIR, 'isic20_test.csv'))
 nans_isic19 = isic19[isic19["lesion_id"].isna()]
 isic19_not_nans = isic19[~isic19.index.isin(nans_isic19.index)]
@@ -86,7 +89,7 @@ for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (t
     # log datasets description
     dataset_info_dict = {}
     image_type_inv = {}
-    if not os.path.basename(save_to).split('.')[0] == 'isic20_test':
+    if not os.path.basename(save_to).split('.')[0] in ('isic16_test', 'isic20_test'):
         for dataset_id in df['dataset_id'].unique():
             dataset_part = df[df.loc[:, 'dataset_id'] == dataset_id]  # fraction per class
             dataset_img_type_dict = {}
