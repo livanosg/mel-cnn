@@ -71,8 +71,8 @@ DATA_MAP = {'location': {'abdomen': LOCATIONS[0], 'back': LOCATIONS[0], 'chest':
                       'unknown': CLASS_NAMES[5]}
             }
 # 0: NV, NNV, SUS, UNK | 1: MEL, NMC
-BEN_MAL_MAP = {'class': {CLASS_NAMES[0]: 'BEN', CLASS_NAMES[1]: 'BEN', CLASS_NAMES[2]: 'BEN', CLASS_NAMES[5]: 'BEN',
-                         CLASS_NAMES[3]: 'MAL', CLASS_NAMES[4]: 'MAL'}
+BEN_MAL_MAP = {'class': {'BEN': 'BEN', CLASS_NAMES[0]: 'BEN', CLASS_NAMES[1]: 'BEN', CLASS_NAMES[2]: 'BEN', CLASS_NAMES[5]: 'BEN',
+                         'MAL': 'MAL', CLASS_NAMES[3]: 'MAL', CLASS_NAMES[4]: 'MAL'}
                }
 
 

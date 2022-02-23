@@ -38,7 +38,7 @@ def parser():
 if __name__ == '__main__':
     args = parser().parse_args().__dict__
     os.environ['AUTOGRAPH_VERBOSITY'] = '0'
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 0 log all, 1:noINFO, 2:noWARNING, 3:noERROR
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'  # 0 log all, 1:noINFO, 2:noWARNING, 3:noERROR
     absl_log.set_verbosity(absl_log.INFO)
 
     args['dir_dict'] = dir_dict(args=args)
@@ -59,17 +59,16 @@ if __name__ == '__main__':
                    dir_dict=args['dir_dict'], input_shape=args['input_shape'], dataset_frac=args['dataset_frac'])
     data.log_freqs_per_class()
     if not args['test']:
+        # log_params(args=args)
+        # train_fn(args=args, data=data)
+        # args['load_model'] = args['dir_dict']['save_path']
+        # val_fn(args, data)
+        if args['fine']:
+            args['dir_dict'] = dir_dict(args=args)
         log_params(args=args)
         train_fn(args=args, data=data)
         args['load_model'] = args['dir_dict']['save_path']
         val_fn(args, data)
-
-        if args['fine']:
-            args['dir_dict'] = dir_dict(args=args)
-            log_params(args=args)
-            train_fn(args=args, data=data)
-            args['load_model'] = args['dir_dict']['save_path']
-            val_fn(args, data)
     else:
         val_fn(args=args, data=data)
     exit()

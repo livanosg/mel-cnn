@@ -44,8 +44,8 @@ NP_RNG.shuffle(padufes_ids)
 padufes_train = padufes.loc[padufes["patient_id"].isin(padufes_ids[:int(len(padufes_ids) * 0.9)])]
 padufes_val = padufes.loc[padufes["patient_id"].isin(padufes_ids[int(len(padufes_ids) * 0.9):])]
 
-
-isic20_orig_test = pd.read_csv(os.path.join(DATA_DIR, 'isic20_test.csv'))
+isic16_test = pd.read_csv(os.path.join(DATA_DIR, 'isic16_test.csv'))
+isic20_test = pd.read_csv(os.path.join(DATA_DIR, 'isic20_test.csv'))
 nans_isic19 = isic19[isic19["lesion_id"].isna()]
 isic19_not_nans = isic19[~isic19.index.isin(nans_isic19.index)]
 isic19_ids = isic19_not_nans["lesion_id"].unique()
@@ -69,7 +69,7 @@ total_val = padufes_val.append(isic19_val).append(isic20_val).append(spt_val).ap
 total_test = isic18_val.append(dermofit).append(up)
 total_data_len = len(total_train) + len(total_val) + len(total_test)
 
-for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (total_test, TEST_CSV_PATH), (isic20_orig_test, ISIC20_TEST_PATH)]:
+for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (total_test, TEST_CSV_PATH), (isic20_test, ISIC20_TEST_PATH)]:
     df = df.sample(frac=1., random_state=NP_RNG.bit_generator)
     columns = ['dataset_id', 'location', 'sex', 'image', 'age_approx', 'image_type', 'class']
     df['age_approx'] -= (df['age_approx'] % 10)
@@ -81,6 +81,7 @@ for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (t
         columns.remove('class')
     df.to_csv(save_to, index=False, columns=columns)
 
+    # log datasets description
     dataset_info_dict = {}
     image_type_inv = {}
     if not os.path.basename(save_to).split('.')[0] == 'isic20_test':
