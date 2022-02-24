@@ -4,7 +4,7 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
 from config import BEN_MAL_MAP, LOCATIONS, IMAGE_TYPE, SEX, AGE_APPROX, TASK_CLASSES, MAIN_DIR, ISIC20_TEST_PATH, \
-    TEST_CSV_PATH, VAL_CSV_PATH, TRAIN_CSV_PATH, ISIC16_TEST_PATH
+    TEST_CSV_PATH, VAL_CSV_PATH, TRAIN_CSV_PATH, ISIC16_TEST_PATH, ISIC17_TEST_PATH, ISIC18_VAL_TEST_PATH, DERMOFIT_TEST_PATH, UP_TEST_PATH
 from sklearn.preprocessing import OneHotEncoder
 
 
@@ -23,23 +23,30 @@ class MelData:
                         'validation': self.prep_df(mode='validation').sample(frac=dataset_frac, random_state=1312),
                         'test': self.prep_df(mode='test'),
                         'isic16_test': self.prep_df(mode='isic16_test'),
-                        'isic20_test': self.prep_df(mode='isic20_test')
+                        'isic17_test': self.prep_df(mode='isic17_test'),
+                        'isic20_test': self.prep_df(mode='isic20_test'),
+                        'isic18_val_test': self.prep_df(mode='isic18_val_test'),
+                        'dermofit_test': self.prep_df(mode='dermofit_test'),
+                        'up_test': self.prep_df(mode='up_test')
                         }
+
         self.train_len = len(self.data_df['train'])
 
     def prep_df(self, mode: str):
         df = pd.read_csv({'train': TRAIN_CSV_PATH, 'validation': VAL_CSV_PATH, 'test': TEST_CSV_PATH,
-                          'isic20_test': ISIC20_TEST_PATH, 'isic16_test': ISIC16_TEST_PATH}[mode])
+                          'isic20_test': ISIC20_TEST_PATH, 'isic16_test': ISIC16_TEST_PATH,
+                          'isic17_test': ISIC17_TEST_PATH, 'isic18_val_test': ISIC18_VAL_TEST_PATH,
+                         'dermofit_test': DERMOFIT_TEST_PATH, 'up_test': UP_TEST_PATH}[mode])
         df['image'] = df['image'].apply(lambda x: os.path.join(self.dir_dict['data_folder'], x))
-        if mode not in ('isic16_test', 'isic20_test'):
+        if mode not in ('isic16_test', 'isic17_test', 'isic20_test', 'isic18_val_test', 'dermofit_test', 'up_test'):
             if self.task == 'ben_mal':
                 df.replace(to_replace=BEN_MAL_MAP, inplace=True)
             elif self.task in ('nev_mel', '5cls'):
                 if self.task == 'nev_mel':
                     df.drop(df[df['class'].isin(['NNV', 'SUS', 'NMC'])].index, errors='ignore', inplace=True)
                 df.drop(df[df['class'] == 'UNK'].index, errors='ignore', inplace=True)
-            if self.image_type != 'both':  # Keep derm or clinic, samples.
-                df.drop(df[df['image_type'] != self.image_type].index, errors='ignore', inplace=True)
+        if self.image_type != 'both':  # Keep derm or clinic, samples.
+            df.drop(df[df['image_type'] != self.image_type].index, errors='ignore', inplace=True)
         return df
 
     def log_freqs_per_class(self):
@@ -74,8 +81,11 @@ class MelData:
                 categories.append(IMAGE_TYPE)
                 columns.append('image_type')
             ohe = OneHotEncoder(handle_unknown='ignore', categories=categories).fit(self.data_df['train'][columns])
-            ohe_features['clinical_data'] = ohe.transform(df[columns]).toarray()
-        if mode in ('isic16_test', 'isic20_test'):
+            try:
+                ohe_features['clinical_data'] = ohe.transform(df[columns]).toarray()
+            except ValueError:
+                pass
+        if mode in ('isic16_test', 'isic17_test', 'isic20_test', 'isic18_val_test', 'dermofit_test', 'up_test'):
             labels = None
         else:
             label_enc = OneHotEncoder(categories=[self.class_names])
@@ -95,12 +105,13 @@ class MelData:
         dataset = dataset.map(lambda sample, label: (self.read_image(sample=sample), label), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         if mode == 'train':
             dataset = dataset.map(lambda sample, label: (self.augm(sample), label), num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        if mode in ('isic16_test', 'isic20_test'):
+        if mode in ('isic16_test', 'isic17_test', 'isic20_test', 'isic18_val_test', 'dermofit_test', 'up_test'):
             dataset = dataset.map(lambda sample, label: sample, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
         options = tf.data.Options()
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
         dataset = dataset.with_options(options)
+
         if mode == 'train':
             dataset = dataset.repeat()
         else:
@@ -112,7 +123,11 @@ class MelData:
                 'validation': self.get_dataset('validation', batch=batch, no_image_type=no_image_type, only_image=only_image),
                 'test': self.get_dataset('test', batch=batch, no_image_type=no_image_type, only_image=only_image),
                 'isic16_test': self.get_dataset('isic16_test', batch=batch, no_image_type=no_image_type, only_image=only_image),
-                'isic20_test': self.get_dataset('isic20_test', batch=batch, no_image_type=no_image_type, only_image=only_image)}
+                'isic17_test': self.get_dataset('isic17_test', batch=batch, no_image_type=no_image_type, only_image=only_image),
+                'isic20_test': self.get_dataset('isic20_test', batch=batch, no_image_type=no_image_type, only_image=only_image),
+                'isic18_val_test': self.get_dataset('isic18_val_test', batch=batch, no_image_type=no_image_type, only_image=only_image),
+                'dermofit_test': self.get_dataset('dermofit_test', batch=batch, no_image_type=no_image_type, only_image=only_image),
+                'up_test': self.get_dataset('up_test', batch=batch, no_image_type=no_image_type, only_image=only_image)}
 
     def read_image(self, sample):
         def _read_image(x):

@@ -11,8 +11,13 @@ MODELS_DIR = os.path.join(MAIN_DIR, 'models')
 TRAIN_CSV_PATH = os.path.join(MAIN_DIR, 'data_train.csv')
 VAL_CSV_PATH = os.path.join(MAIN_DIR, 'data_val.csv')
 TEST_CSV_PATH = os.path.join(MAIN_DIR, 'data_test.csv')
+ISIC18_VAL_TEST_PATH = os.path.join(MAIN_DIR, 'isic18_val_test.csv')
+DERMOFIT_TEST_PATH = os.path.join(MAIN_DIR, 'dermofit_test.csv')
+UP_TEST_PATH = os.path.join(MAIN_DIR, 'up_test.csv')
 ISIC16_TEST_PATH = os.path.join(MAIN_DIR, 'isic16_test.csv')
+ISIC17_TEST_PATH = os.path.join(MAIN_DIR, 'isic17_test.csv')
 ISIC20_TEST_PATH = os.path.join(MAIN_DIR, 'isic20_test.csv')
+
 
 COLUMNS = ['dataset_id', 'patient_id', 'lesion_id', 'image', 'image_type', 'sex', 'age_approx', 'location', 'class']
 
@@ -93,8 +98,9 @@ def dir_dict(args: dict):
                    'data_csv': {'train': TRAIN_CSV_PATH,
                                 'val': VAL_CSV_PATH,
                                 'test': TEST_CSV_PATH,
-                                'isic20_test': ISIC20_TEST_PATH,
-                                'isic16_test': ISIC16_TEST_PATH}}
+                                'isic16_test': ISIC16_TEST_PATH,
+                                'isic17_test': ISIC17_TEST_PATH,
+                                'isic20_test': ISIC20_TEST_PATH}}
     if not args['load_model']:
         directories['logs'] = os.path.join(LOGS_DIR, exp_path)
         directories['trial'] = os.path.join(TRIALS_DIR, exp_path)
@@ -105,9 +111,8 @@ def dir_dict(args: dict):
             directories['save_path'] = '-'.join([directories['save_path'], os.getenv('SLURMD_NODENAME')])
     else:
         # Use full path to load model
-        main_folder = os.path.split(args['load_model'])[0]
-        directories['logs'] = main_folder.replace(MODELS_DIR, LOGS_DIR)
-        directories['trial'] = main_folder.replace(MODELS_DIR, TRIALS_DIR)
+        directories['logs'] = args['load_model'].replace(MODELS_DIR, LOGS_DIR)
+        directories['trial'] = args['load_model'].replace(MODELS_DIR, TRIALS_DIR)
         directories['save_path'] = args['load_model']
         if args['fine'] and (not args['load_model'].endswith('_fine')):
             directories['logs'] = directories['logs'] + '_fine'
