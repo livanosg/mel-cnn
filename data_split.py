@@ -46,7 +46,7 @@ padufes_train = padufes.loc[padufes["patient_id"].isin(padufes_ids[:int(len(padu
 padufes_val = padufes.loc[padufes["patient_id"].isin(padufes_ids[int(len(padufes_ids) * 0.9):])]
 
 isic16_test = pd.read_csv(os.path.join(DATA_DIR, 'isic16_test.csv'))
-[isic16_test.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in isic16_test.columns]
+[isic16_test.insert(loc=0, column=column, value=value) for column, value in zip(COLUMNS, ['none', 'none', 'none', 'none', 'none', 'none', 0., 'none', 'none']) if column not in isic16_test.columns]
 isic16_test = isic16_test[COLUMNS]
 
 isic20_test = pd.read_csv(os.path.join(DATA_DIR, 'isic20_test.csv'))
@@ -75,7 +75,8 @@ total_data_len = len(total_train) + len(total_val) + len(total_test)
 
 for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (total_test, TEST_CSV_PATH),
                     (isic16_test, ISIC16_TEST_PATH), (isic20_test, ISIC20_TEST_PATH)]:
-    df = df.sample(frac=1., random_state=NP_RNG.bit_generator)
+    if save_to not in (ISIC16_TEST_PATH, ISIC20_TEST_PATH):
+        df = df.sample(frac=1., random_state=NP_RNG.bit_generator)
     columns = ['dataset_id', 'location', 'sex', 'image', 'age_approx', 'image_type', 'class']
     df['age_approx'] -= (df['age_approx'] % 10)
     df['image'] = df[['dataset_id', 'image']].apply(lambda id_img: os.path.join(id_img[0], 'data', id_img[1]), axis=1)

@@ -104,6 +104,7 @@ def dir_dict(args: dict):
             directories['trial'] = '-'.join([directories['trial'], os.getenv('SLURMD_NODENAME')])
             directories['save_path'] = '-'.join([directories['save_path'], os.getenv('SLURMD_NODENAME')])
     else:
+        # Use full path to load model
         main_folder = os.path.split(args['load_model'])[0]
         directories['logs'] = main_folder.replace(MODELS_DIR, LOGS_DIR)
         directories['trial'] = main_folder.replace(MODELS_DIR, TRIALS_DIR)

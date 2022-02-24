@@ -29,7 +29,7 @@ class MelData:
 
     def prep_df(self, mode: str):
         df = pd.read_csv({'train': TRAIN_CSV_PATH, 'validation': VAL_CSV_PATH, 'test': TEST_CSV_PATH,
-                          'isic20_test': ISIC20_TEST_PATH, 'isic16_test': ISIC16_TEST_PATH }[mode])
+                          'isic20_test': ISIC20_TEST_PATH, 'isic16_test': ISIC16_TEST_PATH}[mode])
         df['image'] = df['image'].apply(lambda x: os.path.join(self.dir_dict['data_folder'], x))
         if mode not in ('isic16_test', 'isic20_test'):
             if self.task == 'ben_mal':
@@ -76,14 +76,12 @@ class MelData:
             ohe = OneHotEncoder(handle_unknown='ignore', categories=categories).fit(self.data_df['train'][columns])
             ohe_features['clinical_data'] = ohe.transform(df[columns]).toarray()
         if mode in ('isic16_test', 'isic20_test'):
-            # labels = ohe_features['image_path']
             labels = None
         else:
             label_enc = OneHotEncoder(categories=[self.class_names])
             label_enc.fit(self.data_df['train']['class'].values.reshape(-1, 1))
             labels = {'class': label_enc.transform(df['class'].values.reshape(-1, 1)).toarray()}
         return ohe_features, labels
-        # return ohe_features, labels
 
     def get_dataset(self, mode=None, batch=16, no_image_type=False, only_image=False):
         data = self.data_df[mode]
@@ -99,6 +97,7 @@ class MelData:
             dataset = dataset.map(lambda sample, label: (self.augm(sample), label), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         if mode in ('isic16_test', 'isic20_test'):
             dataset = dataset.map(lambda sample, label: sample, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+
         options = tf.data.Options()
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
         dataset = dataset.with_options(options)
@@ -112,11 +111,13 @@ class MelData:
         return {'train': self.get_dataset('train', batch=batch, no_image_type=no_image_type, only_image=only_image),
                 'validation': self.get_dataset('validation', batch=batch, no_image_type=no_image_type, only_image=only_image),
                 'test': self.get_dataset('test', batch=batch, no_image_type=no_image_type, only_image=only_image),
+                'isic16_test': self.get_dataset('isic16_test', batch=batch, no_image_type=no_image_type, only_image=only_image),
                 'isic20_test': self.get_dataset('isic20_test', batch=batch, no_image_type=no_image_type, only_image=only_image)}
 
     def read_image(self, sample):
         def _read_image(x):
-            return tf.cast(tf.image.decode_image(tf.io.read_file(x), channels=3, dtype=tf.uint8), dtype=tf.float32)
+            test_img = tf.cast(tf.image.decode_image(tf.io.read_file(x), channels=3, dtype=tf.uint8), dtype=tf.float32)
+            return test_img
         sample['image'] = tf.map_fn(fn=lambda x: tf.reshape(tensor=_read_image(x), shape=self.input_shape),
                                     elems=sample['image_path'], fn_output_signature=tf.float32)
         return sample

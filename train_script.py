@@ -60,15 +60,16 @@ def train_fn(args, data):
 
 def val_fn(args, data):
     model, strategy = setup_model(args)
-    val_data = data.get_dataset(mode='validation', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
-    thresh_dist, thresh_f1 = calc_metrics(args=args, model=model, dataset=val_data, dataset_type='validation')
+    # val_data = data.get_dataset(mode='validation', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
+    # thresh_dist, thresh_f1 = calc_metrics(args=args, model=model, dataset=val_data, dataset_type='validation')
+    thresh_dist, thresh_f1 = [0.95, 0.97]
     if args['test']:
-        test_data = data.get_dataset(mode='test', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
-        calc_metrics(args=args, model=model, dataset=test_data, dataset_type='test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
+        # test_data = data.get_dataset(mode='test', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
+        # calc_metrics(args=args, model=model, dataset=test_data, dataset_type='test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
         if args['task'] == 'ben_mal':
-            isic20_test_data = data.get_dataset(mode='isic20_test', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
+            # isic20_test_data = data.get_dataset(mode='isic20_test', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
             isic16_test_data = data.get_dataset(mode='isic16_test', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
-            calc_metrics(args=args, model=model, dataset=isic20_test_data, dataset_type='isic20_test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
+            # calc_metrics(args=args, model=model, dataset=isic20_test_data, dataset_type='isic20_test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
             calc_metrics(args=args, model=model, dataset=isic16_test_data, dataset_type='isic16_test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
 
 def unfreeze_model(trained_model):

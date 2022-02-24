@@ -57,7 +57,7 @@ if __name__ == '__main__':
     print('Done!')
     data = MelData(task=args['task'], image_type=args['image_type'], pretrained=args['pretrained'],
                    dir_dict=args['dir_dict'], input_shape=args['input_shape'], dataset_frac=args['dataset_frac'])
-    data.log_freqs_per_class()
+    # data.log_freqs_per_class()
     if not args['test']:
         # log_params(args=args)
         # train_fn(args=args, data=data)
