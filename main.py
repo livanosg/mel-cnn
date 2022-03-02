@@ -27,7 +27,7 @@ def parser():
     args_parser.add_argument('--merge-layers', '-mlrs', type=int, default=32, help='Select multiplier for number of nodes in merge layers.')
     args_parser.add_argument('--no-image-type', '-nit', action='store_true', help='Set to remove image type from training.')
     args_parser.add_argument('--dataset-frac', '-frac', type=float, default=1., help='Dataset fraction.')
-    args_parser.add_argument('--strategy', '-strg', type=str, default='mirrored', choices=['mirrored', 'singlegpu'], help='Select parallelization strategy.')
+    args_parser.add_argument('--strategy', '-strg', type=str, default='singlegpu', choices=['mirrored', 'singlegpu'], help='Select parallelization strategy.')
     args_parser.add_argument('--load-model', '-load', type=str, help='Path to load model.')
     args_parser.add_argument('--test', '-test', action='store_true', help='Test loaded model with isic2020.')
     args_parser.add_argument('--fine', '-fine', action='store_true', help='Fine tune.')
