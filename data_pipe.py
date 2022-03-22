@@ -38,12 +38,12 @@ class MelData:
                           'isic17_test': ISIC17_TEST_PATH, 'isic18_val_test': ISIC18_VAL_TEST_PATH,
                          'dermofit_test': DERMOFIT_TEST_PATH, 'up_test': UP_TEST_PATH}[mode])
         df['image'] = df['image'].apply(lambda x: os.path.join(self.dir_dict['data_folder'], x))
-        if mode not in ('isic16_test', 'isic17_test', 'isic20_test', 'isic18_val_test', 'dermofit_test', 'up_test'):
+        if mode not in ('isic20_test'):
             if self.task == 'ben_mal':
                 df.replace(to_replace=BEN_MAL_MAP, inplace=True)
             elif self.task in ('nev_mel', '5cls'):
                 if self.task == 'nev_mel':
-                    df.drop(df[df['class'].isin(['NNV', 'SUS', 'NMC'])].index, errors='ignore', inplace=True)
+                    df.drop(df[~df['class'].isin(['NEV', 'MEL'])].index, errors='ignore', inplace=True)
                 df.drop(df[df['class'] == 'UNK'].index, errors='ignore', inplace=True)
         if self.image_type != 'both':  # Keep derm or clinic, samples.
             df.drop(df[df['image_type'] != self.image_type].index, errors='ignore', inplace=True)
@@ -83,9 +83,14 @@ class MelData:
             ohe = OneHotEncoder(handle_unknown='ignore', categories=categories).fit(self.data_df['train'][columns])
             try:
                 ohe_features['clinical_data'] = ohe.transform(df[columns]).toarray()
+                ohe_features['anatom_site_general'] = ohe_features['clinical_data'][:, :6]
+                ohe_features['location'] = ohe_features['clinical_data'][:, :6]
+                ohe_features['sex'] = ohe_features['clinical_data'][:, 6:8]
+                ohe_features['age_approx'] = ohe_features['clinical_data'][:, 8:18]
+                ohe_features['image_type'] = ohe_features['clinical_data'][:, 18:]
             except ValueError:
                 pass
-        if mode in ('isic16_test', 'isic17_test', 'isic20_test', 'isic18_val_test', 'dermofit_test', 'up_test'):
+        if mode in ('isic20_test'):
             labels = None
         else:
             label_enc = OneHotEncoder(categories=[self.class_names])
@@ -105,7 +110,7 @@ class MelData:
         dataset = dataset.map(lambda sample, label: (self.read_image(sample=sample), label), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         if mode == 'train':
             dataset = dataset.map(lambda sample, label: (self.augm(sample), label), num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        if mode in ('isic16_test', 'isic17_test', 'isic20_test', 'isic18_val_test', 'dermofit_test', 'up_test'):
+        if mode in ('isic20_test'):
             dataset = dataset.map(lambda sample, label: sample, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
         options = tf.data.Options()
@@ -117,17 +122,6 @@ class MelData:
         else:
             dataset = dataset.repeat(1)
         return dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
-
-    def all_datasets(self, batch=16, no_image_type=False, only_image=False):
-        return {'train': self.get_dataset('train', batch=batch, no_image_type=no_image_type, only_image=only_image),
-                'validation': self.get_dataset('validation', batch=batch, no_image_type=no_image_type, only_image=only_image),
-                'test': self.get_dataset('test', batch=batch, no_image_type=no_image_type, only_image=only_image),
-                'isic16_test': self.get_dataset('isic16_test', batch=batch, no_image_type=no_image_type, only_image=only_image),
-                'isic17_test': self.get_dataset('isic17_test', batch=batch, no_image_type=no_image_type, only_image=only_image),
-                'isic20_test': self.get_dataset('isic20_test', batch=batch, no_image_type=no_image_type, only_image=only_image),
-                'isic18_val_test': self.get_dataset('isic18_val_test', batch=batch, no_image_type=no_image_type, only_image=only_image),
-                'dermofit_test': self.get_dataset('dermofit_test', batch=batch, no_image_type=no_image_type, only_image=only_image),
-                'up_test': self.get_dataset('up_test', batch=batch, no_image_type=no_image_type, only_image=only_image)}
 
     def read_image(self, sample):
         def _read_image(x):

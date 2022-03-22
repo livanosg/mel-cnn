@@ -62,23 +62,24 @@ def val_fn(args, data):
     model, strategy = setup_model(args)
     val_data = data.get_dataset(mode='validation', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
     thresh_dist, thresh_f1 = calc_metrics(args=args, model=model, dataset=val_data, dataset_type='validation')
+    #thresh_dist, thresh_f1 = None, None
     if args['test']:
         # test_data = data.get_dataset(mode='test', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
         # calc_metrics(args=args, model=model, dataset=test_data, dataset_type='test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
-        if args['task'] == 'ben_mal':
-            isic16_test_data = data.get_dataset(mode='isic16_test', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
-            isic17_test_data = data.get_dataset(mode='isic17_test', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
-            isic18_val_test_data = data.get_dataset(mode='isic18_val_test', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
-            isic20_test_data = data.get_dataset(mode='isic20_test', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
-            dermofit_test_data = data.get_dataset(mode='dermofit_test', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
-            up_test_data = data.get_dataset(mode='up_test', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
-
-            calc_metrics(args=args, model=model, dataset=isic16_test_data, dataset_type='isic16_test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
-            calc_metrics(args=args, model=model, dataset=isic17_test_data, dataset_type='isic17_test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
-            calc_metrics(args=args, model=model, dataset=isic18_val_test_data, dataset_type='isic18_val_test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
-            calc_metrics(args=args, model=model, dataset=isic20_test_data, dataset_type='isic20_test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
-            calc_metrics(args=args, model=model, dataset=dermofit_test_data, dataset_type='dermofit_test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
-            calc_metrics(args=args, model=model, dataset=up_test_data, dataset_type='up_test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
+        if args['image_type'] in ('both', 'derm'):
+            for test in ('isic16_test', 'isic17_test', 'isic18_val_test', 'up_test'):
+                if args['task'] == 'nev_mel' and test == 'isic16_test':
+                    pass
+                else:
+                    calc_metrics(args=args, model=model, dataset=data.get_dataset(mode=test, batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image']), dataset_type=test,
+                                 thresh_dist=thresh_dist, thresh_f1=thresh_f1)
+        if args['image_type'] in ('both', 'clinic'):
+            for test in ('dermofit_test', 'up_test'):
+                calc_metrics(args=args, model=model, dataset=data.get_dataset(mode=test, batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image']), dataset_type=test,
+                             thresh_dist=thresh_dist, thresh_f1=thresh_f1)
+        # if args['task'] == 'ben_mal':
+        #     isic20_test_data = data.get_dataset(mode='isic20_test', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
+        #     calc_metrics(args=args, model=model, dataset=isic20_test_data, dataset_type='isic20_test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
 
 
 def unfreeze_model(trained_model):

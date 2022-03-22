@@ -17,7 +17,7 @@ def calc_metrics(args, model, dataset, dataset_type, thresh_dist=None, thresh_f1
     labels = []
     paths = []
     for x in dataset.as_numpy_iterator():
-        if dataset_type in ('isic16_test', 'isic17_test', 'isic20_test', 'isic18_val_test', 'dermofit_test', 'up_test'):
+        if dataset_type in ('isic20_test'):
             paths.append(x['image_path'])
             output.append(model.predict(x))
         else:
@@ -30,20 +30,20 @@ def calc_metrics(args, model, dataset, dataset_type, thresh_dist=None, thresh_f1
         return
     paths = np.concatenate(paths)
     output = np.concatenate(output)
-    if dataset_type not in ('isic16_test', 'isic17_test', 'isic20_test', 'isic18_val_test', 'dermofit_test', 'up_test'):
+    if dataset_type not in ('isic20_test'):
         labels = np.concatenate(labels)
 
     df_dict = {'image_name': paths}
     df_dict.update({class_name: output[..., i] for i, class_name in enumerate(TASK_CLASSES[args['task']])})
-    if dataset_type not in ('isic16_test', 'isic17_test', 'isic20_test', 'isic18_val_test', 'dermofit_test', 'up_test'):
+    if dataset_type not in ('isic20_test'):
         df_dict.update({class_name+'_true': labels[..., i] for i, class_name in enumerate(TASK_CLASSES[args['task']])})
     df = pd.DataFrame(df_dict)
     df['image_name'] = df['image_name'].apply(lambda path: path.decode('UTF-8').replace(args['dir_dict']['data_folder'], ''))
-    if dataset_type in ('isic16_test', 'isic17_test', 'isic20_test', 'isic18_val_test', 'dermofit_test', 'up_test'):
+    if dataset_type in ('isic20_test'):
         df = pd.DataFrame({'image_name': paths, 'target': output[..., 1]})
     df.to_csv(path_or_buf=os.path.join(save_dir, '{}_{}_results.csv'.format(dataset_type, args['image_type'])), index=False)
 
-    if dataset_type not in ('isic16_test', 'isic17_test', 'isic20_test', 'isic18_val_test', 'dermofit_test', 'up_test'):
+    if dataset_type not in ('isic20_test'):
         y_true = np.argmax(labels, axis=-1)
         y_pred = np.argmax(output, axis=-1)  # Threshold 0.5
         cm_img = cm_image(y_true=y_true, y_pred=y_pred, class_names=args['class_names'])
@@ -65,10 +65,12 @@ def calc_metrics(args, model, dataset, dataset_type, thresh_dist=None, thresh_f1
 
             if dataset_type != 'test':
                 # Distance from (0,1)
-                thresh_dist = thresh_roc[np.argmin(dist)]
-                # F1 score for each threshold
-                f1 = np.multiply(2., np.divide(np.multiply(prec_values, rec_values), np.add(prec_values, rec_values)))
-                thresh_f1 = thresh_pr[np.argmax(f1)]
+                if thresh_dist == None:
+                    thresh_dist = thresh_roc[np.argmin(dist)]
+                if thresh_f1 == None:
+                    # F1 score for each threshold
+                    f1 = np.multiply(2., np.divide(np.multiply(prec_values, rec_values), np.add(prec_values, rec_values)))
+                    thresh_f1 = thresh_pr[np.argmax(f1)]
             for threshold in [thresh_dist, thresh_f1]:
                 y_pred2 = np.greater_equal(output[..., 1], threshold).astype(np.int32)
                 cm_img2 = cm_image(y_true=y_true, y_pred=y_pred2, class_names=args['class_names'])

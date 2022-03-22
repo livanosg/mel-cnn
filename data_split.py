@@ -88,7 +88,7 @@ for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (t
     df.replace(to_replace=DATA_MAP, inplace=True)
 
     print("{}| Count:{} Ratio:{}".format(os.path.split(save_to)[-1].rjust(15), str(len(df)).rjust(6), str(round(len(df) / total_data_len, 3)).rjust(6)))
-    if os.path.basename(save_to).split('.')[0] in ('isic16_test', 'isic17_test', 'isic20_test', 'isic18_val_test', 'dermofit_test', 'up_test'):
+    if os.path.basename(save_to).split('.')[0] == 'isic20_test':
         columns.remove('class')
     df.to_csv(save_to, index=False, columns=columns)
 
