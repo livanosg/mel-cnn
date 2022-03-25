@@ -54,9 +54,9 @@ def train_fn(args, data):
         rop_patience = 5
     es_patience = rop_patience * 2
 
-    batch = args['batch_size'] * strategy.num_replicas_in_sync
-    train_data = data.get_dataset(mode='train', batch=batch, no_image_type=args['no_image_type'], only_image=args['only_image'])
-    val_data = data.get_dataset(mode='validation', batch=batch, no_image_type=args['no_image_type'], only_image=args['only_image'])
+    args['batch_size'] = args['batch_size'] * strategy.num_replicas_in_sync
+    train_data = data.get_dataset(mode='train')
+    val_data = data.get_dataset(mode='validation')
     callbacks = [tf.keras.callbacks.ReduceLROnPlateau(factor=0.1, patience=rop_patience),
                  tf.keras.callbacks.EarlyStopping(patience=es_patience),
                  tf.keras.callbacks.CSVLogger(filename=args['dir_dict']['train_logs'], separator=',', append=True),
@@ -67,21 +67,17 @@ def train_fn(args, data):
 
 def test_fn(args, data):
     model, strategy = setup_model(args)
-    batch = args['batch_size'] * strategy.num_replicas_in_sync
-
-    thresh_dist, thresh_f1 = calc_metrics(args=args, model=model, dataset=data.get_dataset(mode='validation', batch=batch, no_image_type=args['no_image_type'], only_image=args['only_image']), dataset_type='validation')
+    thresh_dist, thresh_f1 = calc_metrics(args=args, model=model, dataset=data.get_dataset(mode='validation',), dataset_type='validation')
     #thresh_dist, thresh_f1 = None, None
     if args['image_type'] in ('both', 'derm'):
-        for test in ('isic16_test', 'isic17_test', 'isic18_val_test', 'up_test'):
+        for test in ('isic16_test', 'isic17_test', 'isic18_val_test', 'up_test', 'mclass_derm_test'):
             if args['task'] == 'nev_mel' and test == 'isic16_test':
                 pass
             else:
-                calc_metrics(args=args, model=model, dataset=data.get_dataset(mode=test, batch=batch, no_image_type=args['no_image_type'], only_image=args['only_image']), dataset_type=test,
-                             thresh_dist=thresh_dist, thresh_f1=thresh_f1)
+                calc_metrics(args=args, model=model, dataset=data.get_dataset(mode=test), dataset_type=test, thresh_dist=thresh_dist, thresh_f1=thresh_f1)
     if args['image_type'] in ('both', 'clinic'):
-        for test in ('dermofit_test', 'up_test'):
-            calc_metrics(args=args, model=model, dataset=data.get_dataset(mode=test, batch=batch, no_image_type=args['no_image_type'], only_image=args['only_image']), dataset_type=test,
-                         thresh_dist=thresh_dist, thresh_f1=thresh_f1)
+        for test in ('dermofit_test', 'up_test', 'mclass_clinic_test'):
+            calc_metrics(args=args, model=model, dataset=data.get_dataset(mode=test), dataset_type=test, thresh_dist=thresh_dist, thresh_f1=thresh_f1)
         # if args['task'] == 'ben_mal':
-        #     isic20_test_data = data.get_dataset(mode='isic20_test', batch=64 * strategy.num_replicas_in_sync, no_image_type=args['no_image_type'], only_image=args['only_image'])
+        #     isic20_test_data = data.get_dataset(mode='isic20_test')
         #     calc_metrics(args=args, model=model, dataset=isic20_test_data, dataset_type='isic20_test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
