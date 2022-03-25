@@ -23,11 +23,12 @@ COLUMNS = ['dataset_id', 'patient_id', 'lesion_id', 'image', 'image_type', 'sex'
 
 IMAGE_TYPE = ['clinic', 'derm']
 SEX = ['male', 'female']
-AGE_APPROX = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+AGE_APPROX = ['0', '10', '20', '30', '40', '50', '60', '70', '80', '90']
 LOCATIONS = ['torso', 'upper_extr', 'head_neck', 'lower_extr', 'palms_soles', 'genit_oral']
 CLASS_NAMES = ['NEV', 'NNV', 'SUS', 'NMC', 'MEL', 'UNK']
-TASK_CLASSES = {'ben_mal': ['BEN', 'MAL'], '5cls': CLASS_NAMES[:-1],
-                'nev_mel': [CLASS_NAMES[idx] for idx in [0, 4]]}
+TASK_CLASSES = {'ben_mal': ['BEN', 'MAL'],
+                '5cls': ['NEV', 'NNV', 'SUS', 'NMC', 'MEL'],
+                'nev_mel': ['NEV', 'MEL']}
 
 # 0: Torso | 1: Upper extremity | 2: Head and Neck | 3: Lower Extremity | 4: palms/soles | 5: Genital and oral
 DATA_MAP = {'location': {'abdomen': LOCATIONS[0], 'back': LOCATIONS[0], 'chest': LOCATIONS[0],
