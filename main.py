@@ -55,8 +55,7 @@ if __name__ == '__main__':
     for key, path in args['dir_dict']['data_csv'].items():
         setup_images(csv_path=path, args=args)
     print('Done!')
-    data = MelData(task=args['task'], image_type=args['image_type'], pretrained=args['pretrained'],
-                   dir_dict=args['dir_dict'], input_shape=args['input_shape'], dataset_frac=args['dataset_frac'])
+    data = MelData(args=args)
 
     if not args['test']:
         log_params(args=args)
