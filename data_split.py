@@ -1,8 +1,9 @@
 import os
 import numpy as np
 import pandas as pd
-from config import DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH, ISIC20_TEST_PATH, DATA_MAP, MAIN_DIR, \
-    ISIC16_TEST_PATH, ISIC17_TEST_PATH, ISIC18_VAL_TEST_PATH, DERMOFIT_TEST_PATH, UP_TEST_PATH
+from config import DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH,\
+    ISIC20_TEST_PATH, DATA_MAP, MAIN_DIR, ISIC16_TEST_PATH, ISIC17_TEST_PATH,\
+    ISIC18_VAL_TEST_PATH, DERMOFIT_TEST_PATH, UP_TEST_PATH, MCLASS_CLINIC_TEST_PATH, MCLASS_DERM_TEST_PATH
 
 NP_RNG = np.random.default_rng(seed=1312)
 
@@ -21,6 +22,7 @@ isic20.drop(isic20[isic20['image'].isin(isic20_duplicates['image_name_2'])].inde
 mednode = pd.read_csv(os.path.join(DATA_DIR, 'mednode.csv'))
 [mednode.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in mednode.columns]
 mednode = mednode[COLUMNS]
+
 spt = pd.read_csv(os.path.join(DATA_DIR, '7pt.csv'))
 [spt.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in spt.columns]
 spt = spt[COLUMNS]
@@ -38,8 +40,6 @@ up = pd.read_csv(os.path.join(DATA_DIR, 'up.csv'))
 [up.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in up.columns]
 up = up[COLUMNS]
 padufes = pd.read_csv(os.path.join(DATA_DIR, 'padufes.csv'))
-
-
 padufes_ids = padufes["patient_id"].unique()
 NP_RNG.shuffle(padufes_ids)
 padufes_train = padufes.loc[padufes["patient_id"].isin(padufes_ids[:int(len(padufes_ids) * 0.9)])]
@@ -51,8 +51,13 @@ isic16_test = isic16_test[COLUMNS]
 isic17_test = pd.read_csv(os.path.join(DATA_DIR, 'isic17_test.csv'))
 [isic17_test.insert(loc=0, column=column, value=value) for column, value in zip(COLUMNS, ['none', 'none', 'none', 'none', 'none', 'none', 0., 'none', 'none']) if column not in isic17_test.columns]
 isic17_test = isic17_test[COLUMNS]
-
 isic20_test = pd.read_csv(os.path.join(DATA_DIR, 'isic20_test.csv'))
+
+mclass_clinic_test = pd.read_csv(os.path.join(DATA_DIR, 'mclass_clinic_test.csv'))
+[mclass_clinic_test.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in mclass_clinic_test.columns]
+mednode.drop(mednode[mednode['image'].isin(mclass_clinic_test['image'])].index, errors='ignore', inplace=True)
+mclass_derm_test = pd.read_csv(os.path.join(DATA_DIR, 'mclass_derm_test.csv'))
+[mclass_derm_test.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in mclass_derm_test.columns]
 
 nans_isic19 = isic19[isic19["lesion_id"].isna()]
 isic19_not_nans = isic19[~isic19.index.isin(nans_isic19.index)]
@@ -74,20 +79,21 @@ ph2_val = ph2[~ph2.index.isin(ph2_train.index)]
 
 total_train = padufes_train.append(isic19_train).append(isic20_train).append(spt_train).append(mednode_train).append(ph2_train)
 total_val = padufes_val.append(isic19_val).append(isic20_val).append(spt_val).append(mednode_val).append(ph2_val)
-total_test = isic18_val.append(dermofit).append(up)
+total_test = isic18_val.append(dermofit).append(up).append(isic16_test).append(isic17_test).append(mclass_clinic_test).append(mclass_derm_test)
 total_data_len = len(total_train) + len(total_val) + len(total_test)
 
 for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (total_test, TEST_CSV_PATH),
                     (isic16_test, ISIC16_TEST_PATH), (isic17_test, ISIC17_TEST_PATH), (isic20_test, ISIC20_TEST_PATH),
-                    (isic18_val, ISIC18_VAL_TEST_PATH), (dermofit, DERMOFIT_TEST_PATH), (up, UP_TEST_PATH)]:
-    if save_to not in (ISIC16_TEST_PATH, ISIC17_TEST_PATH, ISIC20_TEST_PATH, ISIC18_VAL_TEST_PATH, DERMOFIT_TEST_PATH, UP_TEST_PATH):
+                    (isic18_val, ISIC18_VAL_TEST_PATH), (dermofit, DERMOFIT_TEST_PATH), (up, UP_TEST_PATH),
+                    (mclass_clinic_test, MCLASS_CLINIC_TEST_PATH), (mclass_derm_test, MCLASS_DERM_TEST_PATH)]:
+    if save_to in (TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH):
         df = df.sample(frac=1., random_state=NP_RNG.bit_generator)
     columns = ['dataset_id', 'location', 'sex', 'image', 'age_approx', 'image_type', 'class']
     df['age_approx'] -= (df['age_approx'] % 10)
     df['image'] = df[['dataset_id', 'image']].apply(lambda id_img: os.path.join(id_img[0], 'data', id_img[1]), axis=1)
     df.replace(to_replace=DATA_MAP, inplace=True)
 
-    print("{}| Count:{} Ratio:{}".format(os.path.split(save_to)[-1].rjust(15), str(len(df)).rjust(6), str(round(len(df) / total_data_len, 3)).rjust(6)))
+    print("{}| Count:{} Ratio:{}".format(os.path.split(save_to)[-1].rjust(25), str(len(df)).rjust(6), str(round(len(df) / total_data_len, 3)).rjust(6)))
     if os.path.basename(save_to).split('.')[0] == 'isic20_test':
         columns.remove('class')
     df.to_csv(save_to, index=False, columns=columns)
@@ -95,7 +101,7 @@ for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (t
     # log datasets description
     dataset_info_dict = {}
     image_type_inv = {}
-    if not os.path.basename(save_to).split('.')[0] in ('isic16_test', 'isic17_test', 'isic20_test'):
+    if os.path.basename(save_to).split('.')[0] != 'isic20_test':
         for dataset_id in df['dataset_id'].unique():
             dataset_part = df[df.loc[:, 'dataset_id'] == dataset_id]  # fraction per class
             dataset_img_type_dict = {}
