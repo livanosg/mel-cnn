@@ -3,9 +3,9 @@ import pandas as pd
 import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
-from config import BEN_MAL_MAP, LOCATIONS, IMAGE_TYPE, SEX, AGE_APPROX, TASK_CLASSES, MAIN_DIR, ISIC20_TEST_PATH, \
-    TEST_CSV_PATH, VAL_CSV_PATH, TRAIN_CSV_PATH, ISIC16_TEST_PATH, ISIC17_TEST_PATH, ISIC18_VAL_TEST_PATH, DERMOFIT_TEST_PATH, UP_TEST_PATH
-from sklearn.preprocessing import OneHotEncoder
+from config import BEN_MAL_MAP, LOCATIONS, IMAGE_TYPE, SEX, AGE_APPROX, TASK_CLASSES,\
+    MAIN_DIR, ISIC20_TEST_PATH, TEST_CSV_PATH, VAL_CSV_PATH, TRAIN_CSV_PATH, ISIC16_TEST_PATH,\
+    ISIC17_TEST_PATH, ISIC18_VAL_TEST_PATH, DERMOFIT_TEST_PATH, UP_TEST_PATH
 
 
 class MelData:
@@ -38,15 +38,20 @@ class MelData:
                           'isic17_test': ISIC17_TEST_PATH, 'isic18_val_test': ISIC18_VAL_TEST_PATH,
                          'dermofit_test': DERMOFIT_TEST_PATH, 'up_test': UP_TEST_PATH}[mode])
         df['image'] = df['image'].apply(lambda x: os.path.join(self.dir_dict['data_folder'], x))
-        if mode not in ('isic20_test'):
+        df['location'].fillna('', inplace=True)
+        df['sex'].fillna('', inplace=True)
+        df['age_approx'].fillna(-1, inplace=True)
+        df['age_approx'] = df['age_approx'].astype(int).astype('string')
+        df['image_type'].fillna('', inplace=True)
+        if mode != 'isic20_test':
             if self.task == 'ben_mal':
                 df.replace(to_replace=BEN_MAL_MAP, inplace=True)
             elif self.task in ('nev_mel', '5cls'):
                 if self.task == 'nev_mel':
-                    df.drop(df[~df['class'].isin(['NEV', 'MEL'])].index, errors='ignore', inplace=True)
-                df.drop(df[df['class'] == 'UNK'].index, errors='ignore', inplace=True)
+                    df.drop(df[~df['class'].isin(self.class_names)].index, errors='ignore', inplace=True)
+                df.drop(df[df['class'].isin(['UNK'])].index, errors='ignore', inplace=True)
         if self.image_type != 'both':  # Keep derm or clinic, samples.
-            df.drop(df[df['image_type'] != self.image_type].index, errors='ignore', inplace=True)
+            df.drop(df[~df['image_type'].isin([self.image_type])].index, errors='ignore', inplace=True)
         return df
 
     def log_freqs_per_class(self):
@@ -73,41 +78,37 @@ class MelData:
         return self.data_df['train']
 
     def make_onehot(self, df, mode, no_image_type, only_image):
-        ohe_features = {'image_path': df['image']}
+        ohe_features = {'image_path': df['image'].values}
         if not only_image:
-            categories = [LOCATIONS, SEX, AGE_APPROX]
-            columns = ['location', 'sex', 'age_approx']
+            loc_lookup = tf.keras.layers.StringLookup(vocabulary=LOCATIONS, output_mode='one_hot')
+            sex_lookup = tf.keras.layers.StringLookup(vocabulary=SEX, output_mode='one_hot')
+            age_lookup = tf.keras.layers.StringLookup(vocabulary=AGE_APPROX, output_mode='one_hot')
+
+            ohe_features['anatom_site_general'] = loc_lookup(tf.constant(df['location'].values))[:, 1:]  # compat
+            ohe_features['location'] = loc_lookup(tf.constant(df['location'].values))[:, 1:]
+            ohe_features['sex'] = sex_lookup(tf.constant(df['sex'].values))[:, 1:]
+            ohe_features['age_approx'] = age_lookup(tf.constant(df['age_approx'].values))[:, 1:]
+            ohe_features['clinical_data'] = tf.keras.layers.Concatenate()([ohe_features['location'], ohe_features['sex'], ohe_features['age_approx']])
             if not no_image_type:
-                categories.append(IMAGE_TYPE)
-                columns.append('image_type')
-            ohe = OneHotEncoder(handle_unknown='ignore', categories=categories).fit(self.data_df['train'][columns])
-            try:
-                ohe_features['clinical_data'] = ohe.transform(df[columns]).toarray()
-                ohe_features['anatom_site_general'] = ohe_features['clinical_data'][:, :6]
-                ohe_features['location'] = ohe_features['clinical_data'][:, :6]
-                ohe_features['sex'] = ohe_features['clinical_data'][:, 6:8]
-                ohe_features['age_approx'] = ohe_features['clinical_data'][:, 8:18]
-                ohe_features['image_type'] = ohe_features['clinical_data'][:, 18:]
-            except ValueError:
-                pass
+                img_type_lookup = tf.keras.layers.StringLookup(vocabulary=IMAGE_TYPE, output_mode='one_hot')
+                ohe_features['image_type'] = img_type_lookup(tf.constant(df['image_type'].values))[:, 1:]
+                ohe_features['clinical_data'] = tf.keras.layers.Concatenate()([ohe_features['clinical_data'], ohe_features['image_type']])
+
         if mode in ('isic20_test'):
-            labels = None
+            label_one_hot = None
         else:
-            label_enc = OneHotEncoder(categories=[self.class_names])
-            label_enc.fit(self.data_df['train']['class'].values.reshape(-1, 1))
-            labels = {'class': label_enc.transform(df['class'].values.reshape(-1, 1)).toarray()}
-        return ohe_features, labels
+            label_lookup = tf.keras.layers.StringLookup(vocabulary=self.class_names, output_mode='one_hot')
+            label_one_hot = {'class': label_lookup(tf.constant(df['class'].values))[:, 1:]}
+        return ohe_features, label_one_hot
 
     def get_dataset(self, mode=None, batch=16, no_image_type=False, only_image=False):
         data = self.data_df[mode]
-        if mode == 'train':
-            data = self.oversampling()
+        # if mode == 'train':
+        #     data = self.oversampling()
         data = self.make_onehot(df=data, mode=mode, no_image_type=no_image_type, only_image=only_image)
         dataset = tf.data.Dataset.from_tensor_slices(data)
-        if mode == 'train':  # Data batches
-            dataset = dataset.shuffle(buffer_size=len(self.data_df['train']), reshuffle_each_iteration=True)
-        dataset = dataset.batch(batch)
         dataset = dataset.map(lambda sample, label: (self.read_image(sample=sample), label), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        dataset = dataset.batch(batch)
         if mode == 'train':
             dataset = dataset.map(lambda sample, label: (self.augm(sample), label), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         if mode in ('isic20_test'):
@@ -117,48 +118,40 @@ class MelData:
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
         dataset = dataset.with_options(options)
 
-        if mode == 'train':
-            dataset = dataset.repeat()
-        else:
+        if mode != 'train':
             dataset = dataset.repeat(1)
         return dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
     def read_image(self, sample):
-        def _read_image(x):
-            test_img = tf.cast(tf.image.decode_image(tf.io.read_file(x), channels=3, dtype=tf.uint8), dtype=tf.float32)
-            return test_img
-        sample['image'] = tf.map_fn(fn=lambda x: tf.reshape(tensor=_read_image(x), shape=self.input_shape),
-                                    elems=sample['image_path'], fn_output_signature=tf.float32)
+        sample['image'] = tf.cast(tf.io.decode_image(tf.io.read_file(sample['image_path']), channels=3), dtype=tf.float32)
         return sample
 
     def augm(self, sample):
-        def _augm(image):
-            image = tf.image.random_flip_up_down(image=image)
-            image = tf.image.random_flip_left_right(image=image)
-            image = tf.image.random_brightness(image=image, max_delta=60.)
-            image = tf.image.random_contrast(image=image, lower=.5, upper=1.5)
-            image = tf.clip_by_value(image, clip_value_min=0., clip_value_max=255.)
-            image = tf.image.random_saturation(image=image, lower=0.8, upper=1.2)
-            image = tfa.image.sharpness(image=tf.cast(image, dtype=tf.float32), factor=self.TF_RNG.uniform(shape=[1], minval=0.5, maxval=1.5), name='Sharpness')
-            trans_val = self.input_shape[0] * 0.2
-            image = tfa.image.translate(images=image, translations=self.TF_RNG.uniform(shape=[2], minval=-trans_val, maxval=trans_val,
-                                                                                       dtype=tf.float32), name='Translation')
-            image = tfa.image.rotate(images=image, angles=tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=360,
-                                                                                      dtype=tf.int32), dtype=tf.float32), interpolation='bilinear', name='Rotation')
-            image = tf.cond(tf.less(self.TF_RNG.uniform(shape=[1]), 0.5),
-                            lambda: tfa.image.gaussian_filter2d(image=image, sigma=1.5, filter_shape=3, name='Gaussian_filter'),
-                            lambda: image)
-            return image
+        image = tf.image.random_flip_up_down(image=sample['image'])
+        image = tf.image.random_flip_left_right(image=image)
+        image = tf.image.random_brightness(image=image, max_delta=60.)
+        image = tf.image.random_contrast(image=image, lower=.5, upper=1.5)
+        image = tf.clip_by_value(image, clip_value_min=0., clip_value_max=255.)
+        image = tf.image.random_saturation(image=image, lower=0.8, upper=1.2)
+        image = tfa.image.sharpness(image=image, factor=self.TF_RNG.uniform(shape=[1], minval=0.5, maxval=1.5), name='Sharpness') # _sharpness_image ->     image_channels = tf.shape(image)[-1]
+        trans_val = self.input_shape[0] * 0.2
+        image = tfa.image.translate(images=image, translations=self.TF_RNG.uniform(shape=[2], minval=-trans_val, maxval=trans_val,
+                                                                                   dtype=tf.float32), name='Translation')
+        image = tfa.image.rotate(images=image, angles=tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=360,
+                                                                                  dtype=tf.int32), dtype=tf.float32), interpolation='bilinear', name='Rotation')
+        image = tf.cond(tf.less(self.TF_RNG.uniform(shape=[1]), 0.5),
+                        lambda: tfa.image.gaussian_filter2d(image=image, sigma=1.5, filter_shape=3, name='Gaussian_filter'),
+                        lambda: image)
 
-        sample['image'] = tf.map_fn(fn=_augm, elems=sample['image'], fn_output_signature=tf.float32)
+        # sample['image'] = tf.map_fn(fn=_augm, elems=sample['image'], fn_output_signature=tf.float32)
         cutout_ratio = 0.15
         for i in range(3):
             mask_height = tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.input_shape[0] * cutout_ratio),
                                   dtype=tf.int32) * 2
             mask_width = tf.cast(self.TF_RNG.uniform(shape=[], minval=0, maxval=self.input_shape[0] * cutout_ratio),
                                  dtype=tf.int32) * 2
-            sample['image'] = tfa.image.random_cutout(sample['image'], mask_size=(mask_height, mask_width))
+            image = tfa.image.random_cutout(image, mask_size=(mask_height, mask_width))
         sample['image'] = {'xept': xception.preprocess_input, 'incept': inception_v3.preprocess_input,
                            'effnet0': efficientnet.preprocess_input, 'effnet1': efficientnet.preprocess_input,
-                           'effnet6': efficientnet.preprocess_input}[self.pretrained](sample['image'])
+                           'effnet6': efficientnet.preprocess_input}[self.pretrained](image)
         return sample
