@@ -11,24 +11,26 @@
 #     keract.display_activations(activations=activations, save=True, directory='test')
 #     keract.display_heatmaps(activations, test, save=True, directory='test')
 import csv
+import os
+from config import DATA_DIR, MAIN_DIR
 
-with open('/home/giorgos/projects/mel-cnn/isic18_val_test.csv') as test_id, open('/home/giorgos/projects/mel-cnn/isic20_test.csv') as test_total:
-    train_csv = csv.DictReader(test_id)
-    test_csv = csv.DictReader(test_total)
-    train_lst = []
-    test_lst = []
+with open(os.path.join(DATA_DIR, 'mclass_clinic_test.csv')) as first_csv, open(os.path.join(MAIN_DIR, 'data_train.csv')) as second_csv:
+    first_csv = csv.DictReader(first_csv)
+    second_csv = csv.DictReader(second_csv)
+    first_lst = []
+    second_lst = []
     count = 0
-    for row in train_csv:
-        train_lst.append(row['image'])
+    for row in first_csv:
+        first_lst.append(row['image'])
 
-    for row in test_csv:
-        test_lst.append(row['image'])
+    for row in second_csv:
+        second_lst.append(row['image'].split('/')[-1])
 
-    total = set(train_lst).intersection(set(test_lst))
+    total = set(first_lst).intersection(set(second_lst))
     print(len(total))
     print(total)
 
 
-    # print(total)
+    # print(total) 9 val
 
     # print("".join([word+"\n" for word in set(file1.read().split()) & set(file2.read().split())]))
