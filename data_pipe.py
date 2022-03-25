@@ -3,40 +3,40 @@ import pandas as pd
 import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
-from config import BEN_MAL_MAP, LOCATIONS, IMAGE_TYPE, SEX, AGE_APPROX, TASK_CLASSES,\
-    MAIN_DIR, ISIC20_TEST_PATH, TEST_CSV_PATH, VAL_CSV_PATH, TRAIN_CSV_PATH, ISIC16_TEST_PATH,\
-    ISIC17_TEST_PATH, ISIC18_VAL_TEST_PATH, DERMOFIT_TEST_PATH, UP_TEST_PATH
+from config import BEN_MAL_MAP, LOCATIONS, IMAGE_TYPE, SEX, AGE_APPROX, TASK_CLASSES, \
+    MAIN_DIR, ISIC20_TEST_PATH, TEST_CSV_PATH, VAL_CSV_PATH, TRAIN_CSV_PATH, ISIC16_TEST_PATH, \
+    ISIC17_TEST_PATH, ISIC18_VAL_TEST_PATH, DERMOFIT_TEST_PATH, UP_TEST_PATH, MCLASS_CLINIC_TEST_PATH, \
+    MCLASS_DERM_TEST_PATH
 
 
 class MelData:
-    def __init__(self, image_type: str, task: str, dir_dict: dict, dataset_frac: float, pretrained: str, input_shape: list):
-        self.task = task
-        self.image_type = image_type
-        self.pretrained = pretrained
-        self.input_shape = input_shape
+    def __init__(self, args):
+        self.task = args['task']
+        self.image_type = args['image_type']
+        self.pretrained = args['pretrained']
+        self.input_shape = args['input_shape']
+        self.only_image = args['only_image']
+        self.no_image_type = args['no_image_type']
         self.TF_RNG = tf.random.Generator.from_non_deterministic_state()  # .from_seed(1312)
         self.class_names = TASK_CLASSES[self.task]
         self.num_classes = len(self.class_names)
-        self.dir_dict = dir_dict
+        self.dir_dict = args['dir_dict']
+        self.dataset_frac = args['dataset_frac']
+        self.batch_size = args['batch_size']
+        # 'train', 'validation', 'test', 'isic16_test', 'isic17_test', 'isic20_test', 'isic18_val_test', 'dermofit_test', 'up_test'
+                        # 'validation': self.prep_df(mode='validation').sample(frac=dataset_frac, random_state=1312)}
 
-        self.data_df = {'train': self.prep_df(mode='train').sample(frac=dataset_frac, random_state=1312),
-                        'validation': self.prep_df(mode='validation').sample(frac=dataset_frac, random_state=1312),
-                        'test': self.prep_df(mode='test'),
-                        'isic16_test': self.prep_df(mode='isic16_test'),
-                        'isic17_test': self.prep_df(mode='isic17_test'),
-                        'isic20_test': self.prep_df(mode='isic20_test'),
-                        'isic18_val_test': self.prep_df(mode='isic18_val_test'),
-                        'dermofit_test': self.prep_df(mode='dermofit_test'),
-                        'up_test': self.prep_df(mode='up_test')
-                        }
-
-        self.train_len = len(self.data_df['train'])
+        # self.train_len = len(self.data_df['train'])
 
     def prep_df(self, mode: str):
         df = pd.read_csv({'train': TRAIN_CSV_PATH, 'validation': VAL_CSV_PATH, 'test': TEST_CSV_PATH,
                           'isic20_test': ISIC20_TEST_PATH, 'isic16_test': ISIC16_TEST_PATH,
                           'isic17_test': ISIC17_TEST_PATH, 'isic18_val_test': ISIC18_VAL_TEST_PATH,
-                         'dermofit_test': DERMOFIT_TEST_PATH, 'up_test': UP_TEST_PATH}[mode])
+                         'dermofit_test': DERMOFIT_TEST_PATH, 'up_test': UP_TEST_PATH,
+                          'mclass_clinic_test': MCLASS_CLINIC_TEST_PATH,
+                          'mclass_derm_test': MCLASS_DERM_TEST_PATH}[mode])
+        if mode in ('train', 'validation'):
+            df = df.sample(frac=self.dataset_frac, random_state=1312)
         df['image'] = df['image'].apply(lambda x: os.path.join(self.dir_dict['data_folder'], x))
         df['location'].fillna('', inplace=True)
         df['sex'].fillna('', inplace=True)
@@ -52,34 +52,29 @@ class MelData:
                 df.drop(df[df['class'].isin(['UNK'])].index, errors='ignore', inplace=True)
         if self.image_type != 'both':  # Keep derm or clinic, samples.
             df.drop(df[~df['image_type'].isin([self.image_type])].index, errors='ignore', inplace=True)
-        return df
-
-    def log_freqs_per_class(self):
-        os.makedirs(os.path.join(MAIN_DIR, 'data_info'), exist_ok=True)
-        for key in ('train', 'validation', 'test'):
-            df = self.data_df[key]
-            with pd.ExcelWriter(os.path.join(MAIN_DIR, 'data_info', 'descr_{}_{}_{}.xlsx'.format(self.task, self.image_type, key)), mode='w') as writer:
+        #log datasets
+        if mode in ('train', 'validation', 'test'):
+            os.makedirs(os.path.join(MAIN_DIR, 'data_info'), exist_ok=True)
+            with pd.ExcelWriter(os.path.join(MAIN_DIR, 'data_info', 'descr_{}_{}_{}.xlsx'.format(self.task, self.image_type, mode)), mode='w') as writer:
                 for feature in ['sex', 'age_approx', 'location']:
                     logs_df = df[['image_type', 'class', feature]].value_counts(sort=False, dropna=False).to_frame('counts')
                     logs_df = logs_df.pivot_table(values='counts', fill_value=0, index=['image_type', feature], columns='class', aggfunc=sum)
                     logs_df = logs_df[self.class_names]
                     logs_df.to_excel(writer, sheet_name=feature)
+        # oversampling
+        # if mode == 'train':
+        #     max_size = max(df[['image_type', 'class']].value_counts(sort=False, dropna=False))
+        #     list_of_sub_df = []
+        #     for _image_type in df['image_type'].unique():
+        #         for _class in df['class'].unique():
+        #             sub_df = df.loc[(df['image_type'] == _image_type) & (df['class'] == _class)]
+        #             sub_df = pd.concat([sub_df] * (max_size // len(sub_df)))
+        #             sub_df = pd.concat([sub_df, sub_df.sample(n=max_size - len(sub_df))])
+        #             list_of_sub_df.append(sub_df)
+        #     df = pd.concat(list_of_sub_df)
 
-    def oversampling(self):
-        max_size = max(self.data_df['train'][['image_type', 'class']].value_counts(sort=False, dropna=False))
-        list_of_sub_df = []
-        for _image_type in self.data_df['train']['image_type'].unique():
-            for _class in self.data_df['train']['class'].unique():
-                sub_df = self.data_df['train'].loc[(self.data_df['train']['image_type'] == _image_type) & (self.data_df['train']['class'] == _class)]
-                sub_df = pd.concat([sub_df] * (max_size // len(sub_df)))
-                sub_df = pd.concat([sub_df, sub_df.sample(n=max_size - len(sub_df))])
-                list_of_sub_df.append(sub_df)
-        self.data_df['train'] = pd.concat(list_of_sub_df)
-        return self.data_df['train']
-
-    def make_onehot(self, df, mode, no_image_type, only_image):
         ohe_features = {'image_path': df['image'].values}
-        if not only_image:
+        if not self.only_image:
             loc_lookup = tf.keras.layers.StringLookup(vocabulary=LOCATIONS, output_mode='one_hot')
             sex_lookup = tf.keras.layers.StringLookup(vocabulary=SEX, output_mode='one_hot')
             age_lookup = tf.keras.layers.StringLookup(vocabulary=AGE_APPROX, output_mode='one_hot')
@@ -89,7 +84,7 @@ class MelData:
             ohe_features['sex'] = sex_lookup(tf.constant(df['sex'].values))[:, 1:]
             ohe_features['age_approx'] = age_lookup(tf.constant(df['age_approx'].values))[:, 1:]
             ohe_features['clinical_data'] = tf.keras.layers.Concatenate()([ohe_features['location'], ohe_features['sex'], ohe_features['age_approx']])
-            if not no_image_type:
+            if not self.no_image_type:
                 img_type_lookup = tf.keras.layers.StringLookup(vocabulary=IMAGE_TYPE, output_mode='one_hot')
                 ohe_features['image_type'] = img_type_lookup(tf.constant(df['image_type'].values))[:, 1:]
                 ohe_features['clinical_data'] = tf.keras.layers.Concatenate()([ohe_features['clinical_data'], ohe_features['image_type']])
@@ -101,18 +96,15 @@ class MelData:
             label_one_hot = {'class': label_lookup(tf.constant(df['class'].values))[:, 1:]}
         return ohe_features, label_one_hot
 
-    def get_dataset(self, mode=None, batch=16, no_image_type=False, only_image=False):
-        data = self.data_df[mode]
-        # if mode == 'train':
-        #     data = self.oversampling()
-        data = self.make_onehot(df=data, mode=mode, no_image_type=no_image_type, only_image=only_image)
+    def get_dataset(self, mode=None):
+        data = self.prep_df(mode)
         dataset = tf.data.Dataset.from_tensor_slices(data)
-        dataset = dataset.map(lambda sample, label: (self.read_image(sample=sample), label), num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        dataset = dataset.batch(batch)
+        dataset = dataset.map(lambda sample, label: (self.read_image(sample=sample), label), num_parallel_calls=tf.data.AUTOTUNE)
+        dataset = dataset.batch(self.batch_size)
         if mode == 'train':
-            dataset = dataset.map(lambda sample, label: (self.augm(sample), label), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+            dataset = dataset.map(lambda sample, label: (self.augm(sample), label), num_parallel_calls=tf.data.AUTOTUNE)
         if mode in ('isic20_test'):
-            dataset = dataset.map(lambda sample, label: sample, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+            dataset = dataset.map(lambda sample, label: sample, num_parallel_calls=tf.data.AUTOTUNE)
 
         options = tf.data.Options()
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
@@ -120,7 +112,7 @@ class MelData:
 
         if mode != 'train':
             dataset = dataset.repeat(1)
-        return dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+        return dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 
     def read_image(self, sample):
         sample['image'] = tf.cast(tf.io.decode_image(tf.io.read_file(sample['image_path']), channels=3), dtype=tf.float32)
