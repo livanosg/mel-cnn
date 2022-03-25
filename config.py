@@ -17,7 +17,8 @@ UP_TEST_PATH = os.path.join(MAIN_DIR, 'up_test.csv')
 ISIC16_TEST_PATH = os.path.join(MAIN_DIR, 'isic16_test.csv')
 ISIC17_TEST_PATH = os.path.join(MAIN_DIR, 'isic17_test.csv')
 ISIC20_TEST_PATH = os.path.join(MAIN_DIR, 'isic20_test.csv')
-
+MCLASS_CLINIC_TEST_PATH = os.path.join(MAIN_DIR, 'mclass_clinic_test.csv')
+MCLASS_DERM_TEST_PATH = os.path.join(MAIN_DIR, 'mclass_derm_test.csv')
 
 COLUMNS = ['dataset_id', 'patient_id', 'lesion_id', 'image', 'image_type', 'sex', 'age_approx', 'location', 'class']
 
