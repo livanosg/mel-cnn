@@ -3,7 +3,7 @@ import argparse
 from absl import logging as absl_log
 from data_pipe import MelData
 from preproc_images import setup_images
-from train_script import train_fn, val_fn
+from train_script import train_fn, test_fn
 from config import dir_dict, TASK_CLASSES, log_params
 
 
@@ -20,7 +20,7 @@ def parser():
     args_parser.add_argument('--activation', '-act', type=str, default='swish', choices=['relu', 'swish'], help='Select leaky relu gradient.')
     args_parser.add_argument('--dropout', '-dor', type=float, default=0.1, help='Select dropout ratio.')
     args_parser.add_argument('--epochs', '-e', type=int, default=500, help='Number of epochs epochs.')
-    args_parser.add_argument('--loss-fn', '-loss', type=str, default='cxe', choices=['cxe', 'focal', 'perclass', 'custom'], help='Select loss function.')
+    args_parser.add_argument('--loss-fn', '-loss', type=str, default='cxe', choices=['cxe', 'focal', 'perclass','wcxe', 'custom'], help='Select loss function.')
     args_parser.add_argument('--loss-frac', '-lossf', type=float, default=.5, help='log_dice_loss ratio in custom loss.')
     args_parser.add_argument('--conv_layers', '-clrs', type=int, default=32, help='Select multiplier for number of nodes in inception layers.')
     args_parser.add_argument('--dense-layers', '-dlrs', type=int, default=16, help='Select multiplier for number of nodes in dense layers.')
@@ -47,28 +47,22 @@ if __name__ == '__main__':
     args['input_shape'] = (args['image_size'], args['image_size'], 3)
 
     os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(map(str, (range(args['gpus']))))
-    os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
-    os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/apps/compilers/cuda/10.1.168'
-    os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=2 --tf_xla_enable_xla_devices --tf_xla_cpu_global_jit'
-    os.environ['OMP_NUM_THREADS'] = '1'
+    # os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
+    # os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/apps/compilers/cuda/10.1.168'
+    # os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=2 --tf_xla_enable_xla_devices --tf_xla_cpu_global_jit'
+    # os.environ['OMP_NUM_THREADS'] = '1'
     print('Setting up Datasets...')
     for key, path in args['dir_dict']['data_csv'].items():
         setup_images(csv_path=path, args=args)
     print('Done!')
     data = MelData(task=args['task'], image_type=args['image_type'], pretrained=args['pretrained'],
                    dir_dict=args['dir_dict'], input_shape=args['input_shape'], dataset_frac=args['dataset_frac'])
-    # data.log_freqs_per_class()
+
     if not args['test']:
-        # log_params(args=args)
-        # train_fn(args=args, data=data)
-        # args['load_model'] = args['dir_dict']['save_path']
-        # val_fn(args, data)
-        if args['fine']:
-            args['dir_dict'] = dir_dict(args=args)
         log_params(args=args)
         train_fn(args=args, data=data)
-        args['load_model'] = args['dir_dict']['save_path']
-        val_fn(args, data)
-    else:
-        val_fn(args=args, data=data)
-    exit()
+        if not args['load_model']:
+            args['load_model'] = args['dir_dict']['save_path']
+    test_fn(args=args, data=data)
+
+exit()
