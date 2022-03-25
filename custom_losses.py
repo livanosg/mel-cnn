@@ -6,7 +6,7 @@ from tensorflow.keras.losses import CategoricalCrossentropy, Reduction
 
 class WeightedCategoricalCrossentropy(CategoricalCrossentropy):
     def __init__(self, args, from_logits=False, weights=None, label_smoothing=0, reduction=Reduction.AUTO,
-                 name='categorical_crossentropy'):
+                 name='weighted_categorical_crossentropy'):
         super().__init__(from_logits, label_smoothing, reduction, name="weighted_{}".format(name))
         self.task = args['task']
         self.num_classes = args['num_classes']
@@ -84,23 +84,19 @@ def binary_focal_loss(gamma=2., alpha=.25):
 
 def custom_loss(frac):
     def total_loss(y_true, y_pred):
-        def log_dice_loss():
-            """Inputs: y_pred: probs form per class
-                       y_true: one-hot encoding of label
-            """
-            with tf.name_scope('Generalized_Dice_Log_Loss'):
-                numerator = tf.reduce_sum(y_true * y_pred)
-                denominator = tf.reduce_sum(y_true + y_pred)
-                dice = tf.math.divide(x=2. * numerator, y=denominator)
-            return - tf.math.log(dice)
+        """Inputs: y_pred: probs form per class
+                   y_true: one-hot encoding of label
+        """
+        with tf.name_scope('Generalized_Dice_Log_Loss'):
+            numerator = tf.reduce_sum(y_true * y_pred)
+            denominator = tf.reduce_sum(y_true + y_pred)
+            dice = tf.math.divide(x=2. * numerator, y=denominator)
+            diceloss = - tf.math.log(dice)
 
-        def weighted_crossentropy():
-            """ y_true: One-hot label
-                y_pred: Softmax output."""
-            with tf.name_scope('Crossentropy_Loss'):
-                wcce = tf.keras.losses.categorical_crossentropy(y_true, y_pred)
-            return tf.reduce_mean(wcce)
+        with tf.name_scope('Crossentropy_Loss'):
+            cxe = tf.keras.losses.categorical_crossentropy(y_true, y_pred)
+            cxe_loss = tf.reduce_mean(cxe)
 
-        return tf.math.multiply(frac, log_dice_loss()) + tf.math.multiply(1. - frac, weighted_crossentropy())
+        return tf.math.multiply(frac, diceloss) + tf.math.multiply(1. - frac, cxe_loss)
 
     return total_loss
