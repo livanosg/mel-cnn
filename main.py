@@ -18,7 +18,7 @@ def parser():
     args_parser.add_argument('--learning-rate', '-lr', type=float, default=1e-5, help='Select learning rate.')
     args_parser.add_argument('--optimizer', '-opt', type=str, default='adamax', choices=['adam', 'ftrl', 'sgd', 'rmsprop', 'adadelta', 'adagrad', 'adamax', 'nadam'], help='Select optimizer.')
     args_parser.add_argument('--activation', '-act', type=str, default='swish', choices=['relu', 'swish'], help='Select leaky relu gradient.')
-    args_parser.add_argument('--dropout', '-dor', type=float, default=0.1, help='Select dropout ratio.')
+    args_parser.add_argument('--dropout', '-dor', type=float, default=0.2, help='Select dropout ratio.')
     args_parser.add_argument('--epochs', '-e', type=int, default=500, help='Number of epochs epochs.')
     args_parser.add_argument('--loss-fn', '-loss', type=str, default='cxe', choices=['cxe', 'focal', 'perclass','wcxe', 'custom'], help='Select loss function.')
     args_parser.add_argument('--loss-frac', '-lossf', type=float, default=.5, help='log_dice_loss ratio in custom loss.')
