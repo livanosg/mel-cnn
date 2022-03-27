@@ -71,13 +71,11 @@ def test_fn(args, data):
     #thresh_dist, thresh_f1 = None, None
     if args['image_type'] in ('both', 'derm'):
         for test in ('isic16_test', 'isic17_test', 'isic18_val_test', 'up_test', 'mclass_derm_test'):
-            if args['task'] == 'nev_mel' and test == 'isic16_test':
-                pass
-            else:
-                calc_metrics(args=args, model=model, dataset=data.get_dataset(mode=test), dataset_type=test, thresh_dist=thresh_dist, thresh_f1=thresh_f1)
+            if args['task'] != 'nev_mel' and test != 'isic16_test':
+                calc_metrics(args=args, model=model, dataset=data.get_dataset(mode=test), dataset_type=test, dist_thresh=thresh_dist, f1_thresh=thresh_f1)
     if args['image_type'] in ('both', 'clinic'):
         for test in ('dermofit_test', 'up_test', 'mclass_clinic_test'):
-            calc_metrics(args=args, model=model, dataset=data.get_dataset(mode=test), dataset_type=test, thresh_dist=thresh_dist, thresh_f1=thresh_f1)
-        # if args['task'] == 'ben_mal':
-        #     isic20_test_data = data.get_dataset(mode='isic20_test')
-        #     calc_metrics(args=args, model=model, dataset=isic20_test_data, dataset_type='isic20_test', thresh_dist=thresh_dist, thresh_f1=thresh_f1)
+            calc_metrics(args=args, model=model, dataset=data.get_dataset(mode=test), dataset_type=test, dist_thresh=thresh_dist, f1_thresh=thresh_f1)
+        if args['task'] == 'ben_mal':
+            isic20_test_data = data.get_dataset(mode='isic20_test')
+            calc_metrics(args=args, model=model, dataset=isic20_test_data, dataset_type='isic20_test', dist_thresh=thresh_dist, f1_thresh=thresh_f1)
