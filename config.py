@@ -1,6 +1,5 @@
 import csv
 import os
-from datetime import datetime
 
 MAIN_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(MAIN_DIR, 'data')
@@ -94,8 +93,7 @@ def dir_dict(args: dict):
                   --- MODELS_DIR: saved model
               """
 
-    trial_id = datetime.now().strftime('%d%m%y%H%M%S')
-    exp_path = os.path.join(args['task'], args['image_type'], trial_id)
+    exp_path = os.path.join(args['task'], args['image_type'], args['trial_id'])
     directories = {'data': DATA_DIR,
                    'data_csv': {'train': TRAIN_CSV_PATH,
                                 'val': VAL_CSV_PATH,
@@ -121,7 +119,7 @@ def dir_dict(args: dict):
             directories['trial'] = directories['trial'] + '_fine'
             directories['save_path'] = directories['save_path'] + '_fine'
 
-    directories['hparams_logs'] = os.path.join(directories['trial'], 'hparams_log.csv')
+    directories['hparams_logs'] = os.path.join(MAIN_DIR, 'hparams_log.csv')
     directories['model_summary'] = os.path.join(directories['trial'], 'model_summary.txt')
     directories['train_logs'] = os.path.join(directories['trial'], 'train_logs.csv')
     directories['data_folder'] = os.path.join(MAIN_DIR, f"proc_{args['image_size']}", 'data')
@@ -132,7 +130,18 @@ def dir_dict(args: dict):
 
 
 def log_params(args):
-    with open(args['dir_dict']['hparams_logs'], 'a') as f:
-        writer = csv.writer(f)
-        writer.writerow(['trial', os.path.basename(args['dir_dict']['trial'])])
-        [writer.writerow([key, str(args[key])]) for key in args.keys() if key != 'dir_dict']
+    if os.path.exists(args['dir_dict']['hparams_logs']):
+        aw = 'a'
+    else:
+        aw = 'w'
+    with open(args['dir_dict']['hparams_logs'], aw) as f:
+        fieldnames = ['trial_id', 'task', 'image_type', 'no_clinical_data', 'no_image_type', 'class_names',
+                      'num_classes', 'image_size', 'conv_layers', 'dense_layers', 'merge_layers', 'loss_fn',
+                      'batch_size', 'learning_rate', 'optimizer', 'activation', 'dropout', 'epochs', 'loss_frac',
+                      'dataset_frac', 'load_model', 'pretrained', 'fine', 'gpus', 'input_shape', 'test', 'strategy']
+        dir_dict = args.pop('dir_dict')
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        if aw == 'w':
+            writer.writeheader()
+        writer.writerows([args])
+        args['dir_dict'] = dir_dict
