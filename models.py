@@ -1,11 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras import Model, Input
-from tensorflow.keras.applications import xception, inception_v3, efficientnet
-from tensorflow.keras.layers import Concatenate, AveragePooling2D, GlobalAvgPool2D
-from tensorflow.keras.layers import Dense, Conv2D, Dropout, LayerNormalization
-from tensorflow.keras.activations import swish, relu
-from tensorflow.keras.regularizers import l1_l2
 
 
 def model_struct(args):
@@ -13,59 +7,68 @@ def model_struct(args):
     incept_nodes = np.asarray([1, 2]) * args['conv_layers']
     merge_nodes = np.asarray([1, 2]) * args['merge_layers']
 
-    activation = {'swish': swish, 'relu': relu}[args['activation']]
-    rglzr = l1_l2(l1=0., l2=0.00)
-    normalization = LayerNormalization
+    activation = {'swish': tf.keras.activations.swish,
+                  'relu': tf.keras.activations.relu}[args['activation']]
+    rglzr = tf.keras.regularizers.l1_l2(l1=0., l2=1e-5)
     inputs_list = []
     # -------------------------------================= Image data =================----------------------------------- #
 
-    base_model = {'xept': xception.Xception,
-                  'incept': inception_v3.InceptionV3,
-                  'effnet0': efficientnet.EfficientNetB0,
-                  'effnet1': efficientnet.EfficientNetB1,
-                  'effnet6': efficientnet.EfficientNetB6}[args['pretrained']](include_top=False, input_shape=args['input_shape'])
+    base_model = {'xept': tf.keras.applications.xception.Xception,
+                  'incept': tf.keras.applications.inception_v3.InceptionV3,
+                  'effnet0': tf.keras.applications.efficientnet.EfficientNetB0,
+                  'effnet1': tf.keras.applications.efficientnet.EfficientNetB1,
+                  'effnet6': tf.keras.applications.efficientnet.EfficientNetB6}[args['pretrained']](include_top=False, input_shape=args['input_shape'])
     base_model.trainable = False
-    image_input = Input(shape=args['input_shape'], name='image')
+    image_input = tf.keras.layers.Input(shape=args['input_shape'], name='image')
     inputs_list.append(image_input)
 
     base_model = base_model(image_input, training=False)
-    inc_avrg = AveragePooling2D(padding='same', strides=1)(base_model)  # Inception module C used in Inception v4
-    inc_avrg = Conv2D(incept_nodes[1], activation=activation, kernel_size=1, padding='same')(inc_avrg)
-    inc_avrg = normalization()(inc_avrg)
-    # inc_avrg = Dropout(rate=args['dropout'])(inc_avrg)
-    inc_conv1 = Conv2D(incept_nodes[1], activation=activation, kernel_size=1, padding='same')(base_model)
-    inc_conv1 = normalization()(inc_conv1)
-    # inc_conv1 = Dropout(rate=args['dropout'])(inc_conv1)
-    inc_conv2 = Conv2D(incept_nodes[0], activation=activation, kernel_size=1, padding='same')(base_model)
-    inc_conv2_1 = Conv2D(incept_nodes[1], activation=activation, kernel_size=(1, 3), padding='same')(inc_conv2)
-    inc_conv2_1 = normalization()(inc_conv2_1)
-    # inc_conv2_1 = Dropout(rate=args['dropout'])(inc_conv2_1)
-    inc_conv2_2 = Conv2D(incept_nodes[1], activation=activation, kernel_size=(3, 1), padding='same')(inc_conv2)
-    inc_conv2_2 = normalization()(inc_conv2_2)
-    # inc_conv2_2 = Dropout(rate=args['dropout'])(inc_conv2_2)
-    inc_mod = Concatenate()([inc_avrg, inc_conv1, inc_conv2_1, inc_conv2_2])
-    common = GlobalAvgPool2D()(inc_mod)
-    common = Dropout(rate=args['dropout'])(common)
+    base_model = tf.keras.layers.Dropout(rate=args['dropout'])(base_model)
+    inc_avrg = tf.keras.layers.AveragePooling2D(padding='same', strides=1)(base_model)  # Inception module C used in Inception v4
+    inc_avrg = tf.keras.layers.Conv2D(incept_nodes[1], activation=activation, kernel_size=1, padding='same', kernel_regularizer=rglzr, kernel_initializer='he_normal')(inc_avrg)
+    inc_avrg = tf.keras.layers.Dropout(rate=args['dropout'])(inc_avrg)
+    inc_avrg = tf.keras.layers.LayerNormalization()(inc_avrg)
+    # inc_avrg = tf.keras.layers.Dropout(rate=args['dropout'])(inc_avrg)
+    inc_conv1 = tf.keras.layers.Conv2D(incept_nodes[1], activation=activation, kernel_size=1, padding='same', kernel_regularizer=rglzr, kernel_initializer='he_normal')(base_model)
+    inc_conv1 = tf.keras.layers.Dropout(rate=args['dropout'])(inc_conv1)
+    inc_conv1 = tf.keras.layers.LayerNormalization()(inc_conv1)
+    # inc_conv1 = tf.keras.layers.Dropout(rate=args['dropout'])(inc_conv1)
+    inc_conv2 = tf.keras.layers.Conv2D(incept_nodes[0], activation=activation, kernel_size=1, padding='same', kernel_regularizer=rglzr, kernel_initializer='he_normal')(base_model)
+    inc_conv2 = tf.keras.layers.Dropout(rate=args['dropout'])(inc_conv2)
+    inc_conv2_1 = tf.keras.layers.Conv2D(incept_nodes[1], activation=activation, kernel_size=(1, 3), padding='same', kernel_regularizer=rglzr, kernel_initializer='he_normal')(inc_conv2)
+    inc_conv2_1 = tf.keras.layers.LayerNormalization()(inc_conv2_1)
+    inc_conv2_1 = tf.keras.layers.Dropout(rate=args['dropout'])(inc_conv2_1)
+    # inc_conv2_1 = tf.keras.layers.Dropout(rate=args['dropout'])(inc_conv2_1)
+    inc_conv2_2 = tf.keras.layers.Conv2D(incept_nodes[1], activation=activation, kernel_size=(3, 1), padding='same', kernel_regularizer=rglzr, kernel_initializer='he_normal')(inc_conv2)
+    inc_conv2_2 = tf.keras.layers.LayerNormalization()(inc_conv2_2)
+    inc_conv2_2 = tf.keras.layers.Dropout(rate=args['dropout'])(inc_conv2_2)
+    # inc_conv2_2 = tf.keras.layers.Dropout(rate=args['dropout'])(inc_conv2_2)
+    inc_mod = tf.keras.layers.Concatenate()([inc_avrg, inc_conv1, inc_conv2_1, inc_conv2_2])
+    common = tf.keras.layers.GlobalAvgPool2D()(inc_mod)
+    common = tf.keras.layers.Dropout(rate=args['dropout'])(common)
     # --------------------------------================ Tabular data =================--------------------------------- #
-    if not args['only_image']:
+    if not args['no_clinical_data']:
         shape = (20,)
         if args['no_image_type']:
             shape = (18,)
-        clinical_data_input = Input(shape=shape, name='clinical_data', dtype=tf.float32)
+        clinical_data_input = tf.keras.layers.Input(shape=shape, name='clinical_data', dtype=tf.float32)
         inputs_list.append(clinical_data_input)
-        clinical_data_1 = Dense(dense_nodes[1], activation=activation, kernel_regularizer=rglzr)(clinical_data_input)
-        clinical_data_1 = normalization()(clinical_data_1)
-        clinical_data_2 = Dense(dense_nodes[0], activation=activation, kernel_regularizer=rglzr)(clinical_data_1)
-        clinical_data_2 = normalization()(clinical_data_2)
-        clinical_data_con = Concatenate(axis=-1)([clinical_data_2, clinical_data_1])
-        clinical_data_3 = Dense(dense_nodes[0], activation=activation, kernel_regularizer=rglzr)(clinical_data_con)
-        clinical_data_3 = normalization()(clinical_data_3)
-        common = Concatenate(axis=-1)([common, clinical_data_1, clinical_data_2, clinical_data_3])
-        # -------------------------------================== Concat part ==================---------------------------------#
-    common = Dense(merge_nodes[1], activation=activation, kernel_regularizer=rglzr)(common)
-    common = normalization()(common)
-    common = Dense(merge_nodes[0], activation=activation, kernel_regularizer=rglzr)(common)
-    common = normalization()(common)
-    # common = Dense(16, activation=activation, kernel_regularizer=rglzr)(common)
-    output = Dense(args['num_classes'], activation='softmax', kernel_regularizer=rglzr, name='class')(common)
-    return Model(inputs_list, [output])
+        clinical_data_1 = tf.keras.layers.Dense(dense_nodes[1], activation=activation, kernel_regularizer=rglzr, kernel_initializer='he_normal')(clinical_data_input)
+        clinical_data_1 = tf.keras.layers.LayerNormalization()(clinical_data_1)
+        clinical_data_1 = tf.keras.layers.Dropout(rate=args['dropout'])(clinical_data_1)
+        clinical_data_2 = tf.keras.layers.Dense(dense_nodes[0], activation=activation, kernel_regularizer=rglzr, kernel_initializer='he_normal')(clinical_data_1)
+        clinical_data_2 = tf.keras.layers.LayerNormalization()(clinical_data_2)
+        clinical_data_2 = tf.keras.layers.Dropout(rate=args['dropout'])(clinical_data_2)
+        clinical_data_con = tf.keras.layers.Concatenate(axis=-1)([clinical_data_2, clinical_data_1])
+        clinical_data_3 = tf.keras.layers.Dense(dense_nodes[0], activation=activation, kernel_regularizer=rglzr, kernel_initializer='he_normal')(clinical_data_con)
+        clinical_data_3 = tf.keras.layers.LayerNormalization()(clinical_data_3)
+        clinical_data_3 = tf.keras.layers.Dropout(rate=args['dropout'])(clinical_data_3)
+        common = tf.keras.layers.Concatenate(axis=-1)([common, clinical_data_1, clinical_data_2, clinical_data_3])
+    # -------------------------------================== Concat part ==================---------------------------------#
+    common = tf.keras.layers.Dense(merge_nodes[1], activation=activation, kernel_regularizer=rglzr, kernel_initializer='he_normal')(common)
+    common = tf.keras.layers.LayerNormalization()(common)
+    common = tf.keras.layers.Dense(merge_nodes[0], activation=activation, kernel_regularizer=rglzr, kernel_initializer='he_normal')(common)
+    common = tf.keras.layers.LayerNormalization()(common)
+    # common = tf.keras.layers.Dense(16, activation=activation, kernel_regularizer=rglzr)(common)
+    output = tf.keras.layers.Dense(args['num_classes'], activation='softmax', kernel_regularizer=rglzr, kernel_initializer='he_normal', name='class')(common)
+    return tf.keras.Model(inputs_list, [output])
