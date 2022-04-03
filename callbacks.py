@@ -11,7 +11,7 @@ class EnrTensorboard(tf.keras.callbacks.TensorBoard):
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
-        logs["learning_rate"] = self.model.optimizer.lr
+        # logs["learning_rate"] = self.model.optimizer.lr
 
         # Use the model to predict the values from the validation dataset.
         y_true = []
