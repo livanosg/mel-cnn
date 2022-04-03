@@ -48,7 +48,6 @@ def calc_metrics(args, model, dataset, dataset_type, dist_thresh=None, f1_thresh
     else:
         paths = np.empty_like(dataset.element_spec['image_path'])
 
-        np.r_()
     for x in dataset.as_numpy_iterator():
         if dataset_type != 'isic20_test':
             paths = np.concatenate((paths, x[0]['image_path']))
@@ -58,7 +57,10 @@ def calc_metrics(args, model, dataset, dataset_type, dist_thresh=None, f1_thresh
             paths = np.concatenate(paths, x['image_path'])
             output = np.concatenate(output, model.predict(x))
 
-    paths, output, labels = paths[1:, ...], output[1:, ...].astype(np.float), labels[1:, ...].astype(np.int)
+    if dataset_type != 'isic20_test':
+        labels = labels[1:, ...].astype(np.int)
+
+    paths, output = paths[1:, ...], output[1:, ...].astype(np.float)
     if len(paths) == 0:
         print('empty dataset')
         return
