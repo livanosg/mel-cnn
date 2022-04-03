@@ -15,7 +15,7 @@ class MelData:
         self.image_type = args['image_type']
         self.pretrained = args['pretrained']
         self.input_shape = args['input_shape']
-        self.only_image = args['only_image']
+        self.no_clinical_data = args['no_clinical_data']
         self.no_image_type = args['no_image_type']
         self.TF_RNG = tf.random.Generator.from_non_deterministic_state()  # .from_seed(1312)
         self.class_names = TASK_CLASSES[self.task]
@@ -73,38 +73,61 @@ class MelData:
         #             list_of_sub_df.append(sub_df)
         #     df = pd.concat(list_of_sub_df)
 
-        ohe_features = {'image_path': df['image'].values}
-        if not self.only_image:
+        onehot_input = {'image_path': df['image'].values}
+        if not self.no_clinical_data:
             loc_lookup = tf.keras.layers.StringLookup(vocabulary=LOCATIONS, output_mode='one_hot')
             sex_lookup = tf.keras.layers.StringLookup(vocabulary=SEX, output_mode='one_hot')
             age_lookup = tf.keras.layers.StringLookup(vocabulary=AGE_APPROX, output_mode='one_hot')
 
-            ohe_features['anatom_site_general'] = loc_lookup(tf.constant(df['location'].values))[:, 1:]  # compat
-            ohe_features['location'] = loc_lookup(tf.constant(df['location'].values))[:, 1:]
-            ohe_features['sex'] = sex_lookup(tf.constant(df['sex'].values))[:, 1:]
-            ohe_features['age_approx'] = age_lookup(tf.constant(df['age_approx'].values))[:, 1:]
-            ohe_features['clinical_data'] = tf.keras.layers.Concatenate()([ohe_features['location'], ohe_features['sex'], ohe_features['age_approx']])
+            onehot_input['anatom_site_general'] = loc_lookup(tf.constant(df['location'].values))[:, 1:]  # compat
+            onehot_input['location'] = loc_lookup(tf.constant(df['location'].values))[:, 1:]
+            onehot_input['sex'] = sex_lookup(tf.constant(df['sex'].values))[:, 1:]
+            onehot_input['age_approx'] = age_lookup(tf.constant(df['age_approx'].values))[:, 1:]
+            onehot_input['clinical_data'] = tf.keras.layers.Concatenate()([onehot_input['location'], onehot_input['sex'], onehot_input['age_approx']])
             if not self.no_image_type:
                 img_type_lookup = tf.keras.layers.StringLookup(vocabulary=IMAGE_TYPE, output_mode='one_hot')
-                ohe_features['image_type'] = img_type_lookup(tf.constant(df['image_type'].values))[:, 1:]
-                ohe_features['clinical_data'] = tf.keras.layers.Concatenate()([ohe_features['clinical_data'], ohe_features['image_type']])
+                onehot_input['image_type'] = img_type_lookup(tf.constant(df['image_type'].values))[:, 1:]
+                onehot_input['clinical_data'] = tf.keras.layers.Concatenate()([onehot_input['clinical_data'], onehot_input['image_type']])
 
-        if mode in ('isic20_test'):
-            label_one_hot = None
-        else:
+        onehot_label = None
+        if mode != 'isic20_test':
             label_lookup = tf.keras.layers.StringLookup(vocabulary=self.class_names, output_mode='one_hot')
-            label_one_hot = {'class': label_lookup(tf.constant(df['class'].values))[:, 1:]}
-        return ohe_features, label_one_hot
+            onehot_label = {'class': label_lookup(tf.constant(df['class'].values))[:, 1:]}
+
+        sample_weights = None
+        if mode == 'train':
+            if not self.no_clinical_data and not self.no_image_type and self.image_type == 'both':
+                ohe_image_type_w = tf.cast(onehot_input['image_type'], tf.float32)
+                image_type_weights = tf.math.divide(tf.reduce_sum(ohe_image_type_w),
+                                                    tf.math.multiply(tf.cast(ohe_image_type_w.shape[-1], dtype=tf.float32),
+                                                                     tf.reduce_sum(ohe_image_type_w, axis=0)))
+                sample_weights = tf.gather(image_type_weights, tf.math.argmax(ohe_image_type_w, axis=-1))
+            else:
+                sample_weights = tf.ones_like(onehot_label['class'][..., 0])
+
+        return onehot_input, onehot_label, sample_weights
+
+    def get_class_weights(self):
+        class_weights = {}
+        ohe_input, ohe_label, sample_weights = self.prep_df('train')
+        ohe_label_w = tf.cast(ohe_label['class'], tf.float32)
+        # weights_values = total_samples / (n_classes * samples_per_class)
+        weights_values = tf.math.divide(tf.reduce_sum(ohe_label_w),
+                                        tf.math.multiply(tf.cast(self.num_classes, dtype=tf.float32),
+                                                         tf.reduce_sum(ohe_label_w, axis=0)))
+        for i in range(self.num_classes):
+            class_weights[i] = weights_values[i]
+        return class_weights
 
     def get_dataset(self, mode=None):
         data = self.prep_df(mode)
         dataset = tf.data.Dataset.from_tensor_slices(data)
-        dataset = dataset.map(lambda sample, label: (self.read_image(sample=sample), label), num_parallel_calls=tf.data.AUTOTUNE)
+        dataset = dataset.map(lambda sample, label, sample_weights: (self.read_image(sample=sample), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
         dataset = dataset.batch(self.batch_size)
-        if mode == 'train':
-            dataset = dataset.map(lambda sample, label: (self.augm(sample), label), num_parallel_calls=tf.data.AUTOTUNE)
-        if mode in ('isic20_test'):
-            dataset = dataset.map(lambda sample, label: sample, num_parallel_calls=tf.data.AUTOTUNE)
+        if mode != 'train':
+            dataset = dataset.map(lambda sample, label, sample_weights: (self.augm(sample), label), num_parallel_calls=tf.data.AUTOTUNE)
+        if mode == 'isic20_test':
+            dataset = dataset.map(lambda sample, label, sample_weights: sample, num_parallel_calls=tf.data.AUTOTUNE)
 
         options = tf.data.Options()
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
