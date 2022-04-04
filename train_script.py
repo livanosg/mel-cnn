@@ -1,4 +1,9 @@
+import os
 import tensorflow as tf
+num_threads = os.cpu_count()
+tf.config.threading.set_inter_op_parallelism_threads(num_threads)
+tf.config.threading.set_intra_op_parallelism_threads(num_threads)
+tf.config.set_soft_device_placement(True)
 import tensorflow_addons as tfa
 import models
 from data_pipe import MelData
@@ -15,10 +20,11 @@ def unfreeze_model(trained_model):
 
 
 def setup_model(args):
-    if args['strategy'] == 'mirrored':
-        strategy = tf.distribute.MirroredStrategy()
-    else:
-        strategy = tf.distribute.OneDeviceStrategy('GPU')
+    strategy = tf.distribute.MirroredStrategy(["GPU:0", "GPU:1"])
+    # if args['strategy'] == 'mirrored':
+    #     strategy = tf.distribute.MirroredStrategy(["GPU:0", "GPU:1"])
+    # else:
+    #     strategy = tf.distribute.OneDeviceStrategy('GPU')
     with strategy.scope():
         if args['load_model']:
             model = tf.keras.models.load_model(args['load_model'], compile=False)
