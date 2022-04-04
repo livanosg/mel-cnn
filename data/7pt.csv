@@ -1630,7 +1630,7 @@ dataset_id,case_num,image,image_type,sex,class,seven_point_score,pigment_network
 7pt,815,FCL/FCL053.JPG,clinic,female,melanoma (more than 1.5 mm),7,atypical,irregular,localized irregular,absent,irregular,present,absent,medium,nodular,upper_extremity,excision,,
 7pt,815,FCL/FCL054.JPG,derm,female,melanoma (more than 1.5 mm),7,atypical,irregular,localized irregular,absent,irregular,present,absent,medium,nodular,upper_extremity,excision,,
 7pt,816,FCL/FCL067.JPG,clinic,female,melanoma (more than 1.5 mm),4,absent,irregular,localized irregular,absent,regular,present,absent,medium,palpable,lower_extremity,excision,,
-7pt,816,FCl/Fcl068.jpg,derm,female,melanoma (more than 1.5 mm),4,absent,irregular,localized irregular,absent,regular,present,absent,medium,palpable,lower_extremity,excision,,
+7pt,816,FCL/Fcl068.jpg,derm,female,melanoma (more than 1.5 mm),4,absent,irregular,localized irregular,absent,regular,present,absent,medium,palpable,lower_extremity,excision,,
 7pt,817,FDL/Fdl051.jpg,clinic,male,melanoma (more than 1.5 mm),7,absent,irregular,diffuse irregular,absent,irregular,present,linear irregular,low,nodular,torso,excision,,
 7pt,817,FDL/FDL052.JPG,derm,male,melanoma (more than 1.5 mm),7,absent,irregular,diffuse irregular,absent,irregular,present,linear irregular,low,nodular,torso,excision,,
 7pt,818,Gcl/Gcl038.jpg,clinic,female,melanoma (more than 1.5 mm),7,atypical,irregular,diffuse irregular,absent,irregular,present,absent,low,nodular,lower_extremity,excision,,
