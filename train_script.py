@@ -35,21 +35,23 @@ def setup_model(args):
 
 def train_fn(args):
     model, strategy = setup_model(args)
-    data = MelData(args=args)
-    class_weight = data.get_class_weights()
-    custom_loss_class_weights = None
-    if args['loss_fn'] in ('focal', 'combined'):
-        custom_loss_class_weights = []
-        for i in class_weight.keys():
-            custom_loss_class_weights.append(class_weight[i])
-        class_weight = None
     args['learning_rate'] = args['learning_rate'] * strategy.num_replicas_in_sync
     args['batch_size'] = args['batch_size'] * strategy.num_replicas_in_sync
-
-    loss_fn = {'cxe': 'categorical_crossentropy', 'focal': categorical_focal_loss(alpha=[0.25, 0.25], weights=custom_loss_class_weights),
-               'combined': combined_loss(args['loss_frac'], weights=custom_loss_class_weights),  #
+    data = MelData(args=args)
+    loss_fn = {'cxe': 'categorical_crossentropy', 'focal': categorical_focal_loss(alpha=[0.25, 0.25]),
+               'combined': combined_loss(args['loss_frac']),
                'perclass': CMWeightedCategoricalCrossentropy(args=args)}[args['loss_fn']]
 
+    def gmean_sens_spec(y_true, y_pred):
+        y_pred_masked = tf.cast(tf.greater_equal(y_pred, tf.reduce_max(y_pred, axis=-1, keepdims=True)), dtype=tf.float32)
+        tp = tf.cast(tf.math.equal(y_pred_masked[..., 1] * y_true[..., 1], 1.), dtype=tf.float32)
+        tn = tf.cast(tf.math.equal(y_pred_masked[..., 0] * y_true[..., 0], 1.), dtype=tf.float32)
+        fp = tf.cast(tf.math.equal(y_pred_masked[..., 1] * y_true[..., 0], 1.), dtype=tf.float32)
+        fn = tf.cast(tf.math.equal(y_pred_masked[..., 0] * y_true[..., 1], 1.), dtype=tf.float32)
+        sensitivity = tf.math.divide_no_nan(tf.reduce_sum(tp), (tf.reduce_sum(tp) + tf.reduce_sum(fn)))
+        specificity = tf.math.divide_no_nan(tf.reduce_sum(tn), (tf.reduce_sum(fp) + tf.reduce_sum(tn)))
+        g_mean = tf.math.sqrt((sensitivity * specificity))
+        return g_mean
 
     with strategy.scope():
         optimizer = {'adam': tf.keras.optimizers.Adam, 'adamax': tf.keras.optimizers.Adamax,
@@ -58,12 +60,13 @@ def train_fn(args):
                      'adagrad': tf.keras.optimizers.Adagrad, 'adadelta': tf.keras.optimizers.Adadelta}[args['optimizer']]
         model.compile(loss=loss_fn,
                       optimizer=optimizer(learning_rate=args['learning_rate']),
-                      metrics=[tfa.metrics.F1Score(num_classes=args['num_classes'], average='macro')])
+                      metrics=[gmean_sens_spec, tfa.metrics.F1Score(num_classes=args['num_classes'], average='weighted')])
+                               # tfa.metrics.F1Score(num_classes=args['num_classes'], average='macro')])
 
     with open(args['dir_dict']['model_summary'], 'w') as f:
         model.summary(print_fn=lambda x: f.write(x + '\n'))
-    start_save = 1000
-    rop_patience = 20
+    start_save = 10
+    rop_patience = 2 * start_save
     if args['fine']:
         rop_patience = 5
     es_patience = 3 * rop_patience
@@ -74,18 +77,15 @@ def train_fn(args):
                  tf.keras.callbacks.ReduceLROnPlateau(factor=0.1, patience=rop_patience),
                  tf.keras.callbacks.EarlyStopping(patience=es_patience),
                  tf.keras.callbacks.CSVLogger(filename=args['dir_dict']['train_logs'], separator=',', append=True),
-                 LaterCheckpoint(filepath=args['dir_dict']['save_path'], save_best_only=True, start_at=start_save),
+                 LaterCheckpoint(filepath=args['dir_dict']['save_path'], save_best_only=True, start_at=start_save, monitor='val_gmean_sens_spec', mode='max'),
                  EnrTensorboard(val_data=val_data, log_dir=args['dir_dict']['logs'], class_names=args['class_names'])]
-    model.fit(x=train_data, validation_data=val_data,
-              class_weight=class_weight,  # bugged
-              callbacks=callbacks, epochs=args['epochs'])  # steps_per_epoch=np.floor(data.train_len / batch),
+    model.fit(x=train_data, validation_data=val_data, callbacks=callbacks, epochs=args['epochs'])  # steps_per_epoch=np.floor(data.train_len / batch),
 
 
 def test_fn(args):
     model, strategy = setup_model(args)
     data = MelData(args=args)
     thresh_dist, thresh_f1 = calc_metrics(args=args, model=model, dataset=data.get_dataset(mode='validation',), dataset_type='validation')
-    #thresh_dist, thresh_f1 = None, None
     if args['image_type'] in ('both', 'derm'):
         for test in ('isic16_test', 'isic17_test', 'isic18_val_test', 'up_test', 'mclass_derm_test'):
             if args['task'] != 'nev_mel' and test != 'isic16_test':
