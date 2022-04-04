@@ -25,6 +25,8 @@ def parser():
     args_parser.add_argument('--epochs', '-e', type=int, default=500, help='Number of epochs epochs.')
     args_parser.add_argument('--loss-fn', '-loss', type=str, default='cxe', choices=['cxe', 'focal', 'perclass','wcxe', 'combined'], help='Select loss function.')
     args_parser.add_argument('--loss-frac', '-lossf', type=float, default=.5, help='log_dice_loss ratio in custom loss.')
+    args_parser.add_argument('--weighted-loss', '-wl', action='store_true', help='Apply class weights.')
+    args_parser.add_argument('--weighted-samples', '-ws', action='store_true', help='Apply sample weights per image type.')
     args_parser.add_argument('--conv_layers', '-clrs', type=int, default=32, help='Select multiplier for number of nodes in inception layers.')
     args_parser.add_argument('--dense-layers', '-dlrs', type=int, default=16, help='Select multiplier for number of nodes in dense layers.')
     args_parser.add_argument('--merge-layers', '-mlrs', type=int, default=32, help='Select multiplier for number of nodes in merge layers.')
