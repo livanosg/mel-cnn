@@ -135,13 +135,12 @@ def log_params(args):
     else:
         aw = 'w'
     with open(args['dir_dict']['hparams_logs'], aw) as f:
-        fieldnames = ['trial_id', 'task', 'image_type', 'no_clinical_data', 'no_image_type', 'class_names',
-                      'num_classes', 'image_size', 'conv_layers', 'dense_layers', 'merge_layers', 'loss_fn',
-                      'batch_size', 'learning_rate', 'optimizer', 'activation', 'dropout', 'epochs', 'loss_frac',
-                      'dataset_frac', 'load_model', 'pretrained', 'fine', 'gpus', 'input_shape', 'test', 'strategy']
-        dir_dict = args.pop('dir_dict')
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        fieldnames = ['trial_id', 'task', 'num_classes', 'class_names', 'image_type', 'image_size', 'input_shape',
+                      'no_clinical_data', 'no_image_type', 'conv_layers', 'dense_layers', 'merge_layers',
+                      'loss_fn', 'loss_frac', 'weighted_samples', 'weighted_loss', 'dataset_frac', 'pretrained',
+                      'batch_size', 'learning_rate', 'optimizer', 'activation', 'dropout', 'epochs', 'test',
+                      'load_model', 'fine', 'gpus', 'strategy']
+        writer = csv.DictWriter(f, fieldnames=fieldnames, restval='', extrasaction='ignore')
         if aw == 'w':
             writer.writeheader()
         writer.writerows([args])
-        args['dir_dict'] = dir_dict
