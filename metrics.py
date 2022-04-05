@@ -6,7 +6,7 @@ import pandas as pd
 from matplotlib import pyplot as plt, use as plt_use
 from config import TASK_CLASSES
 from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, precision_recall_curve, average_precision_score, classification_report
-plt_use('Agg')
+# plt_use('Agg')
 
 
 def conf_mat(y_pred, y_true):
@@ -34,22 +34,23 @@ def metrics(TP, TN, FP, FN, P, PP, N, PN):
     metrics_dict['balanced_accuracy'] = np.round((metrics_dict['sensitivity'] + metrics_dict['specificity']) / 2, 3)
     metrics_dict['F1'] = np.round(f_beta(beta=1, precision=metrics_dict['precision'], recall=metrics_dict['sensitivity']), 3)
     metrics_dict['F2'] = np.round(f_beta(beta=2, precision=metrics_dict['precision'], recall=metrics_dict['sensitivity']), 3)
+    metrics_dict['G_mean'] = np.sqrt(metrics_dict['sensitivity'] * metrics_dict['specificity'])
     return metrics_dict
 
 
-def calc_metrics(args, model, dataset, dataset_type, dist_thresh=None, f1_thresh=None):
-    save_dir = os.path.join(args['dir_dict']['trial'], dataset_type + '_{}'.format(args['image_type']))
+def calc_metrics(args, model, dataset, dataset_name, dist_thresh=None, f1_thresh=None):
+    save_dir = os.path.join(args['dir_dict']['trial'], dataset_name + '_{}'.format(args['image_type']))
     os.makedirs(save_dir, exist_ok=True)
     output = np.expand_dims(np.empty_like(model.output_shape), axis=0)
 
-    if dataset_type != 'isic20_test':
+    if dataset_name != 'isic20_test':
         paths = np.empty_like(dataset.element_spec[0]['image_path'].shape)
         labels = np.expand_dims(np.empty_like(dataset.element_spec[1]['class'].shape), axis=0)
     else:
         paths = np.empty_like(dataset.element_spec['image_path'])
 
     for x in dataset.as_numpy_iterator():
-        if dataset_type != 'isic20_test':
+        if dataset_name != 'isic20_test':
             paths = np.concatenate((paths, x[0]['image_path']))
             output = np.concatenate((output, model.predict(x[0])))
             labels = np.concatenate((labels, x[1]['class']))
@@ -57,7 +58,7 @@ def calc_metrics(args, model, dataset, dataset_type, dist_thresh=None, f1_thresh
             paths = np.concatenate(paths, x['image_path'])
             output = np.concatenate(output, model.predict(x))
 
-    if dataset_type != 'isic20_test':
+    if dataset_name != 'isic20_test':
         labels = labels[1:, ...].astype(np.int)
 
     paths, output = paths[1:, ...], output[1:, ...].astype(np.float)
@@ -70,15 +71,15 @@ def calc_metrics(args, model, dataset, dataset_type, dist_thresh=None, f1_thresh
     df_dict = {'image_name': paths}
     for i, class_name in enumerate(TASK_CLASSES[args['task']]):
         df_dict[f'{class_name}'] = np.round(output[..., i], 5)
-        if dataset_type != 'isic20_test':
+        if dataset_name != 'isic20_test':
             df_dict[f'{class_name + "_true"}'] = labels[..., i]
     df = pd.DataFrame(df_dict)
     df['image_name'] = df['image_name'].apply(lambda path: path.decode('UTF-8').replace(args['dir_dict']['data_folder'], ''))
-    if dataset_type == 'isic20_test':
+    if dataset_name == 'isic20_test':
         df = pd.DataFrame({'image_name': df_dict['image_name'], 'target': output[..., 1]})
-    df.to_csv(path_or_buf=os.path.join(save_dir, '{}_{}_results.csv'.format(dataset_type, args['image_type'])), index=False)
+    df.to_csv(path_or_buf=os.path.join(save_dir, '{}_{}_results.csv'.format(dataset_name, args['image_type'])), index=False)
 
-    if dataset_type != 'isic20_test':
+    if dataset_name != 'isic20_test':
         # Micro average (averaging the total true positives, false negatives and false positives)
         # is only shown for multi-label or multi-class with a subset of classes,
         # because it corresponds to accuracy otherwise and would be the same for all metrics.
@@ -105,7 +106,7 @@ def calc_metrics(args, model, dataset, dataset_type, dist_thresh=None, f1_thresh
                     f.write('{} {} {}\n'.format(' '.rjust(12), str(dist_thresh).rjust(10), str(f1_thresh).rjust(10)))
 
                 with open(os.path.join(save_dir, 'metrics_{}.csv'.format(str(round(threshold, 2)))), 'w') as f:
-                    f.write('Class,Balanced Accuracy,Precision,Sensitivity (Recall),Specificity,Accuracy,AUC,F1,F2,Average Precision\n')
+                    f.write('Class,Balanced Accuracy,Precision,Sensitivity (Recall),Specificity,Accuracy,AUC,F1,F2,G-Mean,Average Precision\n')
                     for _class in range(len(args['class_names'])):
                         AP = np.round(average_precision_score(y_true=labels[..., _class], y_score=output[..., _class]), 3)
                         ROC_AUC = np.round(roc_auc_score(y_true=labels[..., _class], y_score=output[..., _class]), 3)
@@ -113,20 +114,20 @@ def calc_metrics(args, model, dataset, dataset_type, dist_thresh=None, f1_thresh
                         m_dict = metrics(*cm_vals)
                         f.write(f'{args["class_names"][_class]},{m_dict["balanced_accuracy"]},{m_dict["precision"]},'
                                 f'{m_dict["sensitivity"]},{m_dict["specificity"]},{m_dict["accuracy"]},'
-                                f'{ROC_AUC},{m_dict["F1"]},{m_dict["F2"]},{AP}\n')
+                                f'{ROC_AUC},{m_dict["F1"]},{m_dict["F2"]},{m_dict["G_mean"]},{AP}\n')
 
             plt.figure(1), plt.title('ROC curve'), plt.xlabel('False positive rate'), plt.ylabel('True positive rate'), plt.gca().set_aspect('equal', adjustable='box')
-            plt.plot([0, fpr_lst[np.argmin(dist)]], [1, tpr_lst[np.argmin(dist)]])
+            # plt.plot([0, fpr_lst[np.argmin(dist)]], [1, tpr_lst[np.argmin(dist)]])
             plt.plot(fpr_lst, tpr_lst, label=' '.join([args['class_names'][1], '(AUC= {:.3f})'.format(ROC_AUC)])), plt.plot([0, 1], [0, 1], 'k--')
             plt.legend(loc='best')
             plt.figure(1), plt.savefig(os.path.join(save_dir, 'roc_curve.png'))
 
-            # plt.figure(2), plt.title('PR curve'), plt.xlabel('Recall'), plt.ylabel('Precision'), plt.gca().set_aspect('equal', adjustable='box')
-            # plt.plot(rec_lst, prec_lst, label=' '.join([args['class_names'][1], '(AP= {:.3f})'.format(AP)]))
-            # plt.legend(loc='best')
-            # plt.figure(2), plt.savefig(os.path.join(save_dir, 'pr_curve.png'))
+            plt.figure(2), plt.title('PR curve'), plt.xlabel('Recall'), plt.ylabel('Precision'), plt.gca().set_aspect('equal', adjustable='box')
+            plt.plot(rec_lst, prec_lst, label=' '.join([args['class_names'][1], '(AP= {:.3f})'.format(AP)]))
+            plt.legend(loc='best')
+            plt.figure(2), plt.savefig(os.path.join(save_dir, 'pr_curve.png'))
             plt.close('all')
-        if dataset_type == 'validation':
+        if dataset_name == 'validation':
             return dist_thresh, f1_thresh
         else:
             return None, None
