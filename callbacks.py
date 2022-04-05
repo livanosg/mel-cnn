@@ -39,10 +39,10 @@ class TestCallback(tf.keras.callbacks.Callback):
 
     def on_train_end(self, logs=None):
         model = tf.keras.models.load_model(self.args['dir_dict']['model_path'], compile=False)
-        calc_metrics(args=self.args, model=model, dataset=self.validation, dataset_type='validation')
-        calc_metrics(args=self.args, model=model, dataset=self.test, dataset_type='test')
+        calc_metrics(args=self.args, model=model, dataset=self.validation, dataset_name='validation')
+        calc_metrics(args=self.args, model=model, dataset=self.test, dataset_name='test')
         if self.args['task'] in ('ben_mal', '5cls'):
-            calc_metrics(args=self.args, model=model, dataset=self.isic20_test, dataset_type='isic20_test')
+            calc_metrics(args=self.args, model=model, dataset=self.isic20_test, dataset_name='isic20_test')
 
 
 class LaterCheckpoint(tf.keras.callbacks.ModelCheckpoint):
