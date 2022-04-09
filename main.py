@@ -1,8 +1,6 @@
 import os
 import argparse
 from datetime import datetime
-
-from absl import logging as absl_log
 from preproc_images import setup_images
 from train_script import train_fn, test_fn
 from config import dir_dict, TASK_CLASSES, log_params
@@ -39,23 +37,16 @@ def parser():
 
 
 if __name__ == '__main__':
-    threads = os.cpu_count()
     args = parser().parse_args().__dict__
-    os.environ['AUTOGRAPH_VERBOSITY'] = '0'
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'  # 0 log all, 1:noINFO, 2:noWARNING, 3:noERROR
-    absl_log.set_verbosity(absl_log.INFO)
     args['trial_id'] = datetime.now().strftime('%d%m%y%H%M%S')
     args['dir_dict'] = dir_dict(args=args)
     args['class_names'] = TASK_CLASSES[args['task']]
     args['num_classes'] = len(args['class_names'])
     args['input_shape'] = (args['image_size'], args['image_size'], 3)
     os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(map(str, (range(args['gpus']))))
-    os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
+    # os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
     # os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/usr/local/cuda'
-    # os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=2 --tf_xla_enable_xla_devices --tf_xla_cpu_global_jit'
-    os.environ['OMP_NUM_THREADS'] = f'{threads}'
-    os.environ["TF_NUM_INTRAOP_THREADS"] = f'{threads}'
-    os.environ["TF_NUM_INTEROP_THREADS"] = f'{threads}'
+    # os.environ['TF_XLA_FLAGS'] = f'--tf_xla_auto_jit=2 --tf_xla_enable_xla_devices --tf_xla_cpu_global_jit'
     print('Setting up Datasets...')
     for key, path in args['dir_dict']['data_csv'].items():
         setup_images(csv_path=path, args=args)
@@ -72,6 +63,4 @@ if __name__ == '__main__':
         for image_type in ('clinic', 'derm'):
             args['image_type'] = image_type
             test_fn(args=args)
-
-
 exit()

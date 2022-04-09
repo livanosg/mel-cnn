@@ -3,10 +3,9 @@ import io
 import itertools
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt, use as plt_use
+from matplotlib import pyplot as plt
 from config import TASK_CLASSES
 from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score, precision_recall_curve, average_precision_score, classification_report
-# plt_use('Agg')
 
 
 def conf_mat(y_pred, y_true):
@@ -34,7 +33,10 @@ def metrics(TP, TN, FP, FN, P, PP, N, PN):
     metrics_dict['balanced_accuracy'] = np.round((metrics_dict['sensitivity'] + metrics_dict['specificity']) / 2, 3)
     metrics_dict['F1'] = np.round(f_beta(beta=1, precision=metrics_dict['precision'], recall=metrics_dict['sensitivity']), 3)
     metrics_dict['F2'] = np.round(f_beta(beta=2, precision=metrics_dict['precision'], recall=metrics_dict['sensitivity']), 3)
-    metrics_dict['G_mean'] = np.sqrt(metrics_dict['sensitivity'] * metrics_dict['specificity'])
+    metrics_dict['G_mean'] = np.round(np.sqrt(metrics_dict['sensitivity'] * metrics_dict['specificity']), 3)
+    logx = np.log10(metrics_dict['sensitivity']/(1 - metrics_dict['sensitivity']))
+    logy = np.log10(metrics_dict['specificity']/(1 - metrics_dict['specificity']))
+    metrics_dict['dp'] = (np.sqrt(3) / np.pi) * (logx + logy)
     return metrics_dict
 
 
@@ -106,7 +108,7 @@ def calc_metrics(args, model, dataset, dataset_name, dist_thresh=None, f1_thresh
                     f.write('{} {} {}\n'.format(' '.rjust(12), str(dist_thresh).rjust(10), str(f1_thresh).rjust(10)))
 
                 with open(os.path.join(save_dir, 'metrics_{}.csv'.format(str(round(threshold, 2)))), 'w') as f:
-                    f.write('Class,Balanced Accuracy,Precision,Sensitivity (Recall),Specificity,Accuracy,AUC,F1,F2,G-Mean,Average Precision\n')
+                    f.write('Class,Balanced Accuracy,Precision,Sensitivity (Recall),Specificity,Accuracy,AUC,F1,F2,G-Mean,Average Precision,Discriminant Power\n')
                     for _class in range(len(args['class_names'])):
                         AP = np.round(average_precision_score(y_true=labels[..., _class], y_score=output[..., _class]), 3)
                         ROC_AUC = np.round(roc_auc_score(y_true=labels[..., _class], y_score=output[..., _class]), 3)
@@ -114,7 +116,7 @@ def calc_metrics(args, model, dataset, dataset_name, dist_thresh=None, f1_thresh
                         m_dict = metrics(*cm_vals)
                         f.write(f'{args["class_names"][_class]},{m_dict["balanced_accuracy"]},{m_dict["precision"]},'
                                 f'{m_dict["sensitivity"]},{m_dict["specificity"]},{m_dict["accuracy"]},'
-                                f'{ROC_AUC},{m_dict["F1"]},{m_dict["F2"]},{m_dict["G_mean"]},{AP}\n')
+                                f'{ROC_AUC},{m_dict["F1"]},{m_dict["F2"]},{m_dict["G_mean"]},{AP},{m_dict["dp"]}\n')
 
             plt.figure(1), plt.title('ROC curve'), plt.xlabel('False positive rate'), plt.ylabel('True positive rate'), plt.gca().set_aspect('equal', adjustable='box')
             # plt.plot([0, fpr_lst[np.argmin(dist)]], [1, tpr_lst[np.argmin(dist)]])
