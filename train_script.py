@@ -3,7 +3,7 @@ import tensorflow_addons as tfa
 import models
 from data_pipe import MelData
 from metrics import calc_metrics
-from callbacks import LaterCheckpoint, EnrTensorboard
+from callbacks import LaterCheckpoint, EnrTensorboard, LaterReduceLROnPlateau
 from custom_losses import categorical_focal_loss, combined_loss, CMWeightedCategoricalCrossentropy
 
 
@@ -43,9 +43,21 @@ def train_fn(args):
     args['batch_size'] = args['batch_size'] * strategy.num_replicas_in_sync
     data = MelData(args=args)
     loss_fn = {'cxe': 'categorical_crossentropy',
-               'focal': categorical_focal_loss(alpha=[0.25, 0.25]),
+               'focal': categorical_focal_loss(alpha=[1., 1.]),
                'combined': combined_loss(args['loss_frac']),
                'perclass': CMWeightedCategoricalCrossentropy(args=args)}[args['loss_fn']]
+
+    def gmean(y_true, y_pred):
+        y_pred_arg = tf.cast(tf.argmax(y_pred, axis=-1), dtype=tf.float32)
+        y_true_arg = tf.cast(tf.argmax(y_true, axis=-1), dtype=tf.float32)
+        tp = tf.reduce_sum(y_true_arg * y_pred_arg)
+        tn = tf.reduce_sum((1. - y_true_arg) * (1. - y_pred_arg))
+        fp = tf.reduce_sum((1 - y_true_arg) * y_pred_arg)
+        fn = tf.reduce_sum(y_true_arg * (1 - y_pred_arg))
+        sensitivity = tf.math.divide_no_nan(tp, tp + fn)
+        specificity = tf.math.divide_no_nan(tn, tn + fp)
+        g_mean = tf.math.sqrt(sensitivity * specificity)
+        return g_mean
 
     with strategy.scope():
         optimizer = {'adam': tf.keras.optimizers.Adam,
@@ -59,38 +71,41 @@ def train_fn(args):
         model.compile(loss=loss_fn,
                       optimizer=optimizer(learning_rate=args['learning_rate']),
                       metrics=[tfa.metrics.F1Score(num_classes=args['num_classes'],
-                                                   average='weighted'),
-                               tfa.metrics.F1Score(num_classes=args['num_classes'],
-                                                   average='macro'),
-                               tfa.metrics.F1Score(num_classes=args['num_classes'],
-                                                   average='micro')])
+                                                   average='macro', name='f1_macro'),
+                               gmean])
 
     with open(args['dir_dict']['model_summary'], 'w', encoding='utf-8') as model_summary:
         model.summary(print_fn=lambda x: model_summary.write(x + '\n'))
-    start_save = 10
-    rop_patience = 2 * start_save
-    if args['fine']:
-        rop_patience = 5
-    es_patience = 3 * rop_patience
+    # start_save = 10
+    # rop_patience = 5
+    # if args['fine']:
+        # rop_patience = 5
+    es_patience = 30
 
     train_data = data.get_dataset(dataset_name='train')
     val_data = data.get_dataset(dataset_name='validation')
 
-    def schedule(epoch, learning_rate):
-        return learning_rate * 10 if epoch < 5 else learning_rate
+    # def schedule(epoch, learning_rate):
+    #     if epoch < 0:
+    #         new_lr = args['learning_rate'] * 10
+    #     else:
+    #         new_lr = args['learning_rate']
+    #     return new_lr
+    # tf.keras.callbacks.LearningRateScheduler(schedule=schedule),
+    # LaterReduceLROnPlateau(factor=0.1, patience=rop_patience,
+    #                                         monitor="val_gmean", mode='max', start_at=rop_patience, verbose=1),
+    # LaterCheckpoint(filepath=args['dir_dict']['save_path'],
+    #                 save_best_only=True, start_at=start_save,
+    #                 monitor='val_gmean', mode='max'),
 
-    callbacks = [tf.keras.callbacks.LearningRateScheduler(schedule=schedule),
-                 tf.keras.callbacks.ReduceLROnPlateau(factor=0.1, patience=rop_patience),
-                 tf.keras.callbacks.EarlyStopping(patience=es_patience),
+    callbacks = [tf.keras.callbacks.EarlyStopping(patience=es_patience, verbose=1, monitor='val_gmean', mode='max', restore_best_weights=True),
                  tf.keras.callbacks.CSVLogger(filename=args['dir_dict']['train_logs'],
                                               separator=',', append=True),
-                 LaterCheckpoint(filepath=args['dir_dict']['save_path'],
-                                 save_best_only=True, start_at=start_save,
-                                 monitor='val_f1_macro', mode='max'),
                  EnrTensorboard(val_data=val_data, log_dir=args['dir_dict']['logs'],
                                 class_names=args['class_names'])]
     model.fit(x=train_data, validation_data=val_data, callbacks=callbacks,
               epochs=args['epochs'])  # steps_per_epoch=np.floor(data.train_len / batch),
+    model.save(filepath=args['dir_dict']['save_path'])
 
 
 def test_fn(args):
@@ -102,9 +117,9 @@ def test_fn(args):
     thr_d, thr_f1 = calc_metrics(args=args, model=model,
                                  dataset=data.get_dataset(dataset_name='validation'),
                                  dataset_name='validation')
-    test_datasets = {'derm': ('isic16_test', 'isic17_test', 'isic18_val_test',
-                              'mclass_derm_test', 'up_test'),
-                     'clinic': ('up_test', 'dermofit_test', 'mclass_clinic_test')}
+    test_datasets = {'derm': ['isic16_test', 'isic17_test', 'isic18_val_test',
+                              'mclass_derm_test', 'up_test'],
+                     'clinic': ['up_test', 'dermofit_test', 'mclass_clinic_test']}
     if args['task'] == 'nev_mel':
         test_datasets['derm'].remove('isic16_test')
 
