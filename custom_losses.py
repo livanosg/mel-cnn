@@ -64,24 +64,35 @@ def categorical_focal_loss(alpha, gamma=2.):
         epsilon = 1e-7
         y_pred = tf.clip_by_value(y_pred, epsilon, 1. - epsilon)
         # Calculate Cross Entropy
-        cross_entropy = tf.math.multiply(x=tf.math.multiply(x=-1., y=y_true), y=tf.math.log(y_pred))
+        cross_entropy = - tf.math.multiply(x=y_true, y=tf.math.log(y_pred))
         # Calculate Focal Loss
         loss = alpha * tf.math.pow(1 - y_pred, gamma) * cross_entropy
         return tf.reduce_sum(loss, axis=-1)
     return categorical_focal_loss_fixed
 
 
-def combined_loss(frac):
+def combined_loss(frac, alpha=0.25, gamma=2.):
+    def dice_loss(y_true, y_pred):
+        with tf.name_scope('Generalized_Dice_Log_Loss'):
+            numerator = tf.reduce_sum(y_true * y_pred, axis=-1)
+            denominator = tf.reduce_sum(y_true + y_pred,  axis=-1)
+            dice = tf.clip_by_value(2 * numerator / denominator, 1e-7, 1 - 1e-7)
+        return - tf.math.log(dice)
+
+    def cxe(y_true, y_pred):
+        a = 1.
+        with tf.name_scope('Crossentropy_Loss'):
+            focal_param = tf.reduce_sum(a * tf.math.pow(1 - y_pred, gamma) * y_true, axis=-1)
+            return focal_param * tf.keras.losses.categorical_crossentropy(y_true=y_true, y_pred=y_pred)
+
     def total_loss(y_true, y_pred):
         """Inputs: y_pred: probs form per class
                    y_true: one-hot encoding of label
         """
-        with tf.name_scope('Generalized_Dice_Log_Loss'):
-            numerator = tf.reduce_sum(input_tensor=tf.math.multiply(x=y_true, y=y_pred), axis=-1)
-            denominator = tf.reduce_sum(input_tensor=tf.math.add(x=y_true, y=y_pred), axis=-1)
-            dice = tf.math.divide(x=tf.math.multiply(x=2., y=numerator), y=denominator)
-            dice_loss = -tf.math.log(x=dice)
-        with tf.name_scope('Crossentropy_Loss'):
-            cxe_loss = tf.keras.losses.categorical_crossentropy(y_true=y_true, y_pred=y_pred)
-        return tf.add(x=tf.math.multiply(x=frac, y=dice_loss), y=tf.math.multiply(x=tf.math.subtract(x=1., y=frac), y=cxe_loss))
+        if frac == 0.:
+            return cxe(y_true, y_pred)
+        elif frac == 1.:
+            return dice_loss(y_true, y_pred)
+        else:
+            return tf.add(x=tf.math.multiply(x=frac, y=dice_loss(y_true, y_pred)), y=tf.math.multiply(x=1. - frac, y=cxe(y_true, y_pred)))
     return total_loss

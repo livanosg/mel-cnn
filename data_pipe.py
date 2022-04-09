@@ -84,12 +84,14 @@ class MelData:
                                                                  tf.reduce_sum(onehot_input['image_type'], axis=0)))
                 sample_weights = tf.gather(sample_weights, tf.math.argmax(onehot_input['image_type'], axis=-1))
             if self.args['weighted_loss']:  # Class weight
-                class_weights = tf.math.divide(tf.reduce_sum(onehot_label['class']),
-                                               tf.math.multiply(tf.cast(self.num_classes, dtype=tf.float32),
-                                                                tf.reduce_sum(onehot_label['class'], axis=0)))
+                # class_weights = tf.math.divide(tf.reduce_sum(onehot_label['class']),
+                #                                tf.math.multiply(tf.cast(self.num_classes, dtype=tf.float32),
+                #                                                 tf.reduce_sum(onehot_label['class'], axis=0)))
+                class_weights = tf.math.divide(tf.reduce_max(tf.reduce_sum(onehot_label['class'], axis=0)),
+                                               tf.reduce_sum(onehot_label['class'], axis=0))
                 class_weights = tf.gather(class_weights, tf.math.argmax(onehot_label['class'], axis=-1))
 
-                if sample_weights is not None: # `class_weight` and `sample_weight` are multiplicative.
+                if sample_weights is not None:  # `class_weight` and `sample_weight` are multiplicative.
                     class_weights = tf.cast(class_weights, sample_weights.dtype)
                     sample_weights = sample_weights * class_weights
                 else:
@@ -101,17 +103,19 @@ class MelData:
     def get_dataset(self, dataset_name=None):
         data = self.prep_df(dataset_name)
         dataset = tf.data.Dataset.from_tensor_slices(data)
+        if dataset_name == 'train':
+            dataset = dataset.shuffle(buffer_size=dataset.cardinality(), reshuffle_each_iteration=True)
         dataset = dataset.map(lambda sample, label, sample_weights: (self.read_image(sample=sample), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
         dataset = dataset.batch(self.args['batch_size'])
-        if dataset_name != 'train':
-            dataset = dataset.map(lambda sample, label, sample_weights: (self.augm(sample), label), num_parallel_calls=tf.data.AUTOTUNE)
-        if dataset_name == 'isic20_test':
+        if dataset_name == 'train':
+            dataset = dataset.map(lambda sample, label, sample_weights: (self.augm(sample), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
+        elif dataset_name == 'isic20_test':
             dataset = dataset.map(lambda sample, label, sample_weights: sample, num_parallel_calls=tf.data.AUTOTUNE)
-
+        else:
+            dataset = dataset.map(lambda sample, label, sample_weights: (sample, label), num_parallel_calls=tf.data.AUTOTUNE)
         options = tf.data.Options()
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
         dataset = dataset.with_options(options)
-
         if dataset_name != 'train':
             dataset = dataset.repeat(1)
         return dataset.prefetch(buffer_size=tf.data.AUTOTUNE)

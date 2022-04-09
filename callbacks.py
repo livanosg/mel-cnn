@@ -46,13 +46,24 @@ class TestCallback(tf.keras.callbacks.Callback):
 
 
 class LaterCheckpoint(tf.keras.callbacks.ModelCheckpoint):
-    def __init__(self, filepath, start_at, **kwargs):
-        super().__init__(filepath, **kwargs)
+    def __init__(self, start_at, **kwargs):
+        super().__init__(**kwargs)
         self.start_at = start_at
-        print('Start saving on epoch {}.'.format(self.start_at))
 
     def on_epoch_end(self, epoch, logs=None):
         if epoch + 1 >= self.start_at:
             if self.start_at == epoch + 1:
                 print('Epoch {} reached. Start saving'.format(self.start_at))
+            super().on_epoch_end(epoch=epoch, logs=logs)
+
+
+class LaterReduceLROnPlateau(tf.keras.callbacks.ReduceLROnPlateau):
+    def __init__(self, start_at, **kwargs):
+        super().__init__(**kwargs)
+        self.start_at = start_at
+
+    def on_epoch_end(self, epoch, logs=None):
+        if epoch + 1 >= self.start_at:
+            if self.start_at == epoch + 1:
+                print('Epoch {} reached. Start checking lr'.format(self.start_at))
             super().on_epoch_end(epoch=epoch, logs=logs)
