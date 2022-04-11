@@ -15,6 +15,8 @@ def parser():
     args_parser.add_argument('--no-clinical-data', '-ncd', action='store_true', help='Train model only with images.')
     args_parser.add_argument('--no-image-type', '-nit', action='store_true', help='Set to remove image type from training.')
     args_parser.add_argument('--batch-size', '-btch', type=int, default=16, help='Select batch size.')
+    args_parser.add_argument('--l1-reg', '-l1', type=float, default=0., help='L1 regularization.')
+    args_parser.add_argument('--l2-reg', '-l2', type=float, default=0., help='L2 regularization.')
     args_parser.add_argument('--learning-rate', '-lr', type=float, default=1e-5, help='Select learning rate.')
     args_parser.add_argument('--optimizer', '-opt', type=str, default='adam', choices=['adam', 'ftrl', 'sgd', 'rmsprop', 'adadelta', 'adagrad', 'adamax', 'nadam'], help='Select optimizer.')
     args_parser.add_argument('--activation', '-act', type=str, default='swish', choices=['relu', 'swish'], help='Select leaky relu gradient.')
@@ -24,6 +26,7 @@ def parser():
     args_parser.add_argument('--loss-frac', '-lossf', type=float, default=.5, help='log_dice_loss ratio in custom loss.')
     args_parser.add_argument('--weighted-loss', '-wl', action='store_true', help='Apply class weights.')
     args_parser.add_argument('--weighted-samples', '-ws', action='store_true', help='Apply sample weights per image type.')
+    args_parser.add_argument('--clinic-val', '-cv', action='store_true', help='Run validation on clinical images only.')
     args_parser.add_argument('--conv_layers', '-clrs', type=int, default=32, help='Select multiplier for number of nodes in inception layers.')
     args_parser.add_argument('--dense-layers', '-dlrs', type=int, default=16, help='Select multiplier for number of nodes in dense layers.')
     args_parser.add_argument('--merge-layers', '-mlrs', type=int, default=32, help='Select multiplier for number of nodes in merge layers.')
@@ -51,7 +54,6 @@ if __name__ == '__main__':
     for key, path in args['dir_dict']['data_csv'].items():
         setup_images(csv_path=path, args=args)
     print('Done!')
-
     if not args['test']:
         log_params(args=args)
         train_fn(args=args)
