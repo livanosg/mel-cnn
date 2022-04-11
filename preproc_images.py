@@ -1,15 +1,16 @@
 import os
 import cv2
-import multiprocessing as mp
+from joblib import Parallel, delayed
 import numpy as np
 import pandas as pd
 
 
 def setup_images(csv_path, args):
     df = pd.read_csv(csv_path)
-    pool = mp.Pool(mp.cpu_count())
-    pool.starmap(hair_removal_and_resize, [(args, image_name) for image_name in df['image']])
-    pool.close()
+    pargs = {'new_path': args['dir_dict']['data_folder'],
+             'old_path': args['dir_dict']['data'],
+             'image_size': args['image_size']}
+    Parallel(n_jobs=16)(delayed(hair_removal_and_resize)(pargs, image_name) for image_name in df['image'])
 
 
 def hair_removal_and_resize(args, image_name):
@@ -25,18 +26,18 @@ def hair_removal_and_resize(args, image_name):
         ret, mask = cv2.threshold(bhg, 10, 255, cv2.THRESH_BINARY)  # Binary thresholding (MASK)
         return cv2.inpaint(image_to_remove_hair, mask, 6, cv2.INPAINT_NS)  # Replace pixels of the mask
 
-    new_path = os.path.join(args['dir_dict']['data_folder'], image_name)
-    if not os.path.isfile(new_path):
-        image = cv2.imread(os.path.join(args['dir_dict']['data'], image_name))
+    if not os.path.isfile(os.path.join(args['new_path'], image_name)):
+        image = cv2.imread(os.path.join(args['old_path'], image_name))
         image = resize_img(image, 500)  # Resize to 500pxl for faster processing
         image = hair_removal(image)
-        if args['image_size'] != 500:
-            image = resize_img(image, args['image_size'])
+        # if args['image_size'] != 500:
+        image = resize_img(image, args['image_size'])
         dx = (image.shape[0] - image.shape[1]) / 2  # Compare height-width
         tblr = [int(np.ceil(np.abs(dx))), int(np.floor(np.abs(dx))), 0, 0]  # Pad top-bottom
         if dx > 0:  # If height > width
             tblr = tblr[2:] + tblr[:2]  # Pad left-right
         image = cv2.copyMakeBorder(image, *tblr, borderType=cv2.BORDER_CONSTANT)  # Pad with zeros to make it squared.
+        new_path = os.path.join(args['new_path'], image_name)
         os.makedirs(os.path.dirname(new_path), exist_ok=True)
         if not cv2.imwrite(new_path, image):
             with open('fail_to_save.txt', 'a+') as f:
