@@ -98,8 +98,6 @@ def dir_dict(args: dict):
                    'data_csv': {'train': TRAIN_CSV_PATH,
                                 'val': VAL_CSV_PATH,
                                 'test': TEST_CSV_PATH,
-                                'isic16_test': ISIC16_TEST_PATH,
-                                'isic17_test': ISIC17_TEST_PATH,
                                 'isic20_test': ISIC20_TEST_PATH}}
     if not args['load_model']:
         directories['logs'] = os.path.join(LOGS_DIR, exp_path)
@@ -136,10 +134,10 @@ def log_params(args):
         aw = 'w'
     with open(args['dir_dict']['hparams_logs'], aw) as f:
         fieldnames = ['trial_id', 'task', 'num_classes', 'class_names', 'image_type', 'image_size', 'input_shape',
-                      'no_clinical_data', 'no_image_type', 'conv_layers', 'dense_layers', 'merge_layers',
-                      'loss_fn', 'loss_frac', 'weighted_samples', 'weighted_loss', 'dataset_frac', 'pretrained',
-                      'batch_size', 'learning_rate', 'optimizer', 'activation', 'dropout', 'epochs', 'test',
-                      'load_model', 'fine', 'gpus', 'strategy']
+                      'no_clinical_data', 'clinic_val', 'no_image_type', 'conv_layers', 'dense_layers', 'merge_layers',
+                      'l1_reg', 'l2_reg', 'loss_fn', 'loss_frac', 'weighted_samples', 'weighted_loss',
+                      'dataset_frac', 'pretrained', 'batch_size', 'learning_rate', 'optimizer', 'activation',
+                      'dropout', 'epochs', 'test', 'load_model', 'fine', 'gpus', 'strategy']
         writer = csv.DictWriter(f, fieldnames=fieldnames, restval='', extrasaction='ignore')
         if aw == 'w':
             writer.writeheader()
