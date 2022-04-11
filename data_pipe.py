@@ -42,9 +42,11 @@ class MelData:
                 if self.args['task'] == 'nev_mel':
                     df.drop(df[~df['class'].isin(self.class_names)].index, errors='ignore', inplace=True)
                 df.drop(df[df['class'].isin(['UNK'])].index, errors='ignore', inplace=True)
-        if self.args['image_type'] != 'both':  # Keep derm or clinic, samples.
+        if mode == 'validation' and self.args['clinic_val']:
+            df.drop(df[~df['image_type'].isin(['clinic'])].index, errors='ignore', inplace=True)
+        elif self.args['image_type'] != 'both':  # Keep derm or clinic, samples.
             df.drop(df[~df['image_type'].isin([self.args['image_type']])].index, errors='ignore', inplace=True)
-        #log datasets
+        # log datasets
         if mode in ('train', 'validation', 'test'):
             os.makedirs(os.path.join(MAIN_DIR, 'data_info'), exist_ok=True)
             with pd.ExcelWriter(os.path.join(MAIN_DIR, 'data_info', 'descr_{}_{}_{}.xlsx'.format(self.args['task'], self.args['image_type'], mode)), mode='w') as writer:
@@ -79,16 +81,18 @@ class MelData:
         sample_weights = None
         if mode == 'train':
             if self.args['image_type'] == 'both' and self.args['weighted_samples']:  # Sample weight for image type
-                sample_weights = tf.math.divide(tf.reduce_sum(onehot_input['image_type']),
-                                                tf.math.multiply(tf.cast(onehot_input['image_type'].shape[-1], dtype=tf.float32),
-                                                                 tf.reduce_sum(onehot_input['image_type'], axis=0)))
+                # sample_weights = tf.math.divide(tf.reduce_sum(onehot_input['image_type']),
+                #                                 tf.math.multiply(tf.cast(2., dtype=tf.float32),
+                #                                                  tf.reduce_sum(onehot_input['image_type'], axis=0)))
+                samples_per_image_type = tf.reduce_sum(onehot_input['image_type'], axis=0)
+                sample_weights = tf.math.divide(tf.reduce_max(samples_per_image_type), samples_per_image_type)
                 sample_weights = tf.gather(sample_weights, tf.math.argmax(onehot_input['image_type'], axis=-1))
             if self.args['weighted_loss']:  # Class weight
                 # class_weights = tf.math.divide(tf.reduce_sum(onehot_label['class']),
                 #                                tf.math.multiply(tf.cast(self.num_classes, dtype=tf.float32),
                 #                                                 tf.reduce_sum(onehot_label['class'], axis=0)))
-                class_weights = tf.math.divide(tf.reduce_max(tf.reduce_sum(onehot_label['class'], axis=0)),
-                                               tf.reduce_sum(onehot_label['class'], axis=0))
+                samples_per_class = tf.reduce_sum(onehot_label['class'], axis=0)
+                class_weights = tf.math.divide(tf.reduce_max(samples_per_class), samples_per_class)
                 class_weights = tf.gather(class_weights, tf.math.argmax(onehot_label['class'], axis=-1))
 
                 if sample_weights is not None:  # `class_weight` and `sample_weight` are multiplicative.
