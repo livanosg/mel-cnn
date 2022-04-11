@@ -18,10 +18,13 @@ def unfreeze_model(trained_model):
 def setup_model(args):
     """Setup training strategy. Select one of mirrored or singlegpu.
     Also check if a path to load a model is available and loads or setups a new model accordingly"""
-    cross_device_ops = tf.distribute.HierarchicalCopyAllReduce() if args['os'] == 'win32' else tf.distribute.NcclAllReduce()
-    strategy = tf.distribute.MirroredStrategy(cross_device_ops=cross_device_ops) if args['strategy'] == 'mirrored' else tf.distribute.OneDeviceStrategy('GPU')
+    cross_device_ops = tf.distribute.HierarchicalCopyAllReduce() if args['os'] == 'win32'\
+        else tf.distribute.NcclAllReduce()
+    strategy = tf.distribute.MirroredStrategy(cross_device_ops=cross_device_ops) if args['strategy'] == 'mirrored'\
+        else tf.distribute.OneDeviceStrategy('GPU')
     with strategy.scope():
-        model = tf.keras.models.load_model(args['load_model'], compile=False) if args['load_model'] else models.model_struct(args=args)
+        model = tf.keras.models.load_model(args['load_model'], compile=False) if args['load_model'] \
+            else models.model_struct(args=args)
         if args['fine']:
             model = unfreeze_model(model)
         else:
@@ -93,7 +96,8 @@ def train_fn(args):
     #                 save_best_only=True, start_at=start_save,
     #                 monitor='val_gmean', mode='max'),
 
-    callbacks = [tf.keras.callbacks.EarlyStopping(patience=es_patience, verbose=1, monitor='val_gmean', mode='max', restore_best_weights=True),
+    callbacks = [tf.keras.callbacks.EarlyStopping(patience=es_patience, verbose=1, monitor='val_gmean',
+                                                  mode='max', restore_best_weights=True),
                  tf.keras.callbacks.CSVLogger(filename=args['dir_dict']['train_logs'],
                                               separator=',', append=True),
                  EnrTensorboard(val_data=val_data, log_dir=args['dir_dict']['logs'],
