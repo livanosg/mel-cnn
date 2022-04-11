@@ -1,5 +1,6 @@
 import os
 import argparse
+import sys
 from datetime import datetime
 from preproc_images import setup_images
 from train_script import train_fn, test_fn
@@ -41,6 +42,7 @@ def parser():
 
 if __name__ == '__main__':
     args = parser().parse_args().__dict__
+    args['os'] = sys.platform
     args['trial_id'] = datetime.now().strftime('%d%m%y%H%M%S')
     args['dir_dict'] = dir_dict(args=args)
     args['class_names'] = TASK_CLASSES[args['task']]
