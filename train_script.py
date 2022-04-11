@@ -3,7 +3,7 @@ import tensorflow_addons as tfa
 import models
 from data_pipe import MelData
 from metrics import calc_metrics
-from callbacks import LaterCheckpoint, EnrTensorboard, LaterReduceLROnPlateau
+from callbacks import EnrTensorboard  # , LaterCheckpoint, LaterReduceLROnPlateau
 from custom_losses import categorical_focal_loss, combined_loss, CMWeightedCategoricalCrossentropy
 
 
@@ -18,15 +18,10 @@ def unfreeze_model(trained_model):
 def setup_model(args):
     """Setup training strategy. Select one of mirrored or singlegpu.
     Also check if a path to load a model is available and loads or setups a new model accordingly"""
-    if args['strategy'] == 'mirrored':
-        strategy = tf.distribute.MirroredStrategy()
-    else:
-        strategy = tf.distribute.OneDeviceStrategy('GPU')
+    cross_device_ops = tf.distribute.HierarchicalCopyAllReduce() if args['os'] == 'win32' else tf.distribute.NcclAllReduce()
+    strategy = tf.distribute.MirroredStrategy(cross_device_ops=cross_device_ops) if args['strategy'] == 'mirrored' else tf.distribute.OneDeviceStrategy('GPU')
     with strategy.scope():
-        if args['load_model']:
-            model = tf.keras.models.load_model(args['load_model'], compile=False)
-        else:
-            model = models.model_struct(args=args)
+        model = tf.keras.models.load_model(args['load_model'], compile=False) if args['load_model'] else models.model_struct(args=args)
         if args['fine']:
             model = unfreeze_model(model)
         else:
@@ -114,6 +109,7 @@ def test_fn(args):
         raise ValueError(f'{args["image_type"]} not valid. Select on one of ("clinic", "derm")')
     model, _ = setup_model(args)
     data = MelData(args=args)
+    data.args['clinic_val'] = False
     thr_d, thr_f1 = calc_metrics(args=args, model=model,
                                  dataset=data.get_dataset(dataset_name='validation'),
                                  dataset_name='validation')
