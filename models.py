@@ -9,7 +9,7 @@ def model_struct(args):
 
     activation = {'swish': tf.keras.activations.swish,
                   'relu': tf.keras.activations.relu}[args['activation']]
-    rglzr = tf.keras.regularizers.l1_l2(l1=0., l2=1e-6)
+    rglzr = tf.keras.regularizers.l1_l2(l1=args['l1_reg'], l2=args['l1_reg'])
     seed = None
     inputs_list = []
     initializer = tf.keras.initializers.HeNormal()
