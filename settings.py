@@ -64,7 +64,8 @@ def parser():
     args_parser.add_argument('--activation', '-act', type=str, default='swish', choices=['relu', 'swish'],
                              help='Select leaky relu gradient.')
     args_parser.add_argument('--dropout', '-dor', type=float, default=0.5, help='Select dropout ratio.')
-    args_parser.add_argument('--epochs', '-e', type=int, default=500, help='Number of epochs epochs.')
+    args_parser.add_argument('--epochs', '-e', type=int, default=500, help='Number of max training epochs.')
+    args_parser.add_argument('--early-stop', '-es', type=int, default=30, help='Number of early stopping epochs.')
     args_parser.add_argument('--test', '-test', action='store_true', help='Test loaded model with isic2020.')
     args_parser.add_argument('--load-model', '-load', type=str, help='Path to load model.')
     args_parser.add_argument('--fine', '-fine', action='store_true', help='Fine tune.')
@@ -85,12 +86,7 @@ class Directories:
         self.test = args['test']
         self.image_size = args['image_size']
         self.new_folder = os.path.join(self.task, self.image_type, self.trial_id)
-        if self.load_model:
-            if os.path.split(self.load_model)[0]:
-                self.load_folder = self.load_model
-            else:
-                self.load_folder = os.path.join(self.task, self.image_type, self.load_model)
-        else:
+        if not self.load_model:
             self.load_folder = self.new_folder
         self.proc_img_folder = os.path.join(MAIN_DIR, f"proc_{self.image_size}")
         self.dirs = self._dir_dict()
@@ -112,17 +108,18 @@ class Directories:
                              'isic20_test': data_csv['isic20_test'],
                              'logs': os.path.join(LOGS_DIR, self.new_folder),
                              'trial': os.path.join(TRIALS_DIR, self.new_folder),
-                             'save_path': os.path.join(MODELS_DIR, self.new_folder),
-                             'load_path': os.path.join(MODELS_DIR, self.new_folder)}
+                             'save_path': os.path.join(MODELS_DIR, self.new_folder)}
         if os.getenv('SLURMD_NODENAME'):  # Append node name if training on HPC with SLURM.
             for fold in ('logs', 'trial', 'save_path'):
                 directories[fold] = '-'.join([directories[fold], os.getenv('SLURMD_NODENAME')])
         if self.load_model:
+            directories['load_path'] = self.load_model
+        else:
             directories['load_path'] = os.path.join(MODELS_DIR, self.load_folder)
-            if self.fine:
-                directories['logs'] = directories['logs'] + '_fine'
-                directories['trial'] = directories['trial'] + '_fine'
-                directories['save_path'] = directories['save_path'] + '_fine'
+        if self.fine:
+            directories['logs'] = directories['logs'] + '_fine'
+            directories['trial'] = directories['trial'] + '_fine'
+            directories['save_path'] = directories['save_path'] + '_fine'
 
         directories['model_summary'] = os.path.join(directories['trial'], 'model_summary.txt')
         directories['train_logs'] = os.path.join(directories['trial'], 'train_logs.csv')
