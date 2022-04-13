@@ -112,25 +112,25 @@ class MelData:
             dataset = dataset.shuffle(buffer_size=dataset.cardinality(), reshuffle_each_iteration=True)
         dataset = dataset.map(lambda sample, label, sample_weights:
                               (read_image(sample=sample), label, sample_weights),
-                              num_parallel_calls=tf.data.AUTOTUNE)
+                              num_parallel_calls=16)
         dataset = dataset.batch(self.args['batch_size'] * self.args['gpus'])
         if dataset_name == 'train':
             dataset = dataset.map(lambda sample, label, sample_weights:
                                   (self.augm(sample), label, sample_weights),
-                                  num_parallel_calls=tf.data.AUTOTUNE)
+                                  num_parallel_calls=16)
         elif dataset_name == 'isic20_test':
             dataset = dataset.map(lambda sample, label, sample_weights: sample,
-                                  num_parallel_calls=tf.data.AUTOTUNE)
+                                  num_parallel_calls=16)
         else:
             dataset = dataset.map(lambda sample, label, sample_weights:
                                   (sample, label),
-                                  num_parallel_calls=tf.data.AUTOTUNE)
+                                  num_parallel_calls=16)
         options = tf.data.Options()
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
         dataset = dataset.with_options(options)
         if dataset_name != 'train':
             dataset = dataset.repeat(1)
-        return dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
+        return dataset.prefetch(buffer_size=16)
 
     def augm(self, sample):
         image = tf.image.random_flip_up_down(image=sample['image'])
