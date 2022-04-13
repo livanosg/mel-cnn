@@ -1,6 +1,8 @@
+import os
 import tensorflow as tf
 import tensorflow_addons as tfa
 import models
+from features import TASK_CLASSES
 from data_pipe import MelData
 from metrics import calc_metrics
 from callbacks import EnrTensorboard  # , LaterCheckpoint, LaterReduceLROnPlateau
@@ -15,16 +17,20 @@ def unfreeze_model(trained_model):
     return trained_model
 
 
-def setup_model(args):
+def setup_model(args, dirs):
     """Setup training strategy. Select one of mirrored or singlegpu.
     Also check if a path to load a model is available and loads or setups a new model accordingly"""
     cross_device_ops = tf.distribute.HierarchicalCopyAllReduce() if args['os'] == 'win32'\
         else tf.distribute.NcclAllReduce()
     strategy = tf.distribute.MirroredStrategy(cross_device_ops=cross_device_ops) if args['strategy'] == 'mirrored'\
         else tf.distribute.OneDeviceStrategy('GPU')
+    assert args['gpus'] == strategy.num_replicas_in_sync
     with strategy.scope():
-        model = tf.keras.models.load_model(args['load_model'], compile=False) if args['load_model'] \
-            else models.model_struct(args=args)
+        if args['load_model']:
+            assert os.path.exists(dirs['load_path'])
+            model = tf.keras.models.load_model(dirs['load_path'], compile=False)
+        else:
+            model = models.model_struct(args=args)
         if args['fine']:
             model = unfreeze_model(model)
         else:
@@ -34,12 +40,10 @@ def setup_model(args):
     return model, strategy
 
 
-def train_fn(args):
+def train_fn(args, dirs):
     """Setup and run training stage"""
-    model, strategy = setup_model(args)
-    args['learning_rate'] = args['learning_rate'] * strategy.num_replicas_in_sync
-    args['batch_size'] = args['batch_size'] * strategy.num_replicas_in_sync
-    data = MelData(args=args)
+    model, strategy = setup_model(args, dirs)
+    data = MelData(args, dirs)
     loss_fn = {'cxe': 'categorical_crossentropy',
                'focal': categorical_focal_loss(alpha=[1., 1.]),
                'combined': combined_loss(args['loss_frac']),
@@ -66,55 +70,37 @@ def train_fn(args):
                      'sgd': tf.keras.optimizers.SGD,
                      'adagrad': tf.keras.optimizers.Adagrad,
                      'adadelta': tf.keras.optimizers.Adadelta}[args['optimizer']]
-        model.compile(loss=loss_fn,
-                      optimizer=optimizer(learning_rate=args['learning_rate']),
-                      metrics=[tfa.metrics.F1Score(num_classes=args['num_classes'],
+        model.compile(loss=loss_fn, optimizer=optimizer(learning_rate=args['learning_rate'] * args['gpus']),
+                      metrics=[tfa.metrics.F1Score(num_classes=len(TASK_CLASSES[args['task']]),
                                                    average='macro', name='f1_macro'),
                                gmean])
 
-    with open(args['dir_dict']['model_summary'], 'w', encoding='utf-8') as model_summary:
+    with open(dirs['model_summary'], 'w', encoding='utf-8') as model_summary:
         model.summary(print_fn=lambda x: model_summary.write(x + '\n'))
-    # start_save = 10
-    # rop_patience = 5
-    # if args['fine']:
-        # rop_patience = 5
+
     es_patience = 30
 
     train_data = data.get_dataset(dataset_name='train')
     val_data = data.get_dataset(dataset_name='validation')
-
-    # def schedule(epoch, learning_rate):
-    #     if epoch < 0:
-    #         new_lr = args['learning_rate'] * 10
-    #     else:
-    #         new_lr = args['learning_rate']
-    #     return new_lr
-    # tf.keras.callbacks.LearningRateScheduler(schedule=schedule),
-    # LaterReduceLROnPlateau(factor=0.1, patience=rop_patience,
-    #                                         monitor="val_gmean", mode='max', start_at=rop_patience, verbose=1),
-    # LaterCheckpoint(filepath=args['dir_dict']['save_path'],
-    #                 save_best_only=True, start_at=start_save,
-    #                 monitor='val_gmean', mode='max'),
-
     callbacks = [tf.keras.callbacks.EarlyStopping(patience=es_patience, verbose=1, monitor='val_gmean',
                                                   mode='max', restore_best_weights=True),
-                 tf.keras.callbacks.CSVLogger(filename=args['dir_dict']['train_logs'],
+                 tf.keras.callbacks.CSVLogger(filename=dirs['train_logs'],
                                               separator=',', append=True),
-                 EnrTensorboard(val_data=val_data, log_dir=args['dir_dict']['logs'],
-                                class_names=args['class_names'])]
+                 EnrTensorboard(val_data=val_data, log_dir=dirs['logs'],
+                                class_names=TASK_CLASSES[args['task']])]
     model.fit(x=train_data, validation_data=val_data, callbacks=callbacks,
               epochs=args['epochs'])  # steps_per_epoch=np.floor(data.train_len / batch),
-    model.save(filepath=args['dir_dict']['save_path'])
+    model.save(filepath=dirs['save_path'])
 
 
-def test_fn(args):
+def test_fn(args, dirs):
     """ run validation and tests"""
     if args['image_type'] not in ('clinic', 'derm'):
         raise ValueError(f'{args["image_type"]} not valid. Select on one of ("clinic", "derm")')
-    model, _ = setup_model(args)
-    data = MelData(args=args)
+    model, _ = setup_model(args, dirs)
+    data = MelData(args, dirs)
     data.args['clinic_val'] = False
-    thr_d, thr_f1 = calc_metrics(args=args, model=model,
+    thr_d, thr_f1 = calc_metrics(args=args, dirs=dirs, model=model,
                                  dataset=data.get_dataset(dataset_name='validation'),
                                  dataset_name='validation')
     test_datasets = {'derm': ['isic16_test', 'isic17_test', 'isic18_val_test',
@@ -124,10 +110,10 @@ def test_fn(args):
         test_datasets['derm'].remove('isic16_test')
 
     for test_dataset in test_datasets[args['image_type']]:
-        calc_metrics(args=args, model=model,
+        calc_metrics(args=args, dirs=dirs, model=model,
                      dataset=data.get_dataset(dataset_name=test_dataset),
                      dataset_name=test_dataset, dist_thresh=thr_d, f1_thresh=thr_f1)
         if args['task'] == 'ben_mal':
-            calc_metrics(args=args, model=model,
+            calc_metrics(args=args, dirs=dirs, model=model,
                          dataset=data.get_dataset(dataset_name='isic20_test'),
                          dataset_name='isic20_test', dist_thresh=thr_d, f1_thresh=thr_f1)
