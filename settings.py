@@ -107,7 +107,7 @@ class Directories:
 
         directories: dict = {'init_img_folder': INIT_DATA_DIR,
                              'train': data_csv['train'],
-                             'val': data_csv['validation'],
+                             'validation': data_csv['validation'],
                              'test': data_csv['test'],
                              'isic20_test': data_csv['isic20_test'],
                              'logs': os.path.join(LOGS_DIR, self.new_folder),
