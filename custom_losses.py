@@ -30,7 +30,7 @@ class CMWeightedCategoricalCrossentropy(tf.keras.losses.CategoricalCrossentropy)
 
 
 # categorical focal loss from https://github.com/umbertogriffo/focal-loss-keras/blob/master/src/loss_function/losses.py
-def categorical_focal_loss(alpha, gamma=2.):
+def categorical_focal_loss(alpha=[1., 1.], gamma=2.):
     """
     Softmax version of focal loss.
     When there is a skew between different categories/labels in your data set, you can try to apply this function as a
@@ -75,7 +75,7 @@ def combined_loss(frac, alpha=0.25, gamma=2.):
     def dice_loss(y_true, y_pred):
         with tf.name_scope('Generalized_Dice_Log_Loss'):
             numerator = tf.reduce_sum(y_true * y_pred, axis=-1)
-            denominator = tf.reduce_sum(y_true + y_pred,  axis=-1)
+            denominator = tf.reduce_sum(y_true + y_pred, axis=-1)
             dice = tf.clip_by_value(2 * numerator / denominator, 1e-7, 1 - 1e-7)
         return - tf.math.log(dice)
 
@@ -94,5 +94,14 @@ def combined_loss(frac, alpha=0.25, gamma=2.):
         elif frac == 1.:
             return dice_loss(y_true, y_pred)
         else:
-            return tf.add(x=tf.math.multiply(x=frac, y=dice_loss(y_true, y_pred)), y=tf.math.multiply(x=1. - frac, y=cxe(y_true, y_pred)))
+            return tf.add(x=tf.math.multiply(x=frac, y=dice_loss(y_true, y_pred)),
+                          y=tf.math.multiply(x=1. - frac, y=cxe(y_true, y_pred)))
+
     return total_loss
+
+
+def losses(args):
+    return {'cxe': 'categorical_crossentropy',
+            'focal': categorical_focal_loss(alpha=[1., 1.]),
+            'combined': combined_loss(args['loss_frac']),
+            'perclass': CMWeightedCategoricalCrossentropy(args=args)}
