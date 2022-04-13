@@ -3,10 +3,24 @@ import io
 import itertools
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from matplotlib import pyplot as plt
 from features import TASK_CLASSES
 from sklearn.metrics import confusion_matrix, average_precision_score, roc_auc_score, roc_curve,\
     precision_recall_curve, classification_report
+
+
+def gmean(y_true, y_pred):
+    y_pred_arg = tf.cast(tf.argmax(y_pred, axis=-1), dtype=tf.float32)
+    y_true_arg = tf.cast(tf.argmax(y_true, axis=-1), dtype=tf.float32)
+    tp = tf.reduce_sum(y_true_arg * y_pred_arg)
+    tn = tf.reduce_sum((1. - y_true_arg) * (1. - y_pred_arg))
+    fp = tf.reduce_sum((1 - y_true_arg) * y_pred_arg)
+    fn = tf.reduce_sum(y_true_arg * (1 - y_pred_arg))
+    sensitivity = tf.math.divide_no_nan(tp, tp + fn)
+    specificity = tf.math.divide_no_nan(tn, tn + fp)
+    g_mean = tf.math.sqrt(sensitivity * specificity)
+    return g_mean
 
 
 def f_beta(beta, precision, recall):
