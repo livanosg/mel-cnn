@@ -16,8 +16,8 @@ if __name__ == '__main__':
     if not args['test']:
         log_params(args, dirs)
         model = train_fn(args, dirs, model, strategy)
+    args['batch_size'] = args['batch_size'] * 100
     for image_type in ('clinic', 'derm'):
         args['image_type'] = image_type
-        args['batch_size'] = args['batch_size'] * 10
         test_fn(args, dirs, model)
 exit()
