@@ -2,30 +2,15 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 from features import TASK_CLASSES
 from data_pipe import MelData
-from metrics import calc_metrics
+from metrics import calc_metrics, gmean
 from callbacks import EnrTensorboard  # , LaterCheckpoint, LaterReduceLROnPlateau
-from custom_losses import categorical_focal_loss, combined_loss, CMWeightedCategoricalCrossentropy
+from custom_losses import losses
 
 
 def train_fn(args, dirs, model, strategy):
     """Setup and run training stage"""
     data = MelData(args, dirs)
-    loss_fn = {'cxe': 'categorical_crossentropy',
-               'focal': categorical_focal_loss(alpha=[1., 1.]),
-               'combined': combined_loss(args['loss_frac']),
-               'perclass': CMWeightedCategoricalCrossentropy(args=args)}[args['loss_fn']]
-
-    def gmean(y_true, y_pred):
-        y_pred_arg = tf.cast(tf.argmax(y_pred, axis=-1), dtype=tf.float32)
-        y_true_arg = tf.cast(tf.argmax(y_true, axis=-1), dtype=tf.float32)
-        tp = tf.reduce_sum(y_true_arg * y_pred_arg)
-        tn = tf.reduce_sum((1. - y_true_arg) * (1. - y_pred_arg))
-        fp = tf.reduce_sum((1 - y_true_arg) * y_pred_arg)
-        fn = tf.reduce_sum(y_true_arg * (1 - y_pred_arg))
-        sensitivity = tf.math.divide_no_nan(tp, tp + fn)
-        specificity = tf.math.divide_no_nan(tn, tn + fp)
-        g_mean = tf.math.sqrt(sensitivity * specificity)
-        return g_mean
+    loss = losses(args)[args['loss_fn']]
 
     with strategy.scope():
         optimizer = {'adam': tf.keras.optimizers.Adam,
@@ -36,7 +21,7 @@ def train_fn(args, dirs, model, strategy):
                      'sgd': tf.keras.optimizers.SGD,
                      'adagrad': tf.keras.optimizers.Adagrad,
                      'adadelta': tf.keras.optimizers.Adadelta}[args['optimizer']]
-        model.compile(loss=loss_fn, optimizer=optimizer(learning_rate=args['learning_rate'] * args['gpus']),
+        model.compile(loss=loss, optimizer=optimizer(learning_rate=args['learning_rate'] * args['gpus']),
                       metrics=[tfa.metrics.F1Score(num_classes=len(TASK_CLASSES[args['task']]),
                                                    average='macro', name='f1_macro'),
                                gmean])
