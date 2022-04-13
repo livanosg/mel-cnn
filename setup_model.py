@@ -1,6 +1,12 @@
 import tensorflow as tf
 
+from custom_losses import categorical_focal_loss
+from metrics import gmean
 from models import model_struct
+
+tf.config.threading.set_inter_op_parallelism_threads(num_threads=16)
+tf.config.threading.set_intra_op_parallelism_threads(num_threads=16)
+tf.config.set_soft_device_placement(enabled=True)
 
 
 def unfreeze_model(trained_model):
@@ -21,7 +27,8 @@ def setup_model(args, dirs):
     assert args['gpus'] == strategy.num_replicas_in_sync
     with strategy.scope():
         if args['load_model']:
-            model = tf.keras.models.load_model(dirs['load_path'], compile=False)
+            model = tf.keras.models.load_model(dirs['load_path'], compile=True, custom_objects={'gmean': gmean,
+                                                                                                'categorical_focal_loss_fixed': categorical_focal_loss()}) #, 'categorical_focal_loss_fixed': categorical_focal_loss_fixed
         else:
             model = model_struct(args=args)
         if args['fine']:
