@@ -10,27 +10,17 @@
 #     activations = get_activations(model=model, x=test)
 #     keract.display_activations(activations=activations, save=True, directory='test')
 #     keract.display_heatmaps(activations, test, save=True, directory='test')
-import csv
 import os
-from config import DATA_DIR, MAIN_DIR
 
-with open(os.path.join(DATA_DIR, 'mclass_clinic_test.csv')) as first_csv, open(os.path.join(MAIN_DIR, 'data_train.csv')) as second_csv:
-    first_csv = csv.DictReader(first_csv)
-    second_csv = csv.DictReader(second_csv)
-    first_lst = []
-    second_lst = []
-    count = 0
-    for row in first_csv:
-        first_lst.append(row['image'])
+from settings import MODELS_DIR
 
-    for row in second_csv:
-        second_lst.append(row['image'].split('/')[-1])
+# load_model = '453432135'
+load_model = 'nev_mel/clinic/130422070209'
 
-    total = set(first_lst).intersection(set(second_lst))
-    print(len(total))
-    print(total)
+if os.path.split(load_model)[0]:
+    load_folder = load_model
+else:
+    load_folder = os.path.join('task', 'image_type', load_model)
 
-
-    # print(total) 9 val
-
-    # print("".join([word+"\n" for word in set(file1.read().split()) & set(file2.read().split())]))
+if load_model:
+    load_path = os.path.join(MODELS_DIR, load_folder)
