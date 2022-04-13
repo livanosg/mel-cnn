@@ -1,62 +1,59 @@
 import os
 import numpy as np
 import pandas as pd
-from config import DATA_DIR, COLUMNS, TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH,\
-    ISIC20_TEST_PATH, DATA_MAP, MAIN_DIR, ISIC16_TEST_PATH, ISIC17_TEST_PATH,\
-    ISIC18_VAL_TEST_PATH, DERMOFIT_TEST_PATH, UP_TEST_PATH, MCLASS_CLINIC_TEST_PATH, MCLASS_DERM_TEST_PATH
-
+from settings import INIT_DATA_DIR, INFO_DIR, data_csv
+from features import COLUMNS, DATA_MAP
 NP_RNG = np.random.default_rng(seed=1312)
-
-isic18_val = pd.read_csv(os.path.join(DATA_DIR, 'isic18_val.csv'))
+isic18_val = pd.read_csv(os.path.join(INIT_DATA_DIR, 'isic18_val.csv'))
 [isic18_val.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in isic18_val.columns]
 isic18_val = isic18_val[COLUMNS]
-isic19 = pd.read_csv(os.path.join(DATA_DIR, 'isic19.csv'))
+isic19 = pd.read_csv(os.path.join(INIT_DATA_DIR, 'isic19.csv'))
 [isic19.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in isic19.columns]
 isic19 = isic19[COLUMNS]
-isic20 = pd.read_csv(os.path.join(DATA_DIR, 'isic20.csv'))
+isic20 = pd.read_csv(os.path.join(INIT_DATA_DIR, 'isic20.csv'))
 [isic20.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in isic20.columns]
 isic20 = isic20[COLUMNS]
-isic20_duplicates = pd.read_csv(os.path.join(DATA_DIR, 'ISIC_2020_Training_Duplicates.csv'))
+isic20_duplicates = pd.read_csv(os.path.join(INIT_DATA_DIR, 'ISIC_2020_Training_Duplicates.csv'))
 isic20_duplicates['image_name_2'] = isic20_duplicates['image_name_2'] + '.jpg'
 isic20.drop(isic20[isic20['image'].isin(isic20_duplicates['image_name_2'])].index, errors='ignore', inplace=True)
-mednode = pd.read_csv(os.path.join(DATA_DIR, 'mednode.csv'))
+mednode = pd.read_csv(os.path.join(INIT_DATA_DIR, 'mednode.csv'))
 [mednode.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in mednode.columns]
 mednode = mednode[COLUMNS]
 
-spt = pd.read_csv(os.path.join(DATA_DIR, '7pt.csv'))
+spt = pd.read_csv(os.path.join(INIT_DATA_DIR, '7pt.csv'))
 [spt.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in spt.columns]
 spt = spt[COLUMNS]
-spt_val_idx = pd.read_csv(os.path.join(DATA_DIR, '7pt', 'meta', 'valid_indexes.csv'))
+spt_val_idx = pd.read_csv(os.path.join(INIT_DATA_DIR, '7pt', 'meta', 'valid_indexes.csv'))
 spt_val_idx.index = spt_val_idx['indexes']
-spt_test_idx = pd.read_csv(os.path.join(DATA_DIR, '7pt', 'meta', 'test_indexes.csv'))
+spt_test_idx = pd.read_csv(os.path.join(INIT_DATA_DIR, '7pt', 'meta', 'test_indexes.csv'))
 spt_test_idx.index = spt_test_idx['indexes']
-dermofit = pd.read_csv(os.path.join(DATA_DIR, 'dermofit.csv'))
+dermofit = pd.read_csv(os.path.join(INIT_DATA_DIR, 'dermofit.csv'))
 [dermofit.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in dermofit.columns]
 dermofit = dermofit[COLUMNS]
-ph2 = pd.read_csv(os.path.join(DATA_DIR, 'ph2.csv'))
+ph2 = pd.read_csv(os.path.join(INIT_DATA_DIR, 'ph2.csv'))
 [ph2.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in ph2.columns]
 ph2 = ph2[COLUMNS]
-up = pd.read_csv(os.path.join(DATA_DIR, 'up.csv'))
+up = pd.read_csv(os.path.join(INIT_DATA_DIR, 'up.csv'))
 [up.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in up.columns]
 up = up[COLUMNS]
-padufes = pd.read_csv(os.path.join(DATA_DIR, 'padufes.csv'))
+padufes = pd.read_csv(os.path.join(INIT_DATA_DIR, 'padufes.csv'))
 padufes_ids = padufes["patient_id"].unique()
 NP_RNG.shuffle(padufes_ids)
 padufes_train = padufes.loc[padufes["patient_id"].isin(padufes_ids[:int(len(padufes_ids) * 0.9)])]
 padufes_val = padufes.loc[padufes["patient_id"].isin(padufes_ids[int(len(padufes_ids) * 0.9):])]
 
-isic16_test = pd.read_csv(os.path.join(DATA_DIR, 'isic16_test.csv'))
+isic16_test = pd.read_csv(os.path.join(INIT_DATA_DIR, 'isic16_test.csv'))
 [isic16_test.insert(loc=0, column=column, value=value) for column, value in zip(COLUMNS, ['none', 'none', 'none', 'none', 'none', 'none', 0., 'none', 'none']) if column not in isic16_test.columns]
 isic16_test = isic16_test[COLUMNS]
-isic17_test = pd.read_csv(os.path.join(DATA_DIR, 'isic17_test.csv'))
+isic17_test = pd.read_csv(os.path.join(INIT_DATA_DIR, 'isic17_test.csv'))
 [isic17_test.insert(loc=0, column=column, value=value) for column, value in zip(COLUMNS, ['none', 'none', 'none', 'none', 'none', 'none', 0., 'none', 'none']) if column not in isic17_test.columns]
 isic17_test = isic17_test[COLUMNS]
-isic20_test = pd.read_csv(os.path.join(DATA_DIR, 'isic20_test.csv'))
+isic20_test = pd.read_csv(os.path.join(INIT_DATA_DIR, 'isic20_test.csv'))
 
-mclass_clinic_test = pd.read_csv(os.path.join(DATA_DIR, 'mclass_clinic_test.csv'))
+mclass_clinic_test = pd.read_csv(os.path.join(INIT_DATA_DIR, 'mclass_clinic_test.csv'))
 [mclass_clinic_test.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in mclass_clinic_test.columns]
 mednode.drop(mednode[mednode['image'].isin(mclass_clinic_test['image'])].index, errors='ignore', inplace=True)
-mclass_derm_test = pd.read_csv(os.path.join(DATA_DIR, 'mclass_derm_test.csv'))
+mclass_derm_test = pd.read_csv(os.path.join(INIT_DATA_DIR, 'mclass_derm_test.csv'))
 [mclass_derm_test.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in mclass_derm_test.columns]
 
 nans_isic19 = isic19[isic19["lesion_id"].isna()]
@@ -82,11 +79,12 @@ total_val = padufes_val.append(isic19_val).append(isic20_val).append(spt_val).ap
 total_test = isic18_val.append(dermofit).append(up).append(isic16_test).append(isic17_test).append(mclass_clinic_test).append(mclass_derm_test)
 total_data_len = len(total_train) + len(total_val) + len(total_test)
 
-for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (total_test, TEST_CSV_PATH),
-                    (isic16_test, ISIC16_TEST_PATH), (isic17_test, ISIC17_TEST_PATH), (isic20_test, ISIC20_TEST_PATH),
-                    (isic18_val, ISIC18_VAL_TEST_PATH), (dermofit, DERMOFIT_TEST_PATH), (up, UP_TEST_PATH),
-                    (mclass_clinic_test, MCLASS_CLINIC_TEST_PATH), (mclass_derm_test, MCLASS_DERM_TEST_PATH)]:
-    if save_to in (TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH):
+
+for df, save_to in [(total_train, data_csv['train']), (total_val, data_csv['validation']), (total_test, data_csv['test']),
+                    (isic16_test, data_csv['isic16_test']), (isic17_test, data_csv['isic17_test']), (isic20_test, data_csv['isic20_test']),
+                    (isic18_val, data_csv['isic18_val_test']), (dermofit, data_csv['dermofit_test']), (up, data_csv['up_test']),
+                    (mclass_clinic_test, data_csv['mclass_clinic_test']), (mclass_derm_test, data_csv['mclass_derm_test'])]:
+    if save_to in (data_csv['train'], data_csv['validation'], data_csv['test']):
         df = df.sample(frac=1., random_state=NP_RNG.bit_generator)
     columns = ['dataset_id', 'location', 'sex', 'image', 'age_approx', 'image_type', 'class']
     df['age_approx'] -= (df['age_approx'] % 10)
@@ -117,7 +115,7 @@ for df, save_to in [(total_train, TRAIN_CSV_PATH), (total_val, VAL_CSV_PATH), (t
         info = pd.DataFrame(dataset_info_dict).stack().apply(pd.Series)
         info = info[sorted(info.columns)]
         info.fillna(0, inplace=True)
-        save_path = os.path.join(MAIN_DIR, 'data_info', os.path.basename(save_to).split('.')[0]+'_info')
+        save_path = os.path.join(INFO_DIR, os.path.basename(save_to).split('.')[0]+'_info')
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         info.to_html(save_path + '.html', bold_rows=False, border=4)
         info.to_csv(save_path + '.csv')
