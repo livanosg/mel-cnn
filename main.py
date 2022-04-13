@@ -1,70 +1,25 @@
 import os
-import argparse
-import sys
-from datetime import datetime
+from settings import parser, Directories, log_params
 from preproc_images import setup_images
 from train_script import train_fn, test_fn
-from config import dir_dict, TASK_CLASSES, log_params
-
-
-def parser():
-    args_parser = argparse.ArgumentParser()
-    args_parser.add_argument('--pretrained', '-pt', type=str, default='effnet1', choices=['incept', 'xept', 'effnet0', 'effnet1', 'effnet6'], help='Select pretrained model.')
-    args_parser.add_argument('--task', '-task', type=str, required=True, choices=['5cls', 'ben_mal', 'nev_mel'], help='Select the type of model.')
-    args_parser.add_argument('--image-type', '-it', type=str, required=True, choices=['derm', 'clinic', 'both'], help='Select image type to use during training.')
-    args_parser.add_argument('--image-size', '-is', type=int, default=224, help='Select image size.')
-    args_parser.add_argument('--no-clinical-data', '-ncd', action='store_true', help='Train model only with images.')
-    args_parser.add_argument('--no-image-type', '-nit', action='store_true', help='Set to remove image type from training.')
-    args_parser.add_argument('--batch-size', '-btch', type=int, default=16, help='Select batch size.')
-    args_parser.add_argument('--l1-reg', '-l1', type=float, default=0., help='L1 regularization.')
-    args_parser.add_argument('--l2-reg', '-l2', type=float, default=0., help='L2 regularization.')
-    args_parser.add_argument('--learning-rate', '-lr', type=float, default=1e-5, help='Select learning rate.')
-    args_parser.add_argument('--optimizer', '-opt', type=str, default='adam', choices=['adam', 'ftrl', 'sgd', 'rmsprop', 'adadelta', 'adagrad', 'adamax', 'nadam'], help='Select optimizer.')
-    args_parser.add_argument('--activation', '-act', type=str, default='swish', choices=['relu', 'swish'], help='Select leaky relu gradient.')
-    args_parser.add_argument('--dropout', '-dor', type=float, default=0.5, help='Select dropout ratio.')
-    args_parser.add_argument('--epochs', '-e', type=int, default=500, help='Number of epochs epochs.')
-    args_parser.add_argument('--loss-fn', '-loss', type=str, default='cxe', choices=['cxe', 'focal', 'perclass','wcxe', 'combined'], help='Select loss function.')
-    args_parser.add_argument('--loss-frac', '-lossf', type=float, default=.5, help='log_dice_loss ratio in custom loss.')
-    args_parser.add_argument('--weighted-loss', '-wl', action='store_true', help='Apply class weights.')
-    args_parser.add_argument('--weighted-samples', '-ws', action='store_true', help='Apply sample weights per image type.')
-    args_parser.add_argument('--clinic-val', '-cv', action='store_true', help='Run validation on clinical images only.')
-    args_parser.add_argument('--conv_layers', '-clrs', type=int, default=32, help='Select multiplier for number of nodes in inception layers.')
-    args_parser.add_argument('--dense-layers', '-dlrs', type=int, default=16, help='Select multiplier for number of nodes in dense layers.')
-    args_parser.add_argument('--merge-layers', '-mlrs', type=int, default=32, help='Select multiplier for number of nodes in merge layers.')
-    args_parser.add_argument('--dataset-frac', '-frac', type=float, default=1., help='Dataset fraction.')
-    args_parser.add_argument('--strategy', '-strg', type=str, default='mirrored', choices=['mirrored', 'singlegpu'], help='Select parallelization strategy.')
-    args_parser.add_argument('--load-model', '-load', type=str, help='Path to load model.')
-    args_parser.add_argument('--test', '-test', action='store_true', help='Test loaded model with isic2020.')
-    args_parser.add_argument('--fine', '-fine', action='store_true', help='Fine tune.')
-    args_parser.add_argument('--gpus', '-gpus', type=int, default=2, help='Select number of GPUs.')
-    return args_parser
-
 
 if __name__ == '__main__':
-    args = parser().parse_args().__dict__
-    args['os'] = sys.platform
-    args['trial_id'] = datetime.now().strftime('%d%m%y%H%M%S')
-    args['dir_dict'] = dir_dict(args=args)
-    args['class_names'] = TASK_CLASSES[args['task']]
-    args['num_classes'] = len(args['class_names'])
-    args['input_shape'] = (args['image_size'], args['image_size'], 3)
+    args = vars(parser().parse_args())
+    dirs = Directories(args).dirs
     os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(map(str, (range(args['gpus']))))
     # os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
     # os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/usr/local/cuda'
     # os.environ['TF_XLA_FLAGS'] = f'--tf_xla_auto_jit=2 --tf_xla_enable_xla_devices --tf_xla_cpu_global_jit'
-    print('Setting up Datasets...')
-    for key, path in args['dir_dict']['data_csv'].items():
-        setup_images(csv_path=path, args=args)
-    print('Done!')
+    setup_images(args, dirs)
     if not args['test']:
-        log_params(args=args)
-        train_fn(args=args)
-        if not args['load_model']:
-            args['load_model'] = args['dir_dict']['save_path']
+        log_params(args, dirs)
+        train_fn(args, dirs)
+        args['load_model'] = args['trial_id']
+        dirs = Directories(args).dirs
     if args['image_type'] != 'both':
-        test_fn(args=args)
+        test_fn(args, dirs)
     else:
         for image_type in ('clinic', 'derm'):
             args['image_type'] = image_type
-            test_fn(args=args)
+            test_fn(args, dirs)
 exit()
