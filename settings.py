@@ -1,7 +1,7 @@
-import argparse
-import csv
-import os
 import sys
+import os
+import csv
+import argparse
 from datetime import datetime
 
 MAIN_DIR = os.path.dirname(os.path.abspath(__file__))

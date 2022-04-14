@@ -1,8 +1,7 @@
 import tensorflow as tf
-
 from custom_losses import categorical_focal_loss
-from metrics import gmean
-from models import model_struct
+from custom_metrics import gmean
+from models_init import model_struct
 
 tf.config.threading.set_inter_op_parallelism_threads(num_threads=16)
 tf.config.threading.set_intra_op_parallelism_threads(num_threads=16)

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from matplotlib import pyplot as plt
-from features import TASK_CLASSES
+from features_def import TASK_CLASSES
 from sklearn.metrics import confusion_matrix, average_precision_score, roc_auc_score, roc_curve,\
     precision_recall_curve, classification_report
 

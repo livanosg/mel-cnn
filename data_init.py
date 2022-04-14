@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 from settings import INIT_DATA_DIR, INFO_DIR, data_csv
-from features import COLUMNS, DATA_MAP
+from features_def import COLUMNS, DATA_MAP
 NP_RNG = np.random.default_rng(seed=1312)
 isic18_val = pd.read_csv(os.path.join(INIT_DATA_DIR, 'isic18_val.csv'))
 [isic18_val.insert(loc=0, column=column, value=None) for column in COLUMNS if column not in isic18_val.columns]

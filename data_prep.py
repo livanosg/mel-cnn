@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import tensorflow as tf
 import tensorflow_addons as tfa
-from features import BEN_MAL_MAP, LOCATIONS, IMAGE_TYPE, SEX, AGE_APPROX, TASK_CLASSES
+from features_def import BEN_MAL_MAP, LOCATIONS, IMAGE_TYPE, SEX, AGE_APPROX, TASK_CLASSES
 from settings import data_csv
 
 
@@ -44,7 +44,7 @@ class MelData:
         if mode in ('train', 'validation', 'test'):
             os.makedirs(self.dirs['data_info'], exist_ok=True)
             desc_path = os.path.join(self.dirs['data_info'],
-                                     'descr_{}_{}_{}.xlsx'.format(self.args['task'], self.args['image_type'], mode))
+                                     'descr_{}_{}_{}.ods'.format(self.args['task'], self.args['image_type'], mode))
             with pd.ExcelWriter(desc_path, mode='w') as writer:
                 for feature in ['sex', 'age_approx', 'location']:
                     logs_df = df[['image_type', 'class', feature]].value_counts(sort=False,
