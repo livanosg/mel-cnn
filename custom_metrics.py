@@ -6,7 +6,7 @@ import pandas as pd
 import tensorflow as tf
 from matplotlib import pyplot as plt
 from features_def import TASK_CLASSES
-from sklearn.metrics import confusion_matrix, average_precision_score, roc_auc_score, roc_curve,\
+from sklearn.metrics import confusion_matrix, average_precision_score, roc_auc_score, roc_curve, \
     precision_recall_curve, classification_report
 
 
@@ -29,7 +29,7 @@ def f_beta(beta, precision, recall):
 
 def metrics(y_pred, y_true):
     tp = np.sum(y_pred * y_true)
-    tn = np.sum((1-y_pred) * (1 - y_true))
+    tn = np.sum((1 - y_pred) * (1 - y_true))
     p = np.sum(y_true)
     pp = np.sum(y_pred)
     n = np.sum(1 - y_true)
@@ -47,8 +47,8 @@ def metrics(y_pred, y_true):
     metrics_dict['F2'] = np.round(f_beta(beta=2, precision=metrics_dict['precision'],
                                          recall=metrics_dict['sensitivity']), 3)
     metrics_dict['gmean'] = np.round(np.sqrt(metrics_dict['sensitivity'] * metrics_dict['specificity']), 3)
-    logx = np.log10(metrics_dict['sensitivity']/(1 - metrics_dict['sensitivity']))
-    logy = np.log10(metrics_dict['specificity']/(1 - metrics_dict['specificity']))
+    logx = np.log10(metrics_dict['sensitivity'] / (1 - metrics_dict['sensitivity']))
+    logy = np.log10(metrics_dict['specificity'] / (1 - metrics_dict['specificity']))
     metrics_dict['dp'] = (np.sqrt(3) / np.pi) * (logx + logy)
     return metrics_dict
 
@@ -173,7 +173,7 @@ def plot_confusion_matrix(cm, class_names):
     plt.imshow(normalized_cm, interpolation='nearest',
                cmap=plt.cm.get_cmap("binary"))  # https://matplotlib.org/1.2.1/_images/show_colormaps.png
     plt.clim(0., 1.)
-    plt.colorbar(shrink=0.7, aspect=20*0.7)
+    plt.colorbar(shrink=0.7, aspect=20 * 0.7)
     tick_marks = np.arange(len(class_names))
     plt.xticks(tick_marks, class_names, rotation=45)
     plt.yticks(tick_marks, class_names, rotation=90)
@@ -204,3 +204,52 @@ def plot_to_image(figure):
 def cm_image(y_true, y_pred, class_names: list):
     figure = plot_confusion_matrix(cm=confusion_matrix(y_true=y_true, y_pred=y_pred), class_names=class_names)
     return plot_to_image(figure)
+
+
+class GeometricMean(tf.keras.metrics.Metric):
+    """
+    A custom Keras metric to compute the running average of the confusion matrix
+    """
+
+    def __init__(self, num_classes, **kwargs):
+        super(GeometricMean, self).__init__(name='geometric_mean',
+                                            **kwargs)  # handles base args (e.g., dtype)
+        self.num_classes = num_classes
+        self.total_cm = self.add_weight("total", shape=(num_classes, num_classes), initializer="zeros")
+
+    def reset_state(self):
+        for s in self.variables:
+            s.assign(tf.zeros(shape=s.shape))
+
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        self.total_cm.assign_add(self.confusion_matrix(y_true, y_pred))
+        return self.total_cm
+
+    def result(self):
+        return self.process_confusion_matrix()
+
+    def confusion_matrix(self, y_true, y_pred):
+        """
+        Make a confusion matrix
+        """
+        y_pred = tf.argmax(y_pred, 1)
+        y_true = tf.argmax(y_true, 1)
+        cm = tf.math.confusion_matrix(y_true, y_pred, dtype=tf.float32, num_classes=self.num_classes)
+        return cm
+
+    def process_confusion_matrix(self):
+        """returns gmean"""
+        cm = self.total_cm
+        # diag_part = tf.linalg.diag_part(cm)
+        # precision = diag_part / (tf.reduce_sum(cm, 0) + tf.constant(1e-15))
+        # recall = diag_part / (tf.reduce_sum(cm, 1) + tf.constant(1e-15))
+        # f1 = 2 * precision * recall / (precision + recall + tf.constant(1e-15))
+        sensitivity = tf.math.divide_no_nan(cm[1, 1], cm[1, 1] + cm[1, 0])
+        specificity = tf.math.divide_no_nan(cm[0, 0], cm[0, 0] + cm[0, 1])
+        g_mean = tf.math.sqrt(sensitivity * specificity)
+        return g_mean
+
+    def fill_output(self, output):
+        results = self.result()
+        output['g_mean'] = results
+
