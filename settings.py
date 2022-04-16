@@ -36,7 +36,7 @@ def parser():
     args_parser.add_argument('--no-clinical-data', '-ncd', action='store_true', help='Train model only with images.')
     args_parser.add_argument('--no-image-type', '-nit', action='store_true',
                              help='Set to remove image type from training.')
-    args_parser.add_argument('--clinic-val', '-cv', action='store_true', help='Run validation on clinical images only.')
+    args_parser.add_argument('--clinic-val', '-cval', action='store_true', help='Run validation on clinical images only.')
     args_parser.add_argument('--conv_layers', '-clrs', type=int, default=32,
                              help='Select multiplier for number of nodes in inception layers.')
     args_parser.add_argument('--dense-layers', '-dlrs', type=int, default=16,
