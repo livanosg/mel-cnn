@@ -1,13 +1,10 @@
-from data_prep import MelData
 from custom_metrics import calc_metrics
 
 
-def test_fn(args, dirs, model):
+def test_fn(args, dirs, data, model):
     """ run validation and tests"""
     if args['image_type'] not in ('clinic', 'derm'):
         raise ValueError(f'{args["image_type"]} not valid. Select on one of ("clinic", "derm")')
-    data = MelData(args, dirs)
-    data.args['clinic_val'] = False
     thr_d, thr_f1 = calc_metrics(args=args, dirs=dirs, model=model,
                                  dataset=data.get_dataset(dataset_name='validation'),
                                  dataset_name='validation')

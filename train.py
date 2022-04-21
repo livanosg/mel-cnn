@@ -1,15 +1,13 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
 from features_def import TASK_CLASSES
-from data_prep import MelData
 from custom_metrics import GeometricMean
 from custom_callbacks import EnrTensorboard  # , LaterCheckpoint, LaterReduceLROnPlateau
 from custom_losses import losses
 
 
-def train_fn(args, dirs, model, strategy):
+def train_fn(args, dirs, data, model, strategy):
     """Setup and run training stage"""
-    data = MelData(args, dirs)
     loss = losses(args)[args['loss_fn']]
 
     with strategy.scope():
