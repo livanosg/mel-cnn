@@ -127,17 +127,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-/data/7pt
-/data/dermofit
-/data/isic16_test
-/data/isic20_test
-/data/isic2018
-/data/isic2019
-/data/isic2020
-/data/mednode
-/data/padufes
-/data/ph2
-/data/up
-/logs_conda/
 /models/
-/tmp/
+/data/
