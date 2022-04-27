@@ -49,7 +49,7 @@ def metrics(y_pred, y_true):
     metrics_dict['gmean'] = np.round(np.sqrt(metrics_dict['sensitivity'] * metrics_dict['specificity']), 3)
     logx = np.log10(metrics_dict['sensitivity'] / (1 - metrics_dict['sensitivity']))
     logy = np.log10(metrics_dict['specificity'] / (1 - metrics_dict['specificity']))
-    metrics_dict['dp'] = (np.sqrt(3) / np.pi) * (logx + logy)
+    metrics_dict['dp'] = np.round((np.sqrt(3) / np.pi) * (logx + logy), 3)
     return metrics_dict
 
 
