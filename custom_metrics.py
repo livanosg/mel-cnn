@@ -9,6 +9,8 @@ from features_def import TASK_CLASSES
 from sklearn.metrics import confusion_matrix, average_precision_score, roc_auc_score, roc_curve, \
     precision_recall_curve, classification_report
 
+from settings import parser
+
 
 def gmean(y_true, y_pred):
     y_pred_arg = tf.cast(tf.argmax(y_pred, axis=-1), dtype=tf.float32)
@@ -211,11 +213,11 @@ class GeometricMean(tf.keras.metrics.Metric):
     A custom Keras metric to compute the running average of the confusion matrix
     """
 
-    def __init__(self, num_classes, **kwargs):
-        super(GeometricMean, self).__init__(name='geometric_mean',
-                                            **kwargs)  # handles base args (e.g., dtype)
-        self.num_classes = num_classes
-        self.total_cm = self.add_weight("total", shape=(num_classes, num_classes), initializer="zeros")
+    def __init__(self, name='geometric_mean', **kwargs):
+        super(GeometricMean, self).__init__(name=name, **kwargs)  # handles base args (e.g., dtype)
+        self.args = vars(parser().parse_args())
+        self.num_classes = len(TASK_CLASSES[self.args['task']])
+        self.total_cm = self.add_weight("total", shape=(self.num_classes, self.num_classes), initializer="zeros")
 
     def reset_state(self):
         for s in self.variables:
@@ -252,4 +254,3 @@ class GeometricMean(tf.keras.metrics.Metric):
     def fill_output(self, output):
         results = self.result()
         output['g_mean'] = results
-
