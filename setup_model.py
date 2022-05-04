@@ -1,6 +1,6 @@
 import tensorflow as tf
 from custom_losses import categorical_focal_loss
-from custom_metrics import gmean
+from custom_metrics import GeometricMean
 from models_init import model_struct
 
 tf.config.threading.set_inter_op_parallelism_threads(num_threads=16)
@@ -26,7 +26,7 @@ def setup_model(args, dirs):
     assert args['gpus'] == strategy.num_replicas_in_sync
     with strategy.scope():
         if args['load_model']:
-            model = tf.keras.models.load_model(dirs['load_path'], compile=True, custom_objects={'gmean': gmean,
+            model = tf.keras.models.load_model(dirs['load_path'], compile=True, custom_objects={'GeometricMean':GeometricMean,
                                                                                                 'categorical_focal_loss_fixed': categorical_focal_loss()}) #, 'categorical_focal_loss_fixed': categorical_focal_loss_fixed
         else:
             model = model_struct(args=args)
