@@ -26,15 +26,13 @@ def train_fn(args, dirs, data, model, strategy):
 
     with open(dirs['model_summary'], 'w', encoding='utf-8') as model_summary:
         model.summary(print_fn=lambda x: model_summary.write(x + '\n'))
-    train_data = data.get_dataset(dataset_name='train')
-    val_data = data.get_dataset(dataset_name='validation')
     callbacks = [tf.keras.callbacks.EarlyStopping(patience=args['early_stop'], verbose=1, monitor='val_geometric_mean',
                                                   mode='max', restore_best_weights=True),
                  tf.keras.callbacks.CSVLogger(filename=dirs['train_logs'],
                                               separator=',', append=True),
-                 EnrTensorboard(val_data=val_data, log_dir=dirs['logs'],
+                 EnrTensorboard(val_data=data.get_dataset(dataset='validation'), log_dir=dirs['logs'],
                                 class_names=TASK_CLASSES[args['task']])]
-    model.fit(x=train_data, validation_data=val_data, callbacks=callbacks,
+    model.fit(x=data.get_dataset(dataset='train'), validation_data=data.get_dataset(dataset='validation'), callbacks=callbacks,
               epochs=args['epochs'])  # steps_per_epoch=np.floor(data.train_len / batch),
     model.save(filepath=dirs['save_path'])
     return model
