@@ -1,12 +1,13 @@
+from contextlib import redirect_stdout
 import tensorflow as tf
 import tensorflow_addons as tfa
 from features_def import TASK_CLASSES
 from custom_metrics import GeometricMean
-from custom_callbacks import EnrTensorboard  # , LaterCheckpoint, LaterReduceLROnPlateau
+from custom_callbacks import EnrTensorboard
 from custom_losses import losses
 
 
-def train_fn(args, dirs, data, model, strategy):
+def train_fn(args: dict, dirs: dict, data, model, strategy):
     """Setup and run training stage"""
     loss = losses(args)[args['loss_fn']]
 
@@ -18,21 +19,24 @@ def train_fn(args, dirs, data, model, strategy):
                      'rmsprop': tf.keras.optimizers.RMSprop,
                      'sgd': tf.keras.optimizers.SGD,
                      'adagrad': tf.keras.optimizers.Adagrad,
-                     'adadelta': tf.keras.optimizers.Adadelta}[args['optimizer']]
-        model.compile(loss=loss, optimizer=optimizer(learning_rate=args['learning_rate'] * args['gpus']),
+                     'adadelta': tf.keras.optimizers.Adadelta}[args['optimizer']](learning_rate=args['learning_rate'] * args['gpus'])
+
+        model.compile(loss=loss, optimizer=optimizer,
                       metrics=[tfa.metrics.F1Score(num_classes=len(TASK_CLASSES[args['task']]),
                                                    average='macro', name='f1'),
-                               GeometricMean(num_classes=len(TASK_CLASSES[args['task']]))])
+                               GeometricMean()])
+    with redirect_stdout(open(dirs['model_summary'], 'w', encoding='utf-8')):
+        model.summary(show_trainable=True)
 
-    with open(dirs['model_summary'], 'w', encoding='utf-8') as model_summary:
-        model.summary(print_fn=lambda x: model_summary.write(x + '\n'))
-    callbacks = [tf.keras.callbacks.EarlyStopping(patience=args['early_stop'], verbose=1, monitor='val_geometric_mean',
-                                                  mode='max', restore_best_weights=True),
-                 tf.keras.callbacks.CSVLogger(filename=dirs['train_logs'],
-                                              separator=',', append=True),
-                 EnrTensorboard(val_data=data.get_dataset(dataset='validation'), log_dir=dirs['logs'],
-                                class_names=TASK_CLASSES[args['task']])]
-    model.fit(x=data.get_dataset(dataset='train'), validation_data=data.get_dataset(dataset='validation'), callbacks=callbacks,
-              epochs=args['epochs'])  # steps_per_epoch=np.floor(data.train_len / batch),
+    model.fit(x=data.get_dataset('train'), validation_data=data.get_dataset('validation'), epochs=args['epochs'],
+              callbacks=[tf.keras.callbacks.CSVLogger(filename=dirs['train_logs'], separator=',', append=True),
+                         tf.keras.callbacks.EarlyStopping(monitor='val_gmean_macro', mode='max', verbose=1,
+                                                          patience=args['early_stop'], restore_best_weights=True),
+                         tf.keras.callbacks.CSVLogger(filename=dirs['train_logs'], separator=',', append=True),
+                         EnrTensorboard(val_data=data.get_dataset('validation'), log_dir=dirs['logs'],
+                                        class_names=TASK_CLASSES[args['task']])
+                         ]
+              )
+    model.compile(optimizer=optimizer, loss=None)
     model.save(filepath=dirs['save_path'])
     return model

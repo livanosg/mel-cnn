@@ -26,8 +26,10 @@ def setup_model(args, dirs):
     assert args['gpus'] == strategy.num_replicas_in_sync
     with strategy.scope():
         if args['load_model']:
-            model = tf.keras.models.load_model(dirs['load_path'], compile=True, custom_objects={'GeometricMean':GeometricMean,
-                                                                                                'categorical_focal_loss_fixed': categorical_focal_loss()}) #, 'categorical_focal_loss_fixed': categorical_focal_loss_fixed
+            model = tf.keras.models.load_model(dirs['load_path'],
+                                               compile=True,
+                                               custom_objects={'categorical_focal_loss_fixed': categorical_focal_loss(),
+                                                               'GeometricMean': GeometricMean})
         else:
             model = model_struct(args=args)
         if args['fine']:

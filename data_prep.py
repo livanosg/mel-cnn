@@ -34,16 +34,19 @@ class MelData:
 
     def _df_to_onehot_inputs_dict(self, df):
         onehot_input_dict = {'image_path': df['image'].values}
+        onehot_feature_dict = {}
         for key, voc in (('location', LOCATIONS), ('sex', SEX), ('age_approx', AGE_APPROX), ('image_type', IMAGE_TYPE)):
             lookup = tf.keras.layers.StringLookup(vocabulary=voc, output_mode='one_hot')
-            onehot_input_dict[key] = lookup(tf.convert_to_tensor(df[key].values))[:, 1:]
-        onehot_input_dict['anatom_site_general'] = onehot_input_dict['location']  # compat
+            onehot_feature_dict[key] = lookup(tf.convert_to_tensor(df[key].values))[:, 1:]
+        onehot_feature_dict['anatom_site_general'] = onehot_feature_dict['location']  # compat
 
         if not self.args['no_clinical_data']:
-            onehot_input_dict['clinical_data'] = tf.concat([onehot_input_dict['location'], onehot_input_dict['sex'],
-                                                       onehot_input_dict['age_approx']])
+            onehot_input_dict['clinical_data'] = tf.keras.layers.Concatenate()([onehot_feature_dict['location'],
+                                                                                onehot_feature_dict['sex'],
+                                                                                onehot_feature_dict['age_approx']])
             if not self.args['no_image_type']:
-                onehot_input_dict['clinical_data'] = tf.concat([onehot_input_dict['clinical_data'], onehot_input_dict['image_type']])
+                onehot_input_dict['clinical_data'] = tf.keras.layers.Concatenate()([onehot_input_dict['clinical_data'],
+                                                                                    onehot_feature_dict['image_type']])
         return onehot_input_dict
 
     def prep_df(self, mode: str):

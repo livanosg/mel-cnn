@@ -1,3 +1,4 @@
+import gc
 import os
 
 from data_prep import MelData
@@ -10,9 +11,10 @@ from test import test_fn
 if __name__ == '__main__':
     args = vars(parser().parse_args())
     os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(map(str, (range(args['gpus']))))
-    os.environ["OMP_NUM_THREADS"] = '1'
+    # os.environ["OMP_NUM_THREADS"] = '1'
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
     if args['os'] == 'linux':
+        pass
         # XLA currently ignores TF seeds to random operations. Workaround: use the recommended RNGs such as
         # tf.random.stateless_uniform or the tf.random.Generator directly.
         os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/usr/local/cuda'
@@ -30,4 +32,10 @@ if __name__ == '__main__':
         args['image_type'] = image_type
         data = MelData(args, dirs)
         test_fn(args, dirs, data, model)
+    del dirs
+    del data
+    del model
+    del strategy
+    del args
+    gc.collect()
 exit()
