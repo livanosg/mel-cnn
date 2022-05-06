@@ -30,7 +30,7 @@ def train_fn(args: dict, dirs: dict, data, model, strategy):
 
     model.fit(x=data.get_dataset('train'), validation_data=data.get_dataset('validation'), epochs=args['epochs'],
               callbacks=[tf.keras.callbacks.CSVLogger(filename=dirs['train_logs'], separator=',', append=True),
-                         tf.keras.callbacks.EarlyStopping(monitor='val_gmean_macro', mode='max', verbose=1,
+                         tf.keras.callbacks.EarlyStopping(monitor='val_geometric_mean', mode='max', verbose=1,
                                                           patience=args['early_stop'], restore_best_weights=True),
                          tf.keras.callbacks.CSVLogger(filename=dirs['train_logs'], separator=',', append=True),
                          EnrTensorboard(val_data=data.get_dataset('validation'), log_dir=dirs['logs'],
