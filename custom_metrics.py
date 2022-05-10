@@ -70,6 +70,9 @@ def calc_metrics(model, args, dirs, dataset, dataset_name, dist_thresh=None, f1_
     else:
         paths = np.empty_like(dataset.element_spec['image_path'])
 
+    # _paths = np.concatenate(list(dataset.map(lambda samples, labels: samples['image_path'])))
+    # _y_true = np.argmax(np.concatenate(list(dataset.map(lambda samples, labels: labels['class']))), axis=-1)
+    # _test_pred = model.predict(dataset)
     for x in dataset.as_numpy_iterator():
         if dataset_name != 'isic20_test':
             paths = np.concatenate((paths, x[0]['image_path']))
@@ -173,11 +176,10 @@ def plot_confusion_matrix(cm, class_names):
        class_names (array, shape = [n]): String names of the integer classes
     """
 
-    figure = plt.figure(figsize=(4.5, 4.5))
+    figure = plt.figure(figsize=(5, 5))
     normalized_cm = cm / np.expand_dims(cm.sum(axis=1), axis=-1)
     # Plot the normalized confusion matrix.
-    plt.imshow(normalized_cm, interpolation='nearest',
-               cmap=plt.cm.get_cmap("binary"))  # https://matplotlib.org/1.2.1/_images/show_colormaps.png
+    plt.imshow(normalized_cm, cmap=plt.cm.get_cmap("binary"))  # https://matplotlib.org/1.2.1/_images/show_colormaps.png
     plt.clim(0., 1.)
     plt.colorbar(shrink=0.7, aspect=20 * 0.7)
     tick_marks = np.arange(len(class_names))
@@ -188,7 +190,7 @@ def plot_confusion_matrix(cm, class_names):
         color = "white" if normalized_cm[i, j] > 0.5 else "black"
         plt.text(j, i, cm[i, j], horizontalalignment="center", color=color)
 
-    plt.tight_layout()
+    # plt.tight_layout()
     plt.ylabel('True')
     plt.xlabel('Predicted')
     return figure
@@ -360,12 +362,6 @@ class GMean(tf.keras.metrics.Metric):
         reset_value = tf.zeros(self.init_shape, dtype=self.dtype)
         tf.keras.backend.batch_set_value([(v, reset_value) for v in self.variables])
 
-    def reset_states(self):
-        # Backwards compatibility alias of `reset_state`. New classes should
-        # only implement `reset_state`.
-        # Required in Tensorflow < 2.5.0
-        return self.reset_state()
-
 
 class GeometricMean(tf.keras.metrics.Metric):
     """
@@ -395,21 +391,14 @@ class GeometricMean(tf.keras.metrics.Metric):
         """
         y_pred = tf.argmax(y_pred, 1)
         y_true = tf.argmax(y_true, 1)
-        cm = tf.math.confusion_matrix(y_true, y_pred, dtype=tf.float32, num_classes=self.num_classes)
-        return cm
+        return tf.math.confusion_matrix(y_true, y_pred, dtype=tf.float32, num_classes=self.num_classes)
 
     def process_confusion_matrix(self):
         """returns gmean"""
         cm = self.total_cm
-        # diag_part = tf.linalg.diag_part(cm)
-        # precision = diag_part / (tf.reduce_sum(cm, 0) + tf.constant(1e-15))
-        # recall = diag_part / (tf.reduce_sum(cm, 1) + tf.constant(1e-15))
-        # f1 = 2 * precision * recall / (precision + recall + tf.constant(1e-15))
         sensitivity = tf.math.divide_no_nan(cm[1, 1], cm[1, 1] + cm[1, 0])
         specificity = tf.math.divide_no_nan(cm[0, 0], cm[0, 0] + cm[0, 1])
-        g_mean = tf.math.sqrt(sensitivity * specificity)
-        return g_mean
+        return tf.math.sqrt(sensitivity * specificity)  # gmean
 
     def fill_output(self, output):
-        results = self.result()
-        output['g_mean'] = results
+        output['g_mean'] = self.result()
