@@ -53,55 +53,30 @@ def metrics(y_pred, y_true):
     metrics_dict['F2'] = np.round(f_beta(beta=2, precision=metrics_dict['precision'],
                                          recall=metrics_dict['sensitivity']), 3)
     metrics_dict['gmean'] = np.round(np.sqrt(metrics_dict['sensitivity'] * metrics_dict['specificity']), 3)
-    logx = np.log10(metrics_dict['sensitivity'] / (1 - metrics_dict['sensitivity']))
-    logy = np.log10(metrics_dict['specificity'] / (1 - metrics_dict['specificity']))
-    metrics_dict['dp'] = np.round((np.sqrt(3) / np.pi) * (logx + logy), 3)
     return metrics_dict
 
 
 def calc_metrics(model, args, dirs, dataset, dataset_name, dist_thresh=None, f1_thresh=None):
+    print(f"Calculate metrics for {dataset_name} {args['image_type']}...")
     save_dir = os.path.join(dirs['trial'], '_'.join([dataset_name, args['image_type']]))
     os.makedirs(save_dir, exist_ok=True)
-    output = np.expand_dims(np.empty_like(model.output_shape), axis=0)
-    labels = None
     if dataset_name != 'isic20_test':
-        paths = np.empty_like(dataset.element_spec[0]['image_path'].shape)
-        labels = np.expand_dims(np.empty_like(dataset.element_spec[1]['class'].shape), axis=0)
+        df_dict = {'image_name': np.concatenate(list(dataset.map(lambda samples, labels: samples['image_path'])))}
+        labels = np.concatenate(list(dataset.map(lambda samples, labels: labels['class'])))
     else:
-        paths = np.empty_like(dataset.element_spec['image_path'])
+        df_dict = {'image_name': np.concatenate(list(dataset.map(lambda samples: samples['image_path'])))}
+    output = model.predict(dataset)
 
-    # _paths = np.concatenate(list(dataset.map(lambda samples, labels: samples['image_path'])))
-    # _y_true = np.argmax(np.concatenate(list(dataset.map(lambda samples, labels: labels['class']))), axis=-1)
-    # _test_pred = model.predict(dataset)
-    for x in dataset.as_numpy_iterator():
-        if dataset_name != 'isic20_test':
-            paths = np.concatenate((paths, x[0]['image_path']))
-            output = np.concatenate((output, model.predict(x[0])))
-            labels = np.concatenate((labels, x[1]['class']))
-        else:
-            paths = np.concatenate(paths, x['image_path'])
-            output = np.concatenate(output, model.predict(x))
-
-    if dataset_name != 'isic20_test':
-        labels = labels[1:, ...].astype(np.int)
-
-    paths, output = paths[1:, ...], output[1:, ...].astype(np.float)
-    if len(paths) == 0:
-        print('empty dataset')
-        return
-    else:
-        print('dataset size: ', len(paths))
-
-    df_dict = {'image_name': paths}
     for i, class_name in enumerate(TASK_CLASSES[args['task']]):
-        df_dict[f"{class_name}"] = np.round(output[..., i], 5)
+        df_dict[f"{class_name}"] = np.round(output[:, i], 5)
         if dataset_name != 'isic20_test':
-            df_dict[f"{class_name + '_true'}"] = labels[..., i]
+            df_dict[f"{class_name + '_true'}"] = labels[:, i]
+
     df = pd.DataFrame(df_dict)
     df['image_name'] = df['image_name'].apply(lambda path: path.decode('UTF-8').replace(dirs['proc_img_folder'], ''))
     # path.decode('UTF-8').replace(dirs['proc_img_folder'], '')
     if dataset_name == 'isic20_test':
-        df = pd.DataFrame({'image_name': df_dict['image_name'], 'target': output[..., 1]})
+        df = pd.DataFrame({'image_name': df_dict['image_name'], 'target': output[:, 1]})
     df.to_csv(path_or_buf=os.path.join(save_dir, '{}_{}_results.csv'.format(dataset_name, args['image_type'])),
               index=False)
 
@@ -112,20 +87,21 @@ def calc_metrics(model, args, dirs, dataset, dataset_name, dist_thresh=None, f1_
         # One-vs-one. Computes the average AUC of all possible pairwise combinations of classes.
         # Insensitive to class imbalance when `average == 'macro'`.
         if args['task'] != '5cls':
-            fpr_lst, tpr_lst, roc_thresh = roc_curve(y_true=labels[:, 1],
+            fpr_lst, tpr_lst, roc_thresh = roc_curve(y_true=np.argmax(labels, axis=-1),
                                                      y_score=output[:, 1], pos_label=1)
-            prec_lst, rec_lst, pr_thresh = precision_recall_curve(y_true=labels[:, 1],
+            prec_lst, rec_lst, pr_thresh = precision_recall_curve(y_true=np.argmax(labels, axis=-1),
                                                                   probas_pred=output[:, 1], pos_label=1)
             dist = np.sqrt(np.power(fpr_lst, 2) + np.power(1 - tpr_lst, 2))  # Distance from (0,1)
             # F1 score for each threshold
-            f1_values = np.multiply(2., np.divide(np.multiply(prec_lst, rec_lst), np.add(prec_lst, rec_lst)))
+            with np.errstate(divide='ignore', invalid='ignore'):
+                f1_values = np.multiply(2., np.multiply(prec_lst, rec_lst) / np.add(prec_lst, rec_lst))
             if dist_thresh is None:
                 dist_thresh = roc_thresh[np.argmin(dist)]  # Threshold with minimum distance
             if f1_thresh is None:
                 f1_thresh = pr_thresh[np.argmax(f1_values)]  # Threshold with maximum F1 score
-            for threshold in (0.5, dist_thresh, f1_thresh):
+            for threshold in (0.5,):  # dist_thresh, f1_thresh
                 y_pred_thrs = np.greater_equal(output, threshold).astype(np.int32)
-                cm_img = cm_image(y_true=labels[:, 1], y_pred=y_pred_thrs[:, 1], class_names=TASK_CLASSES[args['task']])
+                cm_img = cm_image(y_true=np.argmax(labels, axis=-1), y_pred=y_pred_thrs[:, 1], class_names=TASK_CLASSES[args['task']])
                 with open(os.path.join(save_dir, "cm_{}.png".format(str(round(threshold, 2)))), "wb") as f:
                     f.write(cm_img)
 
@@ -137,7 +113,7 @@ def calc_metrics(model, args, dirs, dataset, dataset_name, dist_thresh=None, f1_
 
                 with open(os.path.join(save_dir, 'metrics_{}.csv'.format(str(round(threshold, 2)))), 'w') as f:
                     f.write('Class,Balanced Accuracy,Precision,Sensitivity (Recall),Specificity,Accuracy,AUC,F1,F2,'
-                            'G-Mean,Average Precision,Discriminant Power\n')
+                            'G-Mean,Average Precision\n')
                     for _class in range(len(TASK_CLASSES[args['task']])):
                         AP = np.round(average_precision_score(y_true=labels[:, _class], y_score=output[:, _class]), 3)
                         ROC_AUC = np.round(roc_auc_score(y_true=labels[:, _class], y_score=output[:, _class]), 3)
@@ -145,12 +121,11 @@ def calc_metrics(model, args, dirs, dataset, dataset_name, dist_thresh=None, f1_
                         f.write(
                             f"{TASK_CLASSES[args['task']][_class]},{m_dict['balanced_accuracy']},{m_dict['precision']},"
                             f"{m_dict['sensitivity']},{m_dict['specificity']},{m_dict['accuracy']},"
-                            f"{ROC_AUC},{m_dict['F1']},{m_dict['F2']},{m_dict['gmean']},{AP},{m_dict['dp']}\n")
+                            f"{ROC_AUC},{m_dict['F1']},{m_dict['F2']},{m_dict['gmean']},{AP}\n")
 
             plt.figure(1)
             plt.title('ROC curve'), plt.gca().set_aspect('equal', adjustable='box')
             plt.xlabel('False positive rate'), plt.ylabel('True positive rate')
-            # plt.plot([0, fpr_lst[np.argmin(dist)]], [1, tpr_lst[np.argmin(dist)]])
             plt.plot(fpr_lst, tpr_lst, label=' '.join([TASK_CLASSES[args['task']][1], '(AUC= {:.3f})'.format(ROC_AUC)]))
             plt.plot([0, 1], [0, 1], 'k--'), plt.legend(loc='best')
             plt.figure(1), plt.savefig(os.path.join(save_dir, 'roc_curve.png'))
