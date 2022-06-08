@@ -76,7 +76,6 @@ class MelData:
             if not self.args['no_image_type']:
                 onehot_input_dict['clinical_data'] = tf.keras.layers.Concatenate()([onehot_input_dict['clinical_data'],
                                                                                     onehot_feature_dict['image_type']])
-        del onehot_feature_dict
         onehot_label = None
         sample_weight = None
 
@@ -86,9 +85,9 @@ class MelData:
 
         if mode == 'train':
             if self.args['image_type'] == 'both' and self.args['weighted_samples']:  # Sample weight for image type
-                samples_per_image_type = tf.reduce_sum(onehot_input_dict['image_type'], axis=0)
+                samples_per_image_type = tf.reduce_sum(onehot_feature_dict['image_type'], axis=0)
                 sample_weight = tf.math.divide(tf.reduce_max(samples_per_image_type), samples_per_image_type)
-                sample_weight = tf.gather(sample_weight, tf.math.argmax(onehot_input_dict['image_type'], axis=-1))
+                sample_weight = tf.gather(sample_weight, tf.math.argmax(onehot_feature_dict['image_type'], axis=-1))
 
             if self.args['weighted_loss']:  # Class weight
                 samples_per_class = tf.reduce_sum(onehot_label['class'], axis=0)
