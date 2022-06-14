@@ -37,15 +37,15 @@ def parser():
     args_parser.add_argument('--no-image-type', '-nit', action='store_true',
                              help='Set to remove image type from training.')
     args_parser.add_argument('--clinic-val', '-cval', action='store_true', help='Run validation on clinical dataset regardless the training image type.')
-    args_parser.add_argument('--conv_layers', '-clrs', type=int, default=32,
+    args_parser.add_argument('--conv_layers', '-clrs', type=int, default=128,
                              help='Select multiplier for number of nodes in inception layers.')
-    args_parser.add_argument('--dense-layers', '-dlrs', type=int, default=16,
+    args_parser.add_argument('--dense-layers', '-dlrs', type=int, default=128,
                              help='Select multiplier for number of nodes in dense layers.')
-    args_parser.add_argument('--merge-layers', '-mlrs', type=int, default=32,
+    args_parser.add_argument('--merge-layers', '-mlrs', type=int, default=512,
                              help='Select multiplier for number of nodes in merge layers.')
     args_parser.add_argument('--l1-reg', '-l1', type=float, default=0., help='L1 regularization.')
-    args_parser.add_argument('--l2-reg', '-l2', type=float, default=0., help='L2 regularization.')
-    args_parser.add_argument('--loss-fn', '-loss', type=str, default='cxe',
+    args_parser.add_argument('--l2-reg', '-l2', type=float, default=1e-7, help='L2 regularization.')
+    args_parser.add_argument('--loss-fn', '-loss', type=str, default='focal',
                              choices=['cxe', 'focal', 'perclass', 'wcxe', 'combined'], help='Select loss function.')
     args_parser.add_argument('--loss-frac', '-lossf', type=float, default=.5,
                              help='log_dice_loss ratio in custom loss.')
@@ -58,12 +58,12 @@ def parser():
                              help='Select pretrained model.')
     args_parser.add_argument('--batch-size', '-btch', type=int, default=16, help='Select batch size.')
     args_parser.add_argument('--learning-rate', '-lr', type=float, default=1e-5, help='Select learning rate.')
-    args_parser.add_argument('--optimizer', '-opt', type=str, default='adam',
+    args_parser.add_argument('--optimizer', '-opt', type=str, default='adamax',
                              choices=['adam', 'ftrl', 'sgd', 'rmsprop', 'adadelta', 'adagrad', 'adamax', 'nadam'],
                              help='Select optimizer.')
     args_parser.add_argument('--activation', '-act', type=str, default='swish', choices=['relu', 'swish'],
                              help='Select leaky relu gradient.')
-    args_parser.add_argument('--dropout', '-dor', type=float, default=0.5, help='Select dropout ratio.')
+    args_parser.add_argument('--dropout', '-dor', type=float, default=0.2, help='Select dropout ratio.')
     args_parser.add_argument('--epochs', '-e', type=int, default=500, help='Number of max training epochs.')
     args_parser.add_argument('--early-stop', '-es', type=int, default=30, help='Number of early stopping epochs.')
     args_parser.add_argument('--test', '-test', action='store_true', help='Test loaded model with isic2020.')
