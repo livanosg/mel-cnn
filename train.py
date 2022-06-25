@@ -3,7 +3,7 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 from features_def import TASK_CLASSES
 from custom_metrics import GeometricMean
-from custom_callbacks import EnrTensorboard
+# from custom_callbacks import EnrTensorboard
 from custom_losses import losses
 
 
@@ -26,12 +26,12 @@ def train_fn(args: dict, dirs: dict, data, model, strategy):
 
     train_data = data.get_dataset('train')
     val_data = data.get_dataset('validation')
-    model.fit(x=train_data, validation_data=val_data, epochs=args['epochs'],
+    model.fit(x=train_data, validation_data=val_data, epochs=args['epochs'], verbose=2,
               callbacks=[tf.keras.callbacks.CSVLogger(filename=dirs['train_logs'], separator=',', append=True),
                          tf.keras.callbacks.EarlyStopping(monitor='val_geometric_mean', mode='max', verbose=1,
                                                           patience=args['early_stop'], restore_best_weights=True),
-                         EnrTensorboard(val_data=val_data, log_dir=dirs['logs'],
-                                        class_names=TASK_CLASSES[args['task']])
+                         # EnrTensorboard(val_data=val_data, log_dir=dirs['logs'],
+                         #                class_names=TASK_CLASSES[args['task']])
                          ]
               )
     model.save(filepath=dirs['save_path'])

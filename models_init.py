@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.layers import AveragePooling2D, Conv2D, Concatenate, Flatten, Input, Dense, LayerNormalization, Dropout, Activation, Softmax
+from tensorflow.keras.layers import AveragePooling2D, Conv2D, Concatenate, Flatten, Input, Dense, LayerNormalization, Dropout, Softmax
 from tensorflow.keras.activations import swish, relu
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
 from features_def import TASK_CLASSES
@@ -28,9 +28,8 @@ def model_struct(args):
     inputs_list.append(image_input)
 
     def conv2d_norm(input_tensor, nodes, kernel_size, activation, dropout, kernel_regularizer, initializer):
-        input_tensor = Conv2D(nodes, padding='same', kernel_size=kernel_size, kernel_regularizer=kernel_regularizer,
+        input_tensor = Conv2D(nodes, padding='same', activation=activation, kernel_size=kernel_size, kernel_regularizer=kernel_regularizer,
                               kernel_initializer=initializer, bias_initializer=initializer)(input_tensor)
-        input_tensor = Activation(activation)(input_tensor)
         input_tensor = LayerNormalization()(input_tensor)
         return Dropout(rate=dropout, seed=seed)(input_tensor)
 
@@ -59,34 +58,27 @@ def model_struct(args):
             shape = (18,)
         clinical_data_input = Input(shape=shape, name='clinical_data', dtype=tf.float32)
         inputs_list.append(clinical_data_input)
-        clinical_data_1 = Dense(dense_nodes[1], kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(clinical_data_input)
-        clinical_data_1 = Activation(act)(clinical_data_1)
+        clinical_data_1 = Dense(dense_nodes[1], activation=act, kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(clinical_data_input)
         clinical_data_1 = LayerNormalization()(clinical_data_1)
         clinical_data_1 = Dropout(rate=args['dropout'], seed=seed)(clinical_data_1)
-        clinical_data_2 = Dense(dense_nodes[0], kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(clinical_data_1)
-        clinical_data_2 = Activation(act)(clinical_data_2)
+        clinical_data_2 = Dense(dense_nodes[0],activation=act, kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(clinical_data_1)
         clinical_data_2 = LayerNormalization()(clinical_data_2)
         clinical_data_2 = Dropout(rate=args['dropout'], seed=seed)(clinical_data_2)
         clinical_data_con = Concatenate(axis=-1)([clinical_data_2, clinical_data_1])
-        clinical_data_3 = Dense(dense_nodes[0], kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(clinical_data_con)
-        clinical_data_3 = Activation(act)(clinical_data_3)
+        clinical_data_3 = Dense(dense_nodes[0],activation=act, kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(clinical_data_con)
         clinical_data_3 = LayerNormalization()(clinical_data_3)
         clinical_data_3 = Dropout(rate=args['dropout'], seed=seed)(clinical_data_3)
         common = Concatenate(axis=-1)([common, clinical_data_1, clinical_data_2, clinical_data_3])
     # -------------------------------================== Concat part ==================---------------------------------#
     # common = GlobalAvgPool2D()(common)
-    common = Dense(merge_nodes[0], kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(common)
-    common = Activation(act)(common)
+    common = Dense(merge_nodes[0],activation=act, kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(common)
     common = LayerNormalization()(common)
     # common = Dropout(rate=args['dropout'], seed=seed)(common)
-    common = Dense(merge_nodes[1], kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(common)
-    common = Activation(act)(common)
+    common = Dense(merge_nodes[1],activation=act, kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(common)
     common = LayerNormalization()(common)
     # common = Dropout(rate=args['dropout'], seed=seed)(common)
-    common = Dense(merge_nodes[2], kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(common)
-    common = Activation(act)(common)
+    common = Dense(merge_nodes[2],activation=act, kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(common)
     # common = LayerNormalization()(common)
-    # common = Dense(16, activation=activation, kernel_regularizer=rglzr)(common)
-    output = Dense(len(TASK_CLASSES[args['task']]), kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(common)
-    output = Softmax(name='class')(output)
+    # common = Dense(16, activation=act, kernel_regularizer=rglzr)(common)
+    output = Dense(len(TASK_CLASSES[args['task']]), activation='softmax', kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init, name='class')(common)
     return tf.keras.Model(inputs_list, [output])
