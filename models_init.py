@@ -61,7 +61,7 @@ def model_struct(args):
         clinical_data_1 = Dense(dense_nodes[1], activation=act, kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(clinical_data_input)
         clinical_data_1 = LayerNormalization()(clinical_data_1)
         clinical_data_1 = Dropout(rate=args['dropout'], seed=seed)(clinical_data_1)
-        clinical_data_2 = Dense(dense_nodes[0],activation=act, kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(clinical_data_1)
+        clinical_data_2 = Dense(dense_nodes[0], activation=act, kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(clinical_data_1)
         clinical_data_2 = LayerNormalization()(clinical_data_2)
         clinical_data_2 = Dropout(rate=args['dropout'], seed=seed)(clinical_data_2)
         clinical_data_con = Concatenate(axis=-1)([clinical_data_2, clinical_data_1])
