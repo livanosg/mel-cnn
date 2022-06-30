@@ -112,7 +112,8 @@ class MelData:
     def get_dataset(self, dataset=None):
         options = tf.data.Options()
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
-        ds = tf.data.Dataset.from_tensor_slices(self._prep_df_for_tfdataset(mode=dataset))
+        data_preped = self._prep_df_for_tfdataset(mode=dataset)
+        ds = tf.data.Dataset.from_tensor_slices(data_preped)
         ds = ds.with_options(options)
 
         # Memory leak due to shuffle: https://github.com/tensorflow/tensorflow/issues/44176#issuecomment-783768033
@@ -121,17 +122,17 @@ class MelData:
         #     ds = ds.shuffle(buffer_size=buffer_size, seed=1312, reshuffle_each_iteration=True)
         # if dataset != 'train':
         # ds = ds.repeat(1)
-        # Read image
-        ds = ds.map(lambda sample, label, sample_weights: (self._read_image(sample=sample), label, sample_weights), num_parallel_calls=4)
+        # Read image6
+        ds = ds.map(lambda sample, label, sample_weights: (self._read_image(sample=sample), label, sample_weights), num_parallel_calls=3)
         ds = ds.batch(self.args['batch_size'] * self.args['gpus'])  # Batch samples
 
         if dataset == 'train':  # Apply image data augmentation on training dataset
-            ds = ds.map(lambda sample, label, sample_weights: (self.augm(sample), label, sample_weights), num_parallel_calls=4)
+            ds = ds.map(lambda sample, label, sample_weights: (self.augm(sample), label, sample_weights), num_parallel_calls=3)
         elif dataset == 'isic20_test':  # Remove sample_weights from validation and test datasets
-            ds = ds.map(lambda sample, label, sample_weights: sample, num_parallel_calls=4)
+            ds = ds.map(lambda sample, label, sample_weights: sample, num_parallel_calls=3)
         else:
-            ds = ds.map(lambda sample, label, sample_weights: (sample, label), num_parallel_calls=4)
-        return ds.prefetch(buffer_size=10 * self.args['batch_size'] * self.args['gpus'])
+            ds = ds.map(lambda sample, label, sample_weights: (sample, label), num_parallel_calls=3)
+        return ds.prefetch(4)  # buffer_size=10 * self.args['batch_size'] * self.args['gpus'])
 
     def augm(self, sample):
         img = tf.image.random_flip_up_down(image=sample['image'])
