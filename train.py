@@ -1,13 +1,17 @@
 from contextlib import redirect_stdout
 import tensorflow as tf
 import tensorflow_addons as tfa
+
+from data_prep import MelData
 from features_def import TASK_CLASSES
 from custom_metrics import GeometricMean
 # from custom_callbacks import EnrTensorboard
 from custom_losses import losses
 
 
-def train_fn(args: dict, dirs: dict, data, model, strategy):
+def train_fn(args: dict, dirs: dict, model, strategy):
+    data = MelData(args, dirs)
+
     """Setup and run training stage"""
     loss = losses(args)[args['loss_fn']]
 
@@ -22,11 +26,9 @@ def train_fn(args: dict, dirs: dict, data, model, strategy):
                                GeometricMean()])
 
     with redirect_stdout(open(dirs['model_summary'], 'w', encoding='utf-8')):
-        model.summary(show_trainable=True)
+        model.summary()  # show_trainable=True)
 
-    train_data = data.get_dataset('train')
-    val_data = data.get_dataset('validation')
-    model.fit(x=train_data, validation_data=val_data, epochs=args['epochs'], verbose=2,
+    model.fit(x=data.get_dataset('train'), validation_data=data.get_dataset('validation'), epochs=args['epochs'], verbose=2,
               callbacks=[tf.keras.callbacks.CSVLogger(filename=dirs['train_logs'], separator=',', append=True),
                          tf.keras.callbacks.EarlyStopping(monitor='val_geometric_mean', mode='max', verbose=1,
                                                           patience=args['early_stop'], restore_best_weights=True),

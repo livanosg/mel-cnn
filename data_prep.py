@@ -31,8 +31,14 @@ class MelData:
 
     def _prep_df(self, mode: str):
         df = pd.read_csv(data_csv[mode])
-        if mode in ('train', 'validation'):
-            df = df.sample(frac=self.args['dataset_frac'], random_state=1312)
+
+        if float(self.args['dataset_frac']) != 1.:
+            if mode in ('train', 'validation'):
+                df = df.sample(frac=self.args['dataset_frac'], random_state=1312)
+        else:
+            if mode in 'train':
+                df = df.sample(frac=self.args['dataset_frac'], random_state=1312)
+
         # Set proper folder to fetch images
         df['image'] = df['image'].apply(lambda x: os.path.join(self.dirs['proc_img_folder'], x))
         # Handle NaNs
@@ -62,26 +68,30 @@ class MelData:
 
     def _prep_df_for_tfdataset(self, mode):
         df = self.dfs[mode]
-        onehot_input_dict = {'image_path': df['image'].values}
-        onehot_feature_dict = {}
-        for key, voc in (('location', LOCATIONS), ('sex', SEX), ('age_approx', AGE_APPROX), ('image_type', IMAGE_TYPE)):
-            lookup = tf.keras.layers.StringLookup(vocabulary=voc, output_mode='one_hot')
-            onehot_feature_dict[key] = lookup(tf.convert_to_tensor(df[key].values))[:, 1:]
-        # onehot_feature_dict['anatom_site_general'] = onehot_feature_dict['location']  # compat
+        onehot_feature_dict = {'image_path': df['image'].values}
 
         if not self.args['no_clinical_data']:
-            onehot_input_dict['clinical_data'] = tf.keras.layers.Concatenate()([onehot_feature_dict['location'],
-                                                                                onehot_feature_dict['sex'],
-                                                                                onehot_feature_dict['age_approx']])
+            loc_lookup = tf.keras.layers.StringLookup(vocabulary=LOCATIONS, output_mode='one_hot')
+            sex_lookup = tf.keras.layers.StringLookup(vocabulary=SEX, output_mode='one_hot')
+            age_lookup = tf.keras.layers.StringLookup(vocabulary=AGE_APPROX, output_mode='one_hot')
+            image_lookup = tf.keras.layers.StringLookup(vocabulary=IMAGE_TYPE, output_mode='one_hot')
+            onehot_feature_dict['location'] = loc_lookup(tf.convert_to_tensor(df['location'].values))[:, 1:]
+            onehot_feature_dict['sex'] = sex_lookup(tf.convert_to_tensor(df['sex'].values))[:, 1:]
+            onehot_feature_dict['age_approx'] = age_lookup(tf.convert_to_tensor(df['age_approx'].values))[:, 1:]
+            onehot_feature_dict['image_type'] = image_lookup(tf.convert_to_tensor(df['image_type'].values))[:, 1:]
+            # onehot_feature_dict['anatom_site_general'] = onehot_feature_dict['location']  # compat
+
+            onehot_feature_dict['clinical_data'] = tf.concat([onehot_feature_dict['location'], onehot_feature_dict['sex'],
+                                                              onehot_feature_dict['age_approx']], axis=-1)
             if not self.args['no_image_type']:
-                onehot_input_dict['clinical_data'] = tf.keras.layers.Concatenate()([onehot_input_dict['clinical_data'],
-                                                                                    onehot_feature_dict['image_type']])
-        onehot_label = None
+                onehot_feature_dict['clinical_data'] = tf.concat([onehot_feature_dict['clinical_data'],
+                                                                  onehot_feature_dict['image_type']], axis=-1)
+        onehot_label = {}
         sample_weight = None
 
         if 'class' in df.columns:  # If class available, make onehot
-            onehot_label = {'class': tf.keras.layers.StringLookup(vocabulary=self.class_names,
-                                                                  output_mode='one_hot')(df['class'].values)[:, 1:]}
+            label_lookup = tf.keras.layers.StringLookup(vocabulary=self.class_names, output_mode='one_hot')
+            onehot_label['class'] = label_lookup(df['class'].values)[:, 1:]
 
         if mode == 'train':
             if self.args['image_type'] == 'both' and self.args['weighted_samples']:  # Sample weight for image type
@@ -102,7 +112,13 @@ class MelData:
 
             if sample_weight is None:  # Set sample weight to one if not set.
                 sample_weight = tf.ones(len(df), dtype=tf.float32)
-        return onehot_input_dict, onehot_label, sample_weight
+
+        del onehot_feature_dict['image_type']
+        del onehot_feature_dict['location']
+        del onehot_feature_dict['sex']
+        del onehot_feature_dict['age_approx']
+
+        return onehot_feature_dict, onehot_label, sample_weight
 
     def _read_image(self, sample):
         sample['image'] = tf.cast(x=tf.io.decode_image(tf.io.read_file(sample['image_path']), channels=3),
@@ -123,15 +139,15 @@ class MelData:
         # if dataset != 'train':
         # ds = ds.repeat(1)
         # Read image6
-        ds = ds.map(lambda sample, label, sample_weights: (self._read_image(sample=sample), label, sample_weights), num_parallel_calls=3)
+        ds = ds.map(lambda sample, label, sample_weights: (self._read_image(sample=sample), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
         ds = ds.batch(self.args['batch_size'] * self.args['gpus'])  # Batch samples
 
         if dataset == 'train':  # Apply image data augmentation on training dataset
-            ds = ds.map(lambda sample, label, sample_weights: (self.augm(sample), label, sample_weights), num_parallel_calls=3)
+            ds = ds.map(lambda sample, label, sample_weights: (self.augm(sample), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
         elif dataset == 'isic20_test':  # Remove sample_weights from validation and test datasets
-            ds = ds.map(lambda sample, label, sample_weights: sample, num_parallel_calls=3)
+            ds = ds.map(lambda sample, label, sample_weights: sample, num_parallel_calls=tf.data.AUTOTUNE)
         else:
-            ds = ds.map(lambda sample, label, sample_weights: (sample, label), num_parallel_calls=3)
+            ds = ds.map(lambda sample, label, sample_weights: (sample, label), num_parallel_calls=tf.data.AUTOTUNE)
         return ds.prefetch(4)  # buffer_size=10 * self.args['batch_size'] * self.args['gpus'])
 
     def augm(self, sample):

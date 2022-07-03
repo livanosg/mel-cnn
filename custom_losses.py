@@ -1,32 +1,31 @@
 import tensorflow as tf
 
-
-class CMWeightedCategoricalCrossentropy(tf.keras.losses.CategoricalCrossentropy):
-    def __init__(self, args, from_logits=False, weights=None, label_smoothing=0,
-                 name='categorical_crossentropy'):
-        super().__init__(from_logits, label_smoothing, name=f"weighted_{name}")
-        self.task = args['task']
-        if weights is not None:
-            self.weights = tf.convert_to_tensor(weights, dtype=tf.float32)
-        else:
-            if self.task == '5cls':
-                #  0: Nevus | 1: Non-Nevus benign | 2: Suspicious | 3: Non-Melanocytic Carcinoma | 4: Melanoma
-                self.weights = tf.constant([[1., 1.21, 0.38, 1.286, 2.313],
-                                            [4.771, 3.811, 1.431, 1.362, 1.492],
-                                            [4.071, 2.321, 5.203, 5.161, 3.463],
-                                            [3.502, 0.734, 1.516, 1.33, 2.095],
-                                            [4.197, 0.670, 0.289, 0.913, 3.214]], dtype=tf.float32)
-            if self.task == 'ben_mal':  # 0: Benign | 1: Malignant
-                self.weights = tf.constant([[1., 3.],
-                                            [5., 4.]], dtype=tf.float32)
-            if self.task == 'nev_mel':  # 0: Nevus | 1: Melanoma
-                self.weights = tf.constant([[1., 3.],
-                                            [5., 4.]], dtype=tf.float32)
-
-    def call(self, y_true, y_pred):
-        weights = tf.gather_nd(self.weights, tf.concat([tf.expand_dims(tf.math.argmax(y_true, axis=-1)),
-                                                        tf.expand_dims(tf.math.argmax(y_pred, axis=-1))], axis=-1))
-        return super().call(y_true, y_pred) * weights
+# class CMWeightedCategoricalCrossentropy(tf.keras.losses.CategoricalCrossentropy):
+#     def __init__(self, args, from_logits=False, weights=None, label_smoothing=0,
+#                  name='categorical_crossentropy'):
+#         super().__init__(from_logits, label_smoothing, name=f"weighted_{name}")
+#         self.task = args['task']
+#         if weights is not None:
+#             self.weights = tf.convert_to_tensor(weights, dtype=tf.float32)
+#         else:
+#             if self.task == '5cls':
+#                 #  0: Nevus | 1: Non-Nevus benign | 2: Suspicious | 3: Non-Melanocytic Carcinoma | 4: Melanoma
+#                 self.weights = tf.constant([[1., 1.21, 0.38, 1.286, 2.313],
+#                                             [4.771, 3.811, 1.431, 1.362, 1.492],
+#                                             [4.071, 2.321, 5.203, 5.161, 3.463],
+#                                             [3.502, 0.734, 1.516, 1.33, 2.095],
+#                                             [4.197, 0.670, 0.289, 0.913, 3.214]], dtype=tf.float32)
+#             if self.task == 'ben_mal':  # 0: Benign | 1: Malignant
+#                 self.weights = tf.constant([[1., 3.],
+#                                             [5., 4.]], dtype=tf.float32)
+#             if self.task == 'nev_mel':  # 0: Nevus | 1: Melanoma
+#                 self.weights = tf.constant([[1., 3.],
+#                                             [5., 4.]], dtype=tf.float32)
+#
+#     def call(self, y_true, y_pred):
+#         weights = tf.gather_nd(self.weights, tf.concat([tf.expand_dims(tf.math.argmax(y_true, axis=-1)),
+#                                                         tf.expand_dims(tf.math.argmax(y_pred, axis=-1))], axis=-1))
+#         return super().call(y_true, y_pred) * weights
 
 
 def categorical_focal_loss(alpha=[1., 1.], gamma=2.):
@@ -104,5 +103,5 @@ def combined_loss(frac, gamma=2.):
 def losses(args):
     return {'cxe': 'categorical_crossentropy',
             'focal': categorical_focal_loss(alpha=[1., 1.]),
-            'combined': combined_loss(args['loss_frac']),
-            'perclass': CMWeightedCategoricalCrossentropy(args=args)}
+            'combined': combined_loss(args['loss_frac'])}  # ,
+            # 'perclass': CMWeightedCategoricalCrossentropy(args=args)}

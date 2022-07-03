@@ -1,5 +1,4 @@
 import os
-from data_prep import MelData
 from settings import parser, Directories, log_params
 # from prepare_images import setup_images
 from setup_model import setup_model
@@ -19,14 +18,12 @@ if __name__ == '__main__':
         # LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4 python main.py args
     dirs = Directories(args).dirs
     # setup_images(args, dirs)
-    data = MelData(args, dirs)
     model, strategy = setup_model(args, dirs)
     if not args['test']:
         log_params(args, dirs)
-        train_fn(args, dirs, data, model, strategy)
+        train_fn(args, dirs, model, strategy)
     args['clinic_val'] = False
     for image_type in ('clinic', 'derm'):
         args['image_type'] = image_type
-        data = MelData(args, dirs)
-        test_fn(args, dirs, data, model)
+        test_fn(args, dirs, model)
     exit()
