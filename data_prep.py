@@ -117,7 +117,7 @@ def get_dataset(args, dataset, dirs):
     options = tf.data.Options()
     options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
     ds = ds.with_options(options)
-    return ds.prefetch(tf.data.AUTOTUNE)  # buffer_size=10 * args['batch_size'] * args['gpus'])
+    return ds.prefetch(8)  # tf.data.AUTOTUNE)  # buffer_size=10 * args['batch_size'] * args['gpus'])
 
 
 def augm(sample, args, rng):
