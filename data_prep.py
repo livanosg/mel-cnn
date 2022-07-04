@@ -1,4 +1,6 @@
 import os
+
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 import tensorflow_addons as tfa
@@ -23,27 +25,27 @@ def _prep_df(args, dataset: str, dirs):
     df['image'] = df['image'].apply(lambda x: os.path.join(dirs['proc_img_folder'], x))
     # Handle NaNs
     for cat in ['location', 'sex', 'image_type']:
-        df[cat].fillna('', inplace=True)
-    df['age_approx'].fillna(-1, inplace=True)
+        df[cat] = df[cat].fillna('')
+    df['age_approx'] = df['age_approx'].fillna(-1)
     df['age_approx'] = df['age_approx'].astype(int).astype('string')
     # df['age_approx'] = df['age_approx']
     # Define classes according to task
     if 'class' in df.columns:
         if args['task'] == 'ben_mal':
-            df.replace(to_replace=BEN_MAL_MAP, inplace=True)
+            df = df.replace(to_replace=BEN_MAL_MAP)
         if args['task'] == 'nev_mel':
-            df.drop(df[~df['class'].isin(class_names)].index, errors='ignore', inplace=True)
+            df = df.drop(df[~df['class'].isin(class_names)].index, errors='ignore')
         if args['task'] == '5cls':  # Drop unclassified benign samples
-            df.drop(df[df['class'].isin(['UNK'])].index, errors='ignore', inplace=True)
+            df = df.drop(df[df['class'].isin(['UNK'])].index, errors='ignore')
 
     if dataset == 'validation':
         if args['clinic_val']:  # Run validation on clinical dataset regardless the training image type
-            df.drop(df[df['image_type'].isin(['derm'])].index, errors='ignore', inplace=True)
+            df = df.drop(df[df['image_type'].isin(['derm'])].index, errors='ignore')
         elif args['image_type'] != 'both':  # Run validation on the same training image type
-            df.drop(df[~df['image_type'].isin([args['image_type']])].index, errors='ignore', inplace=True)
+            df = df.drop(df[~df['image_type'].isin([args['image_type']])].index, errors='ignore')
     else:  # Keep dermoscopy or clinical image samples for the rest datasets according to training image type
         if args['image_type'] != 'both':
-            df.drop(df[~df['image_type'].isin([args['image_type']])].index, errors='ignore', inplace=True)
+            df = df.drop(df[~df['image_type'].isin([args['image_type']])].index, errors='ignore')
     return df
 
 
@@ -69,27 +71,28 @@ def _prep_df_for_tfdataset(args, dataset, dirs):
     if dataset == 'train':
         if args['image_type'] == 'both' and args['weighted_samples']:  # Sample weight for image type
             image_type_ohe = ohe_data[:, -4:-2]
-            sample_weight = tf.math.divide(tf.reduce_max(tf.reduce_sum(image_type_ohe, axis=0)), tf.reduce_sum(image_type_ohe, axis=0))
-            sample_weight = tf.gather(sample_weight, tf.math.argmax(image_type_ohe, axis=-1))
-
+            sample_weight = np.divide(np.amax(np.sum(image_type_ohe, axis=0)), np.sum(image_type_ohe, axis=0))
+            sample_weight = np.sum(np.multiply(sample_weight, image_type_ohe), axis=-1)
         if args['weighted_loss']:  # Class weight
-            class_weight = tf.math.divide(tf.reduce_max(tf.reduce_sum(onehot_label['class'], axis=0)), tf.reduce_sum(onehot_label['class'], axis=0))
-            class_weight = tf.gather(class_weight, tf.math.argmax(onehot_label['class'], axis=-1))
+            class_weight = np.divide(np.amax(np.sum(onehot_label['class'], axis=0)), np.sum(onehot_label['class'], axis=0))
+            class_weight = np.sum(np.multiply(class_weight, onehot_label['class']), axis=-1)
 
             if sample_weight is not None:  # From keras: `class_weight` and `sample_weight` are multiplicative.
-                class_weight = tf.cast(class_weight, sample_weight.dtype)
                 sample_weight = sample_weight * class_weight
             else:
                 sample_weight = class_weight
 
         if sample_weight is None:  # Set sample weight to one if not set.
-            sample_weight = tf.ones(len(df), dtype=tf.float32)
+            sample_weight = np.ones(len(df), dtype=tf.float32)
     return onehot_feature_dict, onehot_label, sample_weight
 
 
 def _read_image(sample):
-    sample['image'] = tf.cast(x=tf.io.decode_image(tf.io.read_file(sample['image_path']), channels=3),
-                              dtype=tf.float32)
+    read_img = tf.io.read_file(sample['image_path'])
+    decode_img = tf.io.decode_image(read_img, channels=3)
+    sample['image'] = tf.cast(x=decode_img, dtype=tf.float32)
+    del read_img
+    del decode_img
     return sample
 
 
@@ -101,39 +104,32 @@ def get_dataset(args, dataset, dirs):
     # if dataset == 'train':
     #     ds = ds.shuffle(buffer_size=ds.cardinality(), seed=1312, reshuffle_each_iteration=True)
     # Read image
-
-    ds = ds.map(lambda sample, label, sample_weights: (_read_image(sample=sample), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
-    ds = ds.batch(args['batch_size'] * args['gpus'])  # Batch samples
-
+    # ds = ds.map(lambda sample, label, sample_weights: (_read_image(sample=sample), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
     if dataset == 'train':  # Apply image data augmentation on training dataset
-        ds = ds.map(lambda sample, label, sample_weights: (augm(sample, args, rng), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
+        ds = ds.map(lambda sample, label, sample_weights: (augm(_read_image(sample), args, rng), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
     elif dataset == 'isic20_test':  # Remove sample_weights from validation and test datasets
-        ds = ds.map(lambda sample, label, sample_weights: sample, num_parallel_calls=tf.data.AUTOTUNE)
+        ds = ds.map(lambda sample, label, sample_weights: _read_image(sample), num_parallel_calls=tf.data.AUTOTUNE)
     else:
-        ds = ds.map(lambda sample, label, sample_weights: (sample, label), num_parallel_calls=tf.data.AUTOTUNE)
+        ds = ds.map(lambda sample, label, sample_weights: (_read_image(sample), label), num_parallel_calls=tf.data.AUTOTUNE)
+
+    ds = ds.batch(args['batch_size'] * args['gpus'])  # Batch samples
     # ds = ds.repeat(1)
     options = tf.data.Options()
     options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
     ds = ds.with_options(options)
-    ds = ds.prefetch(tf.data.AUTOTUNE)
-    return ds  # buffer_size=10 * args['batch_size'] * args['gpus'])
+    return ds.prefetch(tf.data.AUTOTUNE)  # buffer_size=10 * args['batch_size'] * args['gpus'])
 
 
 def augm(sample, args, rng):
-    img = tf.image.random_flip_up_down(image=sample['image'])
-    img = tf.image.random_flip_left_right(image=img)
-    img = tf.image.random_brightness(image=img, max_delta=60.)
-    img = tf.image.random_contrast(image=img, lower=.5, upper=1.5)
-    img = tf.clip_by_value(img, clip_value_min=0., clip_value_max=255.)
-    img = tf.image.random_saturation(image=img, lower=0.8, upper=1.2)
-    img = tfa.image.sharpness(image=img, factor=rng.uniform(shape=[1], minval=0.5, maxval=1.5),
-                              name='Sharpness')  # _sharpness_image -> image_channels = tf.shape(image)[-1]
-    # trans_val = args['image_size'] * 0.2
+    img = tf.image.random_flip_up_down(tf.image.random_flip_left_right(image=sample['image']))
+    img = tf.image.random_brightness(image=tf.image.random_contrast(image=img, lower=.5, upper=1.5), max_delta=60.)
+    img = tf.image.random_saturation(image=tf.clip_by_value(img, clip_value_min=0., clip_value_max=255.), lower=0.8, upper=1.2)
+    # _sharpness_image -> image_channels = tf.shape(image)[-1]
+    img = tfa.image.sharpness(image=img, factor=rng.uniform(shape=[1], minval=0.5, maxval=1.5), name='Sharpness')
     img = tfa.image.translate(images=img, translations=rng.uniform(shape=[2],
                                                                    minval=-args['image_size'] * 0.2,
                                                                    maxval=args['image_size'] * 0.2,
-                                                                   dtype=tf.float32),
-                              name='Translation')
+                                                                   dtype=tf.float32), name='Translation')
     img = tfa.image.rotate(images=img, angles=tf.cast(rng.uniform(shape=[],  dtype=tf.int32,
                                                                   minval=0, maxval=360), dtype=tf.float32),
                            interpolation='bilinear', name='Rotation')
@@ -141,12 +137,14 @@ def augm(sample, args, rng):
                   lambda: tfa.image.gaussian_filter2d(image=img, sigma=1.5, filter_shape=3, name='Gaussian_filter'),
                   lambda: img)
     cutout_ratio = 0.15
+    img = tf.expand_dims(img, 0)
     for i in range(3):
         mask_height = tf.cast(rng.uniform(shape=[], minval=0, maxval=args['image_size'] * cutout_ratio),
                               dtype=tf.int32) * 2
         mask_width = tf.cast(rng.uniform(shape=[], minval=0, maxval=args['image_size'] * cutout_ratio),
                              dtype=tf.int32) * 2
         img = tfa.image.random_cutout(img, mask_size=(mask_height, mask_width))
+    img = tf.squeeze(img)
     sample['image'] = {'xept': tf.keras.applications.xception.preprocess_input,
                        'incept': tf.keras.applications.inception_v3.preprocess_input,
                        'effnet0': tf.keras.applications.efficientnet.preprocess_input,

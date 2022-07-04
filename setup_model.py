@@ -3,9 +3,9 @@ from custom_losses import categorical_focal_loss
 from custom_metrics import GeometricMean
 from models_init import model_struct
 
-tf.config.threading.set_inter_op_parallelism_threads(num_threads=16)
-tf.config.threading.set_intra_op_parallelism_threads(num_threads=16)
-tf.config.set_soft_device_placement(enabled=True)
+# tf.config.threading.set_inter_op_parallelism_threads(num_threads=16)
+# tf.config.threading.set_intra_op_parallelism_threads(num_threads=16)
+# tf.config.set_soft_device_placement(enabled=True)
 
 
 def unfreeze_model(trained_model):
