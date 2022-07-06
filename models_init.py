@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.layers import AveragePooling2D, Conv2D, Concatenate, Flatten, Input, Dense, LayerNormalization, Dropout, Softmax
+from tensorflow.keras.layers import AveragePooling2D, Conv2D, Concatenate, Flatten, Input, Dense, LayerNormalization, Dropout
 from tensorflow.keras.activations import swish, relu
 from tensorflow.keras.applications import xception, inception_v3, efficientnet
 from features_def import TASK_CLASSES
@@ -27,28 +27,49 @@ def model_struct(args):
     image_input = Input(shape=input_shape, name='image')
     inputs_list.append(image_input)
 
-    def conv2d_norm(input_tensor, nodes, kernel_size, activation, dropout, kernel_regularizer, initializer):
-        input_tensor = Conv2D(nodes, padding='same', activation=activation, kernel_size=kernel_size, kernel_regularizer=kernel_regularizer,
-                              kernel_initializer=initializer, bias_initializer=initializer)(input_tensor)
-        input_tensor = LayerNormalization()(input_tensor)
-        return Dropout(rate=dropout, seed=seed)(input_tensor)
-
-    def c_split(input_tensor, nodes, activation, dropout, kernel_regularizer, initializer):
-        split_1 = conv2d_norm(input_tensor=input_tensor, nodes=nodes, activation=activation, kernel_size=(1, 3), dropout=dropout, kernel_regularizer=kernel_regularizer, initializer=initializer)
-        split_2 = conv2d_norm(input_tensor=input_tensor, nodes=nodes, activation=activation, kernel_size=(3, 1), dropout=dropout, kernel_regularizer=kernel_regularizer, initializer=initializer)
-        return split_1, split_2
-
     base_model = base_model(image_input, training=False)
     # Inception module C used in Inception v4
     inc_avrg = AveragePooling2D(padding='same', strides=1)(base_model)
-    inc_avrg = conv2d_norm(input_tensor=inc_avrg, nodes=conv_nodes[0], activation=act, kernel_size=1, dropout=args['dropout'], kernel_regularizer=l1_l2, initializer=init)
-    inc_c1 = conv2d_norm(input_tensor=base_model, nodes=conv_nodes[0], activation=act, kernel_size=1, dropout=args['dropout'], kernel_regularizer=l1_l2, initializer=init)
-    inc_c2 = conv2d_norm(input_tensor=base_model, nodes=conv_nodes[1], activation=act, kernel_size=1, dropout=args['dropout'], kernel_regularizer=l1_l2, initializer=init)
-    inc_c2_1, inc_c2_2 = c_split(input_tensor=inc_c2, nodes=conv_nodes[0], activation=act, dropout=args['dropout'], kernel_regularizer=l1_l2, initializer=init)
-    inc_c3 = conv2d_norm(input_tensor=base_model, nodes=conv_nodes[1], activation=act, kernel_size=1, dropout=args['dropout'], kernel_regularizer=l1_l2, initializer=init)
-    inc_c3 = conv2d_norm(input_tensor=inc_c3, nodes=conv_nodes[2], activation=act, kernel_size=(1, 3), dropout=args['dropout'], kernel_regularizer=l1_l2, initializer=init)
-    inc_c3 = conv2d_norm(input_tensor=inc_c3, nodes=conv_nodes[3], activation=act, kernel_size=(3, 1), dropout=args['dropout'], kernel_regularizer=l1_l2, initializer=init)
-    inc_c3_1, inc_c3_2 = c_split(input_tensor=inc_c3, nodes=conv_nodes[0], activation=act, dropout=args['dropout'], kernel_regularizer=l1_l2, initializer=init)
+    inc_avrg = Conv2D(conv_nodes[0], padding='same', activation=act, kernel_size=1, kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(inc_avrg)
+    inc_avrg = LayerNormalization()(inc_avrg)
+    inc_avrg = Dropout(rate=args['dropout'], seed=seed)(inc_avrg)
+
+    inc_c1 = Conv2D(conv_nodes[0], padding='same', activation=act, kernel_size=1, kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(base_model)
+    inc_c1 = LayerNormalization()(inc_c1)
+    inc_c1 = Dropout(rate=args['dropout'], seed=seed)(inc_c1)
+
+    inc_c2 = Conv2D(conv_nodes[1], padding='same', activation=act, kernel_size=1, kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(base_model)
+    inc_c2 = LayerNormalization()(inc_c2)
+    inc_c2 = Dropout(rate=args['dropout'], seed=seed)(inc_c2)
+
+    inc_c2_1 = Conv2D(conv_nodes[0], padding='same', activation=act, kernel_size=(1, 3), kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(inc_c2)
+    inc_c2_1 = LayerNormalization()(inc_c2_1)
+    inc_c2_1 = Dropout(rate=args['dropout'], seed=seed)(inc_c2_1)
+
+    inc_c2_2 = Conv2D(conv_nodes[0], padding='same', activation=act, kernel_size=(3, 1), kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(inc_c2)
+    inc_c2_2 = LayerNormalization()(inc_c2_2)
+    inc_c2_2 = Dropout(rate=args['dropout'], seed=seed)(inc_c2_2)
+
+    inc_c3 = Conv2D(conv_nodes[1], padding='same', activation=act, kernel_size=1, kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(base_model)
+    inc_c3 = LayerNormalization()(inc_c3)
+    inc_c3 = Dropout(rate=args['dropout'], seed=seed)(inc_c3)
+
+    inc_c3 = Conv2D(conv_nodes[2], padding='same', activation=act, kernel_size=(1, 3), kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(inc_c3)
+    inc_c3 = LayerNormalization()(inc_c3)
+    inc_c3 = Dropout(rate=args['dropout'], seed=seed)(inc_c3)
+
+    inc_c3 = Conv2D(conv_nodes[3], padding='same', activation=act, kernel_size=(3, 1), kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(inc_c3)
+    inc_c3 = LayerNormalization()(inc_c3)
+    inc_c3 = Dropout(rate=args['dropout'], seed=seed)(inc_c3)
+
+    inc_c3_1 = Conv2D(conv_nodes[0], padding='same', activation=act, kernel_size=(1, 3), kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(inc_c3)
+    inc_c3_1 = LayerNormalization()(inc_c3_1)
+    inc_c3_1 = Dropout(rate=args['dropout'], seed=seed)(inc_c3_1)
+
+    inc_c3_2 = Conv2D(conv_nodes[0], padding='same', activation=act, kernel_size=(3, 1), kernel_regularizer=l1_l2, kernel_initializer=init, bias_initializer=init)(inc_c3)
+    inc_c3_2 = LayerNormalization()(inc_c3_2)
+    inc_c3_2 = Dropout(rate=args['dropout'], seed=seed)(inc_c3_2)
+
     common = Concatenate()([base_model, inc_avrg, inc_c1, inc_c2_1, inc_c2_2, inc_c3_1, inc_c3_2])
     common = Flatten()(common)
 # --------------------------------================ Tabular data =================--------------------------------- #

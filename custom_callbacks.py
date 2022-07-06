@@ -1,6 +1,18 @@
+import gc
+
 import numpy as np
 import tensorflow as tf
+import tensorflow.keras.backend as K
 from custom_metrics import cm_image
+
+
+class MemFix(tf.keras.callbacks.Callback):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def on_epoch_end(self, epoch: int, logs=None):
+        gc.collect()
+        K.clear_session()
 
 
 class EnrTensorboard(tf.keras.callbacks.TensorBoard):
