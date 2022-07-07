@@ -1,25 +1,23 @@
 import os
-
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import OneHotEncoder
 import tensorflow as tf
 import tensorflow_addons as tfa
 from features_def import BEN_MAL_MAP, LOCATIONS, IMAGE_TYPE, SEX, AGE_APPROX, TASK_CLASSES
 from settings import data_csv
 
-
+@tf.autograph.experimental.do_not_convert
 def _prep_df(args, dataset: str, dirs):
     df = pd.read_csv(data_csv[dataset])
     # _log_info(args, dataset, df, dirs)
 
-    class_names = TASK_CLASSES[args['task']]
-
     if float(args['dataset_frac']) != 1.:
         if dataset in ('train', 'validation'):
-            df = df.sample(frac=args['dataset_frac'], random_state=1312)
+            df = df.sample(frac=args['dataset_frac'])
     else:
         if dataset in 'train':
-            df = df.sample(frac=args['dataset_frac'], random_state=1312)
+            df = df.sample(frac=args['dataset_frac'])
 
     # Set proper folder to fetch images
     df['image'] = df['image'].apply(lambda x: os.path.join(dirs['proc_img_folder'], x))
@@ -34,7 +32,7 @@ def _prep_df(args, dataset: str, dirs):
         if args['task'] == 'ben_mal':
             df = df.replace(to_replace=BEN_MAL_MAP)
         if args['task'] == 'nev_mel':
-            df = df.drop(df[~df['class'].isin(class_names)].index, errors='ignore')
+            df = df.drop(df[~df['class'].isin(TASK_CLASSES[args['task']])].index, errors='ignore')
         if args['task'] == '5cls':  # Drop unclassified benign samples
             df = df.drop(df[df['class'].isin(['UNK'])].index, errors='ignore')
 
@@ -49,8 +47,8 @@ def _prep_df(args, dataset: str, dirs):
     return df
 
 
+@tf.autograph.experimental.do_not_convert
 def _prep_df_for_tfdataset(args, dataset, dirs):
-    from sklearn.preprocessing import OneHotEncoder
     df = _prep_df(args, dataset, dirs)
     onehot_feature_dict = {'image_path': df['image'].values}
     categories = [LOCATIONS, SEX, AGE_APPROX]
@@ -83,37 +81,49 @@ def _prep_df_for_tfdataset(args, dataset, dirs):
                 sample_weight = class_weight
 
         if sample_weight is None:  # Set sample weight to one if not set.
-            sample_weight = np.ones(len(df), dtype=tf.float32)
+            sample_weight = np.ones(len(df), dtype=np.float32)
     return onehot_feature_dict, onehot_label, sample_weight
 
 
+@tf.autograph.experimental.do_not_convert
 def _read_images(sample):
-    def _dec_img(x): return tf.cast(x=tf.io.decode_image(tf.io.read_file(x), channels=3), dtype=tf.float32)
-    sample['image'] = tf.map_fn(_dec_img, sample['image_path'], fn_output_signature=tf.float32)
+    sample['image'] = tf.vectorized_map(fn=lambda x: tf.cast(x=tf.io.decode_image(tf.io.read_file(x), channels=3), dtype=tf.float32),
+                                elems=sample['image_path'])  # , fn_output_signature=tf.float32)
     return sample
 
-
-def get_dataset(args, dataset, dirs):
+@tf.autograph.experimental.do_not_convert
+def get_train_dataset(args, dirs):
     rng = tf.random.Generator.from_non_deterministic_state()
-    ds = tf.data.Dataset.from_tensor_slices(_prep_df_for_tfdataset(args, dataset, dirs))
-
-    # Memory leak due to shuffle: https://github.com/tensorflow/tensorflow/issues/44176#issuecomment-783768033
-    if dataset == 'train':
-        ds = ds.shuffle(buffer_size=ds.cardinality(), seed=1312, reshuffle_each_iteration=True)
+    ds = tf.data.Dataset.from_tensor_slices(_prep_df_for_tfdataset(args, 'train', dirs))
     # Read image
-    # ds = ds.map(lambda sample, label, sample_weights: (_read_image(sample=sample), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
     ds = ds.batch(args['batch_size'] * args['gpus'])  # Batch samples
-    if dataset == 'train':  # Apply image data augmentation on training dataset
-        ds = ds.map(lambda sample, label, sample_weights: (augm(_read_images(sample), args, rng), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
-    elif dataset == 'isic20_test':  # Remove sample_weights from validation and test datasets
-        ds = ds.map(lambda sample, label, sample_weights: _read_images(sample), num_parallel_calls=tf.data.AUTOTUNE)
-    else:
-        ds = ds.map(lambda sample, label, sample_weights: (_read_images(sample), label), num_parallel_calls=tf.data.AUTOTUNE)
-    #ds = ds.repeat()
+    ds = ds.map(lambda sample, label, sample_weights: (augm(_read_images(sample), args, rng), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
     options = tf.data.Options()
     options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
     ds = ds.with_options(options)
+    return ds.prefetch(tf.data.AUTOTUNE)  # buffer_size=10 * args['batch_size'] * args['gpus'])
 
+
+@tf.autograph.experimental.do_not_convert
+def get_val_test_dataset(args, dataset, dirs):
+    ds = tf.data.Dataset.from_tensor_slices(_prep_df_for_tfdataset(args, dataset, dirs))
+    # Read image
+    ds = ds.batch(50 * args['batch_size'] * args['gpus'])  # Batch samples
+    ds = ds.map(lambda sample, label, sample_weights: (_read_images(sample), label), num_parallel_calls=tf.data.AUTOTUNE)
+    options = tf.data.Options()
+    options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
+    ds = ds.with_options(options)
+    return ds.prefetch(tf.data.AUTOTUNE)  # buffer_size=10 * args['batch_size'] * args['gpus'])
+
+
+@tf.autograph.experimental.do_not_convert
+def get_isic20_test_dataset(args, dirs):
+    ds = tf.data.Dataset.from_tensor_slices(_prep_df_for_tfdataset(args, 'isic20_test', dirs))
+    ds = ds.batch(10 * args['batch_size'] * args['gpus'])  # Batch samples
+    ds = ds.map(lambda sample, label, sample_weights: (_read_images(sample)), num_parallel_calls=tf.data.AUTOTUNE)
+    options = tf.data.Options()
+    options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
+    ds = ds.with_options(options)
     return ds.prefetch(tf.data.AUTOTUNE)  # buffer_size=10 * args['batch_size'] * args['gpus'])
 
 
