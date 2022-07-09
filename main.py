@@ -1,10 +1,6 @@
 import os
 from contextlib import redirect_stdout
-
 import tensorflow as tf
-
-tf.get_logger().setLevel('INFO')
-
 import tensorflow_addons as tfa
 from custom_losses import categorical_focal_loss, losses
 from custom_metrics import GeometricMean, calc_metrics
@@ -18,6 +14,8 @@ from settings import parser, Directories, log_params
 args = vars(parser().parse_args())
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(map(str, (range(args['gpus']))))
 os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
+for gpu in tf.config.experimental.list_physical_devices('GPU'):
+    tf.config.experimental.set_memory_growth(gpu, True)
 if args['os'] == 'linux':
     # XLA currently ignores TF seeds to random operations. Workaround: use the recommended RNGs such as
     # tf.random.stateless_uniform or the tf.random.Generator directly.
@@ -36,6 +34,7 @@ if args['strategy'] == 'mirrored':
 else:
     strategy = tf.distribute.OneDeviceStrategy('GPU')
 assert args['gpus'] == strategy.num_replicas_in_sync
+
 
 if not args['test']:
     log_params(args, dirs)
@@ -68,7 +67,7 @@ if not args['test']:
         with redirect_stdout(open(dirs['model_summary'], 'w', encoding='utf-8')):
             model.summary()  # show_trainable=True)
 
-        model.fit(x=get_train_dataset(args=args, dirs=dirs), epochs=args['epochs'], verbose=2,
+        model.fit(x=get_train_dataset(args=args, dirs=dirs), epochs=args['epochs'],
                   validation_data=get_val_test_dataset(args=args, dataset='validation', dirs=dirs),
                   callbacks=[tf.keras.callbacks.CSVLogger(filename=dirs['train_logs'], separator=',', append=True),
                              tf.keras.callbacks.EarlyStopping(monitor='val_geometric_mean', mode='max', verbose=1,
@@ -77,7 +76,6 @@ if not args['test']:
                              ]
                   )
     model.save(filepath=dirs['save_path'])
-
 args['clinic_val'] = False
 for image_type in ('clinic', 'derm'):
     args['image_type'] = image_type
