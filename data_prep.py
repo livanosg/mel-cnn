@@ -87,9 +87,12 @@ def _prep_df_for_tfdataset(args, dataset, dirs):
     return onehot_feature_dict, onehot_label, sample_weight
 
 
-def _read_images(sample):
-    def _dec_img(x): return tf.cast(x=tf.io.decode_image(tf.io.read_file(x), channels=3), dtype=tf.float32)
-    sample['image'] = tf.map_fn(_dec_img, sample['image_path'], fn_output_signature=tf.float32)
+def _read_image(sample):
+    read_img = tf.io.read_file(sample['image_path'])
+    decode_img = tf.io.decode_image(read_img, channels=3)
+    sample['image'] = tf.cast(x=decode_img, dtype=tf.float32)
+    del read_img
+    del decode_img
     return sample
 
 
@@ -98,23 +101,23 @@ def get_dataset(args, dataset, dirs):
     ds = tf.data.Dataset.from_tensor_slices(_prep_df_for_tfdataset(args, dataset, dirs))
 
     # Memory leak due to shuffle: https://github.com/tensorflow/tensorflow/issues/44176#issuecomment-783768033
-    if dataset == 'train':
-        ds = ds.shuffle(buffer_size=ds.cardinality(), seed=1312, reshuffle_each_iteration=True)
+    # if dataset == 'train':
+    #     ds = ds.shuffle(buffer_size=ds.cardinality(), seed=1312, reshuffle_each_iteration=True)
     # Read image
     # ds = ds.map(lambda sample, label, sample_weights: (_read_image(sample=sample), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
-    ds = ds.batch(args['batch_size'] * args['gpus'])  # Batch samples
     if dataset == 'train':  # Apply image data augmentation on training dataset
-        ds = ds.map(lambda sample, label, sample_weights: (augm(_read_images(sample), args, rng), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
+        ds = ds.map(lambda sample, label, sample_weights: (augm(_read_image(sample), args, rng), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
     elif dataset == 'isic20_test':  # Remove sample_weights from validation and test datasets
-        ds = ds.map(lambda sample, label, sample_weights: _read_images(sample), num_parallel_calls=tf.data.AUTOTUNE)
+        ds = ds.map(lambda sample, label, sample_weights: _read_image(sample), num_parallel_calls=tf.data.AUTOTUNE)
     else:
-        ds = ds.map(lambda sample, label, sample_weights: (_read_images(sample), label), num_parallel_calls=tf.data.AUTOTUNE)
-    #ds = ds.repeat()
+        ds = ds.map(lambda sample, label, sample_weights: (_read_image(sample), label), num_parallel_calls=tf.data.AUTOTUNE)
+
+    ds = ds.batch(args['batch_size'] * args['gpus'])  # Batch samples
+    # ds = ds.repeat(1)
     options = tf.data.Options()
     options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
     ds = ds.with_options(options)
-
-    return ds.prefetch(tf.data.AUTOTUNE)  # buffer_size=10 * args['batch_size'] * args['gpus'])
+    return ds.prefetch(8)  # tf.data.AUTOTUNE)  # buffer_size=10 * args['batch_size'] * args['gpus'])
 
 
 def augm(sample, args, rng):
@@ -134,12 +137,14 @@ def augm(sample, args, rng):
                   lambda: tfa.image.gaussian_filter2d(image=img, sigma=1.5, filter_shape=3, name='Gaussian_filter'),
                   lambda: img)
     cutout_ratio = 0.15
+    img = tf.expand_dims(img, 0)
     for i in range(3):
         mask_height = tf.cast(rng.uniform(shape=[], minval=0, maxval=args['image_size'] * cutout_ratio),
                               dtype=tf.int32) * 2
         mask_width = tf.cast(rng.uniform(shape=[], minval=0, maxval=args['image_size'] * cutout_ratio),
                              dtype=tf.int32) * 2
         img = tfa.image.random_cutout(img, mask_size=(mask_height, mask_width))
+    img = tf.squeeze(img)
     sample['image'] = {'xept': tf.keras.applications.xception.preprocess_input,
                        'incept': tf.keras.applications.inception_v3.preprocess_input,
                        'effnet0': tf.keras.applications.efficientnet.preprocess_input,
