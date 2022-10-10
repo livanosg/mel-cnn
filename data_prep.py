@@ -7,7 +7,7 @@ import tensorflow_addons as tfa
 from features_def import BEN_MAL_MAP, LOCATIONS, IMAGE_TYPE, SEX, AGE_APPROX, TASK_CLASSES
 from settings import data_csv
 
-
+@tf.autograph.experimental.do_not_convert
 def _prep_df(args, dataset: str, dirs):
     df = pd.read_csv(data_csv[dataset])
     # _log_info(args, dataset, df, dirs)
@@ -47,8 +47,10 @@ def _prep_df(args, dataset: str, dirs):
     return df
 
 
+@tf.autograph.experimental.do_not_convert
 def _prep_df_for_tfdataset(args, dataset, dirs):
     df = _prep_df(args, dataset, dirs)
+    onehot_feature_dict = {'image_path': df['image'].values}
     categories = [LOCATIONS, SEX, AGE_APPROX]
     columns = ['location', 'sex', 'age_approx']
     if not args['no_image_type']:
@@ -59,16 +61,19 @@ def _prep_df_for_tfdataset(args, dataset, dirs):
     features_env = OneHotEncoder(handle_unknown='ignore', categories=categories)
     features_env.fit(df[columns])
     ohe_data = features_env.transform(df[columns]).toarray()
+    if not args['no_clinical_data']:
+        onehot_feature_dict['clinical_data'] = ohe_data[:, :-2]
     sample_weight = None
+    onehot_label = {'class': ohe_data[:, -2:]}
+
     if dataset == 'train':
         if args['image_type'] == 'both' and args['weighted_samples']:  # Sample weight for image type
             image_type_ohe = ohe_data[:, -4:-2]
             sample_weight = np.divide(np.amax(np.sum(image_type_ohe, axis=0)), np.sum(image_type_ohe, axis=0))
             sample_weight = np.sum(np.multiply(sample_weight, image_type_ohe), axis=-1)
         if args['weighted_loss']:  # Class weight
-            class_weight = np.divide(np.amax(np.sum(ohe_data[:, -2:], axis=0)),
-                                     np.sum(ohe_data[:, -2:], axis=0))
-            class_weight = np.sum(np.multiply(class_weight, ohe_data[:, -2:]), axis=-1)
+            class_weight = np.divide(np.amax(np.sum(onehot_label['class'], axis=0)), np.sum(onehot_label['class'], axis=0))
+            class_weight = np.sum(np.multiply(class_weight, onehot_label['class']), axis=-1)
 
             if sample_weight is not None:  # From keras: `class_weight` and `sample_weight` are multiplicative.
                 sample_weight = sample_weight * class_weight
@@ -77,100 +82,81 @@ def _prep_df_for_tfdataset(args, dataset, dirs):
 
         if sample_weight is None:  # Set sample weight to one if not set.
             sample_weight = np.ones(len(df), dtype=np.float32)
-    if not args['no_clinical_data']:
-        clinical_data = ohe_data[:, :-2]
-    else:
-        clinical_data = ohe_data
-    #      image_path,         clinical_data, class,            sample weight
-    return df['image'].values, clinical_data, ohe_data[:, -2:], sample_weight
+    return onehot_feature_dict, onehot_label, sample_weight
 
 
-def _read_images(image):
-    return tf.cast(x=tf.io.decode_image(tf.io.read_file(tf.squeeze(image)), channels=3), dtype=tf.float32)
+@tf.autograph.experimental.do_not_convert
+def _read_images(sample):
+    sample['image'] = tf.vectorized_map(fn=lambda x: tf.cast(x=tf.io.decode_image(tf.io.read_file(x), channels=3), dtype=tf.float32),
+                                elems=sample['image_path'])  # , fn_output_signature=tf.float32)
+    return sample
 
-
+@tf.autograph.experimental.do_not_convert
 def get_train_dataset(args, dirs):
     rng = tf.random.Generator.from_non_deterministic_state()
-    image_path, onehot_features, onehot_label, sample_weight = _prep_df_for_tfdataset(args, 'train', dirs)
-    image_path_ds = tf.data.Dataset.from_tensor_slices(image_path)
-    images_ds = image_path_ds.map(_read_images, num_parallel_calls=tf.data.AUTOTUNE, deterministic=True)
-    image_path_ds = image_path_ds.batch(args['batch_size'] * args['gpus'], num_parallel_calls=tf.data.AUTOTUNE, deterministic=True)
-    images_ds = images_ds.batch(args['batch_size'] * args['gpus'], num_parallel_calls=tf.data.AUTOTUNE, deterministic=True)
-    images_ds = images_ds.map(lambda sample: augm(sample, args, rng), num_parallel_calls=tf.data.AUTOTUNE, deterministic=True)
-    onehot_features_ds = tf.data.Dataset.from_tensor_slices(onehot_features).batch(args['batch_size'] * args['gpus'], num_parallel_calls=tf.data.AUTOTUNE, deterministic=True)
-    onehot_label_ds = tf.data.Dataset.from_tensor_slices(onehot_label).batch(args['batch_size'] * args['gpus'], num_parallel_calls=tf.data.AUTOTUNE, deterministic=True)
-    sample_weight_ds = tf.data.Dataset.from_tensor_slices(sample_weight).batch(args['batch_size'] * args['gpus'], num_parallel_calls=tf.data.AUTOTUNE, deterministic=True)
-    ds = tf.data.Dataset.zip((image_path_ds, images_ds, onehot_features_ds, onehot_label_ds, sample_weight_ds))
-    ds = ds.map(lambda a, b, c, d, e: ({'image_path': a, 'image': b, 'clinical_data': c}, {'class': d}, e))
-    # ds = ds.batch(args['batch_size'] * args['gpus'], deterministic=True)
+    ds = tf.data.Dataset.from_tensor_slices(_prep_df_for_tfdataset(args, 'train', dirs))
+    # Read image
+    ds = ds.batch(args['batch_size'] * args['gpus'])  # Batch samples
+    ds = ds.map(lambda sample, label, sample_weights: (augm(_read_images(sample), args, rng), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
     options = tf.data.Options()
     options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
     ds = ds.with_options(options)
-    return ds.prefetch(tf.data.AUTOTUNE)
+    return ds.prefetch(tf.data.AUTOTUNE)  # buffer_size=10 * args['batch_size'] * args['gpus'])
 
 
+@tf.autograph.experimental.do_not_convert
 def get_val_test_dataset(args, dataset, dirs):
-    image_path, onehot_features, onehot_label, sample_weight = _prep_df_for_tfdataset(args, dataset, dirs)
-    image_path_ds = tf.data.Dataset.from_tensor_slices(image_path)
-    images_ds = image_path_ds.map(_read_images, num_parallel_calls=tf.data.AUTOTUNE, deterministic=True)
-    image_path_ds = tf.data.Dataset.from_tensor_slices(image_path).batch(50 * args['batch_size'] * args['gpus'], num_parallel_calls=tf.data.AUTOTUNE, deterministic=True)
-    images_ds = images_ds.batch(50 * args['batch_size'] * args['gpus'], num_parallel_calls=tf.data.AUTOTUNE, deterministic=True)
-    onehot_features_ds = tf.data.Dataset.from_tensor_slices(onehot_features).batch(50 * args['batch_size'] * args['gpus'], deterministic=True)
-    onehot_label_ds = tf.data.Dataset.from_tensor_slices(onehot_label).batch(50 * args['batch_size'] * args['gpus'], deterministic=True)
-    ds = tf.data.Dataset.zip((image_path_ds, images_ds, onehot_features_ds, onehot_label_ds))
-    ds = ds.map(lambda a, b, c, d: ({'image_path': a, 'image': b, 'clinical_data': c}, {'class': d}))
+    ds = tf.data.Dataset.from_tensor_slices(_prep_df_for_tfdataset(args, dataset, dirs))
+    # Read image
+    ds = ds.batch(50 * args['batch_size'] * args['gpus'])  # Batch samples
+    ds = ds.map(lambda sample, label, sample_weights: (_read_images(sample), label), num_parallel_calls=tf.data.AUTOTUNE)
     options = tf.data.Options()
     options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
     ds = ds.with_options(options)
-    return ds.prefetch(tf.data.AUTOTUNE)
+    return ds.prefetch(tf.data.AUTOTUNE)  # buffer_size=10 * args['batch_size'] * args['gpus'])
 
 
+@tf.autograph.experimental.do_not_convert
 def get_isic20_test_dataset(args, dirs):
-    image_path, onehot_features, onehot_label, sample_weight = _prep_df_for_tfdataset(args, 'isic20_test', dirs)
-    image_path_ds = tf.data.Dataset.from_tensor_slices(image_path)
-    images_ds = image_path_ds.map(_read_images, num_parallel_calls=tf.data.AUTOTUNE, deterministic=True)
-    image_path_ds = tf.data.Dataset.from_tensor_slices(image_path).batch(50 * args['batch_size'] * args['gpus'], num_parallel_calls=tf.data.AUTOTUNE, deterministic=True)
-    images_ds = images_ds.batch(50 * args['batch_size'] * args['gpus'], num_parallel_calls=tf.data.AUTOTUNE, deterministic=True)
-    onehot_features_ds = tf.data.Dataset.from_tensor_slices(onehot_features).batch(50 * args['batch_size'] * args['gpus'], num_parallel_calls=tf.data.AUTOTUNE, deterministic=True)
-    ds = tf.data.Dataset.zip((image_path_ds, images_ds, onehot_features_ds))
-    ds = ds.map(lambda a, b, c: ({'image_path': a, 'image': b, 'clinical_data': c}))
+    ds = tf.data.Dataset.from_tensor_slices(_prep_df_for_tfdataset(args, 'isic20_test', dirs))
+    ds = ds.batch(10 * args['batch_size'] * args['gpus'])  # Batch samples
+    ds = ds.map(lambda sample, label, sample_weights: (_read_images(sample)), num_parallel_calls=tf.data.AUTOTUNE)
     options = tf.data.Options()
     options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
     ds = ds.with_options(options)
-    return ds.prefetch(tf.data.AUTOTUNE)
+    return ds.prefetch(tf.data.AUTOTUNE)  # buffer_size=10 * args['batch_size'] * args['gpus'])
 
 
-def augm(image, args, rng):
-    image = tf.image.random_flip_up_down(tf.image.random_flip_left_right(image=image))
-    image = tf.image.random_brightness(image=tf.image.random_contrast(image=image, lower=.5, upper=1.5), max_delta=60.)
-    image = tf.image.random_saturation(image=tf.clip_by_value(image, clip_value_min=0., clip_value_max=255.), lower=0.8,
-                                     upper=1.2)
+def augm(sample, args, rng):
+    img = tf.image.random_flip_up_down(tf.image.random_flip_left_right(image=sample['image']))
+    img = tf.image.random_brightness(image=tf.image.random_contrast(image=img, lower=.5, upper=1.5), max_delta=60.)
+    img = tf.image.random_saturation(image=tf.clip_by_value(img, clip_value_min=0., clip_value_max=255.), lower=0.8, upper=1.2)
     # _sharpness_image -> image_channels = tf.shape(image)[-1]
-    image = tfa.image.sharpness(image=image, factor=rng.uniform(shape=[1], minval=0.5, maxval=1.5), name='Sharpness')
-    image = tfa.image.translate(images=image, translations=rng.uniform(shape=[2],
+    img = tfa.image.sharpness(image=img, factor=rng.uniform(shape=[1], minval=0.5, maxval=1.5), name='Sharpness')
+    img = tfa.image.translate(images=img, translations=rng.uniform(shape=[2],
                                                                    minval=-args['image_size'] * 0.2,
                                                                    maxval=args['image_size'] * 0.2,
                                                                    dtype=tf.float32), name='Translation')
-    image = tfa.image.rotate(images=image, angles=tf.cast(rng.uniform(shape=[], dtype=tf.int32,
+    img = tfa.image.rotate(images=img, angles=tf.cast(rng.uniform(shape=[],  dtype=tf.int32,
                                                                   minval=0, maxval=360), dtype=tf.float32),
                            interpolation='bilinear', name='Rotation')
-    image = tf.cond(tf.less(rng.uniform(shape=[1]), 0.5),
-                  lambda: tfa.image.gaussian_filter2d(image=image, sigma=1.5, filter_shape=3, name='Gaussian_filter'),
-                  lambda: image)
+    img = tf.cond(tf.less(rng.uniform(shape=[1]), 0.5),
+                  lambda: tfa.image.gaussian_filter2d(image=img, sigma=1.5, filter_shape=3, name='Gaussian_filter'),
+                  lambda: img)
     cutout_ratio = 0.15
     for i in range(3):
         mask_height = tf.cast(rng.uniform(shape=[], minval=0, maxval=args['image_size'] * cutout_ratio),
                               dtype=tf.int32) * 2
         mask_width = tf.cast(rng.uniform(shape=[], minval=0, maxval=args['image_size'] * cutout_ratio),
                              dtype=tf.int32) * 2
-        image = tfa.image.random_cutout(image, mask_size=(mask_height, mask_width))
-    image = {'xept': tf.keras.applications.xception.preprocess_input,
+        img = tfa.image.random_cutout(img, mask_size=(mask_height, mask_width))
+    sample['image'] = {'xept': tf.keras.applications.xception.preprocess_input,
                        'incept': tf.keras.applications.inception_v3.preprocess_input,
                        'effnet0': tf.keras.applications.efficientnet.preprocess_input,
                        'effnet1': tf.keras.applications.efficientnet.preprocess_input,
                        'effnet6': tf.keras.applications.efficientnet.preprocess_input
-             }[args['pretrained']](image)
-    return image
+                       }[args['pretrained']](img)
+    return sample
 
 
 def _log_info(args, dataset, df, dirs):
