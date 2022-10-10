@@ -13,7 +13,7 @@ if __name__ == '__main__':
     if args['os'] == 'linux':
         # XLA currently ignores TF seeds to random operations. Workaround: use the recommended RNGs such as
         # tf.random.stateless_uniform or the tf.random.Generator directly.
-        os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/home/giorgos/anaconda3/envs/mel-cnn/pkgs/cuda-toolkit/'
+        os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/usr/local/cuda'
         os.environ['TF_XLA_FLAGS'] = f'--tf_xla_auto_jit=2 --tf_xla_enable_xla_devices --tf_xla_cpu_global_jit'
         # From https://github.com/tensorflow/tensorflow/issues/44176#issuecomment-783768033
         # LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4 python main.py args

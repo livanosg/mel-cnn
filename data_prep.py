@@ -60,14 +60,14 @@ class MelData:
                 df.drop(df[~df['image_type'].isin([self.args['image_type']])].index, errors='ignore', inplace=True)
         return df
 
-    def _prep_df_for_tfdataset(self, mode):
+    def _prep_df_for_tf_dataset(self, mode):
         df = self.dfs[mode]
         onehot_input_dict = {'image_path': df['image'].values}
         onehot_feature_dict = {}
         for key, voc in (('location', LOCATIONS), ('sex', SEX), ('age_approx', AGE_APPROX), ('image_type', IMAGE_TYPE)):
             lookup = tf.keras.layers.StringLookup(vocabulary=voc, output_mode='one_hot')
             onehot_feature_dict[key] = lookup(tf.convert_to_tensor(df[key].values))[:, 1:]
-        # onehot_feature_dict['anatom_site_general'] = onehot_feature_dict['location']  # compat
+        onehot_feature_dict['anatom_site_general'] = onehot_feature_dict['location']  # compat
 
         if not self.args['no_clinical_data']:
             onehot_input_dict['clinical_data'] = tf.keras.layers.Concatenate()([onehot_feature_dict['location'],
@@ -101,7 +101,7 @@ class MelData:
                     sample_weight = class_weight
 
             if sample_weight is None:  # Set sample weight to one if not set.
-                sample_weight = tf.ones(len(df), dtype=tf.float32)
+                sample_weight = tf.ones(onehot_label['class'].shape[0], dtype=tf.float32)
         return onehot_input_dict, onehot_label, sample_weight
 
     def _read_image(self, sample):
@@ -112,7 +112,7 @@ class MelData:
     def get_dataset(self, dataset=None):
         options = tf.data.Options()
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
-        ds = tf.data.Dataset.from_tensor_slices(self._prep_df_for_tfdataset(mode=dataset))
+        ds = tf.data.Dataset.from_tensor_slices(self._prep_df_for_tf_dataset(mode=dataset))
         ds = ds.with_options(options)
 
         # Memory leak due to shuffle: https://github.com/tensorflow/tensorflow/issues/44176#issuecomment-783768033
@@ -122,15 +122,15 @@ class MelData:
         # if dataset != 'train':
         # ds = ds.repeat(1)
         # Read image
-        ds = ds.map(lambda sample, label, sample_weights: (self._read_image(sample=sample), label, sample_weights), num_parallel_calls=4)
+        ds = ds.map(lambda sample, label, sample_weights: (self._read_image(sample=sample), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
         ds = ds.batch(self.args['batch_size'] * self.args['gpus'])  # Batch samples
 
         if dataset == 'train':  # Apply image data augmentation on training dataset
-            ds = ds.map(lambda sample, label, sample_weights: (self.augm(sample), label, sample_weights), num_parallel_calls=4)
+            ds = ds.map(lambda sample, label, sample_weights: (self.augm(sample), label, sample_weights), num_parallel_calls=tf.data.AUTOTUNE)
         elif dataset == 'isic20_test':  # Remove sample_weights from validation and test datasets
-            ds = ds.map(lambda sample, label, sample_weights: sample, num_parallel_calls=4)
+            ds = ds.map(lambda sample, label, sample_weights: sample, num_parallel_calls=tf.data.AUTOTUNE)
         else:
-            ds = ds.map(lambda sample, label, sample_weights: (sample, label), num_parallel_calls=4)
+            ds = ds.map(lambda sample, label, sample_weights: (sample, label), num_parallel_calls=tf.data.AUTOTUNE)
         return ds.prefetch(buffer_size=10 * self.args['batch_size'] * self.args['gpus'])
 
     def augm(self, sample):
@@ -142,10 +142,9 @@ class MelData:
         img = tf.image.random_saturation(image=img, lower=0.8, upper=1.2)
         img = tfa.image.sharpness(image=img, factor=self.rng.uniform(shape=[1], minval=0.5, maxval=1.5),
                                   name='Sharpness')  # _sharpness_image -> image_channels = tf.shape(image)[-1]
-        # trans_val = self.args['image_size'] * 0.2
+        trans_val = self.args['image_size'] * 0.2
         img = tfa.image.translate(images=img, translations=self.rng.uniform(shape=[2],
-                                                                            minval=-self.args['image_size'] * 0.2,
-                                                                            maxval=self.args['image_size'] * 0.2,
+                                                                            minval=-trans_val, maxval=trans_val,
                                                                             dtype=tf.float32),
                                   name='Translation')
         img = tfa.image.rotate(images=img, angles=tf.cast(self.rng.uniform(shape=[],  dtype=tf.int32,
