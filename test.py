@@ -1,10 +1,7 @@
 from custom_metrics import calc_metrics
-from data_prep import MelData
 
 
-def test_fn(args, dirs, model):
-    data = MelData(args, dirs)
-
+def test_fn(args, dirs, data, model):
     """ run validation and tests"""
     assert args['image_type'] in ('clinic', 'derm')
     thr_d, thr_f1 = calc_metrics(args=args, dirs=dirs, model=model,
