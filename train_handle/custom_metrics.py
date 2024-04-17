@@ -1,15 +1,12 @@
 import os
 import io
 import itertools
-from typeguard import typechecked
-from typing import Optional
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from matplotlib import pyplot as plt
-from tensorflow_addons.utils.types import FloatTensorLike, AcceptableDTypes
 
-from features_def import TASK_CLASSES
+from data_handle.features_def import TASK_CLASSES
 from sklearn.metrics import confusion_matrix, average_precision_score, roc_auc_score, roc_curve, \
     precision_recall_curve, classification_report
 
@@ -101,7 +98,8 @@ def calc_metrics(model, args, dirs, dataset, dataset_name, dist_thresh=None, f1_
                 f1_thresh = pr_thresh[np.argmax(f1_values)]  # Threshold with maximum F1 score
             for threshold in (0.5,):  # dist_thresh, f1_thresh
                 y_pred_thrs = np.greater_equal(output, threshold).astype(np.int32)
-                cm_img = cm_image(y_true=np.argmax(labels, axis=-1), y_pred=y_pred_thrs[:, 1], class_names=TASK_CLASSES[args['task']])
+                cm_img = cm_image(y_true=np.argmax(labels, axis=-1), y_pred=y_pred_thrs[:, 1],
+                                  class_names=TASK_CLASSES[args['task']])
                 with open(os.path.join(save_dir, "cm_{}.png".format(str(round(threshold, 2)))), "wb") as f:
                     f.write(cm_img)
 
@@ -233,14 +231,13 @@ class GMean(tf.keras.metrics.Metric):
 
     """
 
-    @typechecked
     def __init__(
             self,
-            num_classes: FloatTensorLike,
-            average: Optional[str] = None,
-            threshold: Optional[FloatTensorLike] = None,
-            name: str = "gmean",
-            dtype: AcceptableDTypes = None,
+            num_classes,
+            average=None,
+            threshold=None,
+            name="gmean",
+            dtype=None,
             **kwargs,
     ):
         super().__init__(name=name, dtype=dtype)

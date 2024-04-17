@@ -1,10 +1,10 @@
 from contextlib import redirect_stdout
 import tensorflow as tf
 import tensorflow_addons as tfa
-from features_def import TASK_CLASSES
-from custom_metrics import GeometricMean
-from custom_callbacks import EnrTensorboard
-from custom_losses import losses
+from data_handle.features_def import TASK_CLASSES
+from train_handle.custom_metrics import GeometricMean
+from train_handle.custom_callbacks import EnrTensorboard
+from train_handle.custom_losses import losses
 
 
 def train_fn(args: dict, dirs: dict, data, model, strategy):

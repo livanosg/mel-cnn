@@ -1,7 +1,9 @@
 import tensorflow as tf
-from custom_losses import categorical_focal_loss
-from custom_metrics import GeometricMean
-from models_init import model_struct
+# from tensorflow.distribute import HierarchicalCopyAllReduce, NcclAllReduce, MirroredStrategy, OneDeviceStrategy
+from tensorflow.python.distribute.strategy_combinations import MirroredStrategy, OneDeviceStrategy
+from train_handle.custom_losses import categorical_focal_loss
+from train_handle.custom_metrics import GeometricMean
+from model_handle.models_init import model_struct
 
 tf.config.threading.set_inter_op_parallelism_threads(num_threads=16)
 tf.config.threading.set_intra_op_parallelism_threads(num_threads=16)
@@ -16,23 +18,20 @@ def unfreeze_model(trained_model):
     return trained_model
 
 
-def setup_model(args, dirs):
+def setup_model(args, strategy, load_path=None, finetune=False):
     """Setup training strategy. Select one of mirrored or singlegpu.
     Also check if a path to load a model is available and loads or setups a new model accordingly"""
-    cross_device_ops = tf.distribute.HierarchicalCopyAllReduce() if args['os'] == 'win32'\
-        else tf.distribute.NcclAllReduce()
-    strategy = tf.distribute.MirroredStrategy(cross_device_ops=cross_device_ops) if args['strategy'] == 'mirrored'\
-        else tf.distribute.OneDeviceStrategy('GPU')
-    assert args['gpus'] == strategy.num_replicas_in_sync
+    # cross_device_ops = HierarchicalCopyAllReduce() if sys.platform == 'win32' else NcclAllReduce()
+    # strategy = MirroredStrategy(cross_device_ops=cross_device_ops) if strategy == 'mirrored' else OneDeviceStrategy('GPU')
+    strategy = MirroredStrategy() if strategy == 'mirrored' else OneDeviceStrategy('GPU')
     with strategy.scope():
-        if args['load_model']:
-            model = tf.keras.models.load_model(dirs['load_path'],
-                                               compile=True,
+        if load_path:
+            model = tf.keras.models.load_model(load_path, compile=True,
                                                custom_objects={'categorical_focal_loss_fixed': categorical_focal_loss(),
                                                                'GeometricMean': GeometricMean})
         else:
             model = model_struct(args=args)
-        if args['fine']:
+        if finetune:
             model = unfreeze_model(model)
         else:
             for layer in model.layers:

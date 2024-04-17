@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from features_def import TASK_CLASSES
+from data_handle.features_def import TASK_CLASSES
 
 
 def model_struct(args):
